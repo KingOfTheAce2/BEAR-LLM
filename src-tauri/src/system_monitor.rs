@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use sysinfo::{System, Process, Component, Disk, Networks, Pid, ProcessesToUpdate, CpuRefreshKind};
+use sysinfo::{System, ProcessesToUpdate, Components};
 use nvml_wrapper::Nvml;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -199,8 +199,15 @@ impl SystemMonitor {
         let frequency_mhz = self.system.cpus()[0].frequency();
         let usage_percent = self.system.global_cpu_usage();
 
-        // Replace the entire temperature block with:
-        let temperature = 0.0; // Temperature monitoring not available in this sysinfo version
+        // Get CPU temperature using the new Components API
+        let temperature = {
+            let components = Components::new_with_refreshed_list();
+            components
+                .iter()
+                .find(|c| c.label().contains("CPU") || c.label().contains("Core"))
+                .map(|c| c.temperature())
+                .unwrap_or(0.0)
+        };
 
         CpuInfo {
             brand,

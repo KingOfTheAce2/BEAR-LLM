@@ -1,5 +1,5 @@
-use anyhow::{Result, anyhow};
-use sysinfo::{System, Process, Pid, ProcessesToUpdate, CpuRefreshKind};
+use anyhow::Result;
+use sysinfo::{System, ProcessesToUpdate, Components};
 use std::time::Duration;
 
 #[cfg(target_os = "windows")]
@@ -52,7 +52,7 @@ impl HardwareMonitor {
         let cpu_usage = self.get_cpu_usage();
         let memory_usage = self.get_memory_usage();
         let gpu_usage = self.get_gpu_usage().await?;
-        let temperature = 0.0; // Placeholder until components are available
+        let temperature = self.get_temperature();
 
         let is_safe = self.check_thresholds(cpu_usage, memory_usage, gpu_usage, temperature);
 
@@ -123,9 +123,9 @@ impl HardwareMonitor {
     }
 
     fn get_temperature(&self) -> Option<f32> {
-        // Check if components() method exists in your sysinfo version
-        // If not, you may need to use a different approach or update sysinfo
-        for component in self.system.components() {
+        // Use the new Components API from sysinfo 0.37
+        let components = Components::new_with_refreshed_list();
+        for component in &components {
             if component.label().contains("CPU") || component.label().contains("Core") {
                 return Some(component.temperature());
             }
@@ -170,7 +170,7 @@ impl HardwareMonitor {
         for (pid, process) in self.system.processes() {
             processes.push(ProcessInfo {
                 pid: pid.as_u32(),
-                name: process.name().to_string_lossy().to_string(),  // Fixed: OsStr to String conversion
+                name: process.name().to_string_lossy().to_string(),
                 cpu_usage: process.cpu_usage(),
                 memory_usage: process.memory() as f32 / 1024.0 / 1024.0,
             });
