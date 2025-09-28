@@ -1,10 +1,8 @@
-# 🐻 BEAR AI - Local LLM Assistant
+# 🐻 BEAR AI LLM - Local AI LLM Assistant
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-BEAR AI is a desktop application that runs large language models entirely on your local hardware. No internet connection required after initial setup, no data collection, complete privacy.
-
-![BEAR AI Interface](preview-system-aware.html)
+BEAR AI LLM is a desktop application that runs large language models entirely on your local hardware. No internet connection required after initial setup, no data collection, complete privacy.
 
 ## ✨ Key Features
 
@@ -40,7 +38,7 @@ BEAR AI is a desktop application that runs large language models entirely on you
 ## 📦 Installation
 
 ### Option 1: Download Installer (Recommended)
-1. Go to [Releases](https://github.com/yourusername/BEAR-AI/releases)
+1. Go to [Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases)
 2. Download `BEAR-AI-Setup-1.0.0.exe`
 3. Run installer and follow setup wizard
 4. Launch from Start Menu or Desktop
@@ -56,7 +54,7 @@ npm run tauri build
 
 ## 🚀 Quick Start
 
-1. **Launch BEAR AI** from Start Menu
+1. **Launch BEAR AI LLM** from Start Menu
 2. **System Check** - Automatic hardware detection
 3. **Browse Models** - Click "🤗 Browse Models" to see compatible LLMs
 4. **Download Model** - Choose one based on your system capabilities
@@ -154,7 +152,7 @@ npm run tauri dev  # Development mode
 
 ## ⚖️ Legal Notice
 
-BEAR AI is designed for legal and professional use. Users are responsible for:
+BEAR AI LLM is designed for legal and professional use. Users are responsible for:
 - Compliance with applicable laws and regulations
 - Proper handling of confidential information
 - Verification of AI-generated content
@@ -164,6 +162,6 @@ BEAR AI is designed for legal and professional use. Users are responsible for:
 
 ---
 
-**🐻 BEAR AI - Your Private AI Assistant**
+**🐻 BEAR AI LLM - Your Private AI Assistant**
 
 *No clouds, no tracking, just intelligent assistance on your terms.*

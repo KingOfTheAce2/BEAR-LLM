@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
-  Send, Paperclip, Plus, Settings, Sun, Moon, User,
-  Bot, Copy, RefreshCw, ChevronLeft, ChevronRight,
-  Loader2, Check, AlertCircle, Sparkles
+  Send, Paperclip, Plus, Sun, Moon,
+  Bot, ChevronLeft, ChevronRight,
+  Loader2, Sparkles
 } from 'lucide-react';
 import { useAppStore } from './stores/appStore';
 import ChatMessage from './components/ChatMessage';
@@ -15,7 +15,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -114,7 +113,7 @@ function App() {
           timestamp: Date.now(),
         });
 
-        const result = await invoke<any>('process_document', {
+        await invoke<any>('process_document', {
           filePath: selected,
           fileType: selected.split('.').pop()
         });

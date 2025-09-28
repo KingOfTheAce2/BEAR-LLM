@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Shield, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface PIIGuardProps {
   text: string;

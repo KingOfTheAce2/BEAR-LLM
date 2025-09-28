@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw, Bug, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
