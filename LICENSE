@@ -1,0 +1,97 @@
+BEAR AI SOFTWARE LICENSE AGREEMENT
+
+Version 1.0, Effective Date: September 2024
+
+Copyright (c) 2024 BEAR AI. All rights reserved.
+
+IMPORTANT: READ THIS LICENSE AGREEMENT CAREFULLY BEFORE USING THE SOFTWARE.
+
+This Software License Agreement ("Agreement") is a legal agreement between you (either an individual or a single entity, "Licensee") and BEAR AI ("Licensor") for the BEAR AI Local LLM Assistant software, including any associated documentation, media, and online or electronic documentation (collectively, the "Software").
+
+BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT.
+
+1. GRANT OF LICENSE
+   Subject to the terms and conditions of this Agreement, Licensor hereby grants Licensee a non-exclusive, non-transferable, limited license to:
+   a) Install and use the Software on any number of devices owned or controlled by Licensee for personal or commercial use
+   b) Make backup copies of the Software for archival purposes
+   c) Use the Software for processing confidential and sensitive data with full privacy protection
+
+2. PROPRIETARY RIGHTS
+   The Software is licensed, not sold. Licensor retains all right, title, and interest in and to the Software, including all intellectual property rights therein. This Agreement does not grant Licensee any rights to trademarks or service marks.
+
+3. RESTRICTIONS
+   Licensee shall NOT:
+   a) Reverse engineer, decompile, or disassemble the Software, except to the extent that such activity is expressly permitted by applicable law
+   b) Modify, adapt, or create derivative works based upon the Software
+   c) Remove, alter, or obscure any proprietary notices on the Software
+   d) Sell, rent, lease, sublicense, or distribute the Software to third parties
+   e) Use the Software to create a competing product or service
+   f) Use the Software for any unlawful purpose or in violation of any applicable laws
+
+4. PRIVACY AND DATA PROTECTION
+   The Software is designed to operate entirely on Licensee's local hardware:
+   a) NO data is transmitted to Licensor's servers or any third-party services
+   b) All AI model inference occurs locally on Licensee's device
+   c) Licensee retains full ownership and control of all data processed by the Software
+   d) The Software includes PII (Personally Identifiable Information) protection features that operate locally
+
+5. AI MODELS
+   a) The Software facilitates downloading of open-source AI models from third-party repositories (e.g., Hugging Face)
+   b) These models are subject to their own respective licenses
+   c) Licensee is responsible for compliance with the licenses of any models they download and use
+   d) Licensor makes no warranties regarding third-party models
+
+6. DISCLAIMER OF WARRANTIES
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. LICENSOR DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE OR UNINTERRUPTED.
+
+7. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR THE USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID BY LICENSEE FOR THE SOFTWARE.
+
+8. INDEMNIFICATION
+   Licensee agrees to indemnify, defend, and hold harmless Licensor from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising out of Licensee's use of the Software or breach of this Agreement.
+
+9. TERM AND TERMINATION
+   a) This Agreement is effective until terminated
+   b) Licensee may terminate this Agreement at any time by destroying all copies of the Software
+   c) Licensor may terminate this Agreement if Licensee breaches any term herein
+   d) Upon termination, all rights granted to Licensee shall cease
+
+10. UPDATES AND SUPPORT
+    a) Licensor may provide updates, patches, or new versions at its discretion
+    b) Support is provided on an "as available" basis
+    c) Updates may be subject to additional or modified terms
+
+11. EXPORT COMPLIANCE
+    Licensee agrees to comply with all applicable export laws and regulations, including U.S. export controls.
+
+12. GOVERNING LAW
+    This Agreement shall be governed by and construed in accordance with the laws of the United States and the State of Delaware, without regard to its conflict of law provisions.
+
+13. ENTIRE AGREEMENT
+    This Agreement constitutes the entire agreement between the parties and supersedes all prior or contemporaneous understandings regarding the Software.
+
+14. SEVERABILITY
+    If any provision of this Agreement is held to be unenforceable, the remaining provisions shall continue in full force and effect.
+
+15. NO WAIVER
+    The failure of Licensor to enforce any right or provision shall not be deemed a waiver of such right or provision.
+
+16. CONTACT INFORMATION
+    For questions about this Agreement, please contact:
+    BEAR AI Legal Department
+    legal@bear-ai.local
+
+BY INSTALLING OR USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
+
+---
+
+THIRD-PARTY LICENSES
+
+This software includes the following open-source components:
+
+1. Tauri Framework - MIT License
+2. React - MIT License
+3. Rust Programming Language - MIT/Apache 2.0
+4. Various npm packages - See package.json for individual licenses
+
+The full text of these licenses can be found in the THIRD_PARTY_LICENSES.txt file.
