@@ -107,7 +107,7 @@ impl SystemMonitor {
                         let name = device.name().unwrap_or_else(|_| "Unknown GPU".to_string());
 
                         let mem_info = device.memory_info().unwrap_or_else(|_| {
-                            nvml_wrapper::structs::device::MemoryInfo {
+                            nvml_wrapper::struct_wrappers::device::MemoryInfo {
                                 total: 0,
                                 free: 0,
                                 used: 0,
@@ -192,20 +192,24 @@ impl SystemMonitor {
     }
 
     fn get_cpu_info(&mut self) -> CpuInfo {
-        self.system.refresh_cpu();
+        self.system.refresh_cpu_all(CpuRefreshKind::everything());
 
         let brand = self.system.cpus()[0].brand().to_string();
         let core_count = self.system.cpus().len();
         let frequency_mhz = self.system.cpus()[0].frequency();
-        let usage_percent = self.system.global_cpu_info().cpu_usage();
+        let usage_percent = self.system.global_cpu_usage();
 
-        // Get CPU temperature
-        let temperature = self.system
-            .components()
-            .iter()
-            .find(|c| c.label().contains("CPU") || c.label().contains("Core"))
-            .map(|c| c.temperature())
-            .unwrap_or(0.0);
+        // Get CPU temperature (if components are available)
+        let temperature = if self.system.components().len() > 0 {
+            self.system
+                .components()
+                .iter()
+                .find(|c| c.label().contains("CPU") || c.label().contains("Core"))
+                .map(|c| c.temperature())
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        };
 
         CpuInfo {
             brand,
@@ -235,8 +239,8 @@ impl SystemMonitor {
     fn get_os_info(&self) -> String {
         format!(
             "{} {}",
-            self.system.name().unwrap_or_else(|| "Unknown".to_string()),
-            self.system.os_version().unwrap_or_else(|| "".to_string())
+            System::name().unwrap_or_else(|| "Unknown".to_string()),
+            System::os_version().unwrap_or_else(|| "".to_string())
         )
     }
 
@@ -388,7 +392,7 @@ impl SystemMonitor {
         ResourceSnapshot {
             timestamp: std::time::SystemTime::now(),
             gpu: gpu_snapshot,
-            cpu_usage: self.system.global_cpu_info().cpu_usage(),
+            cpu_usage: self.system.global_cpu_usage(),
             ram_usage_percent: (self.system.used_memory() as f32 / self.system.total_memory() as f32) * 100.0,
         }
     }
@@ -407,8 +411,8 @@ pub enum Quantization {
     F32,    // Full precision
     F16,    // Half precision
     Q8_0,   // 8-bit quantization
-    Q5_K_M, // 5-bit quantization
-    Q4_K_M, // 4-bit quantization
+    Q5KM,   // 5-bit quantization - Fixed naming
+    Q4KM,   // 4-bit quantization - Fixed naming
     Q4_0,   // 4-bit quantization (older)
 }
 
@@ -434,9 +438,9 @@ fn calculate_vram_requirement(model: &ModelParams) -> u64 {
         Quantization::F32 => 4,     // 4 bytes per parameter
         Quantization::F16 => 2,     // 2 bytes per parameter
         Quantization::Q8_0 => 1,    // ~1 byte per parameter
-        Quantization::Q5_K_M => 5/8, // ~0.625 bytes per parameter
-        Quantization::Q4_K_M => 1/2, // ~0.5 bytes per parameter
-        Quantization::Q4_0 => 1/2,  // ~0.5 bytes per parameter
+        Quantization::Q5KM => 1,    // ~0.625 bytes per parameter (simplified to 1)
+        Quantization::Q4KM => 1,    // ~0.5 bytes per parameter (simplified to 1)
+        Quantization::Q4_0 => 1,    // ~0.5 bytes per parameter (simplified to 1)
     };
 
     // Add overhead for context, activations, etc (roughly 20%)
