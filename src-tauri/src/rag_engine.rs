@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -162,7 +162,7 @@ impl RAGEngine {
         chunks
     }
 
-    async fn rerank_results(&self, results: Vec<JsonValue>, query: &str) -> Result<Vec<JsonValue>> {
+    async fn rerank_results(&self, results: Vec<JsonValue>, _query: &str) -> Result<Vec<JsonValue>> {
         let mut reranked = results;
         reranked.sort_by(|a, b| {
             let score_a = a["score"].as_f64().unwrap_or(0.0);

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use sysinfo::{System, ProcessesToUpdate, Components};
+use sysinfo::{System, Components};
 use nvml_wrapper::Nvml;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -216,7 +216,7 @@ impl SystemMonitor {
             core_count,
             frequency_mhz,
             usage_percent,
-            temperature: temperature.unwrap_or(0.0),
+            temperature: temperature,
         }
     }
 

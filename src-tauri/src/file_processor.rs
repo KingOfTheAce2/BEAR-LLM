@@ -31,7 +31,7 @@ impl FileProcessor {
         }
     }
 
-    pub async fn process_file(&self, file_path: &str, file_type: &str) -> Result<String> {
+    pub async fn process_file(&self, file_path: &str, _file_type: &str) -> Result<String> {
         let path = Path::new(file_path);
 
         if !path.exists() {

@@ -56,22 +56,69 @@ pub async fn download_model_from_huggingface(
     save_path: String,
 ) -> Result<DownloadProgress, String> {
     use hf_hub::api::tokio::Api;
-    use hf_hub::Repo;
+    use std::path::Path;
+    use tokio::fs;
 
     // Initialize HuggingFace API
     let api = Api::new().map_err(|e| e.to_string())?;
     let repo = api.model(model_id.clone());
 
-    // This would download the model files
-    // In production, you'd stream progress updates
+    // Create save directory
+    let save_dir = Path::new(&save_path);
+    fs::create_dir_all(save_dir).await.map_err(|e| e.to_string())?;
+
+    // Essential model files to download
+    let files_to_download = vec![
+        "config.json",
+        "model.safetensors", // or "pytorch_model.bin"
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+        "vocab.txt", // for some models
+    ];
+
+    let mut downloaded_files = 0;
+    let mut total_size_mb = 0;
+    let start_time = std::time::Instant::now();
+
+    for file_name in &files_to_download {
+        match repo.get(file_name).await {
+            Ok(downloaded_path) => {
+                let dest_path = save_dir.join(file_name);
+                
+                // Get file size for progress tracking
+                if let Ok(metadata) = tokio::fs::metadata(&downloaded_path).await {
+                    total_size_mb += metadata.len() / (1024 * 1024);
+                }
+                
+                // Copy to destination
+                if let Err(e) = tokio::fs::copy(&downloaded_path, &dest_path).await {
+                    return Err(format!("Failed to copy {}: {}", file_name, e));
+                }
+                
+                downloaded_files += 1;
+            }
+            Err(_) => {
+                // Some files might not exist for all models, continue
+                continue;
+            }
+        }
+    }
+
+    if downloaded_files == 0 {
+        return Err("No model files could be downloaded. Check if model exists.".to_string());
+    }
+
+    let elapsed = start_time.elapsed().as_secs_f64();
+    let speed_mbps = if elapsed > 0.0 { total_size_mb as f64 / elapsed } else { 0.0 };
 
     Ok(DownloadProgress {
         model_id,
-        status: DownloadStatus::InProgress,
-        progress_percent: 0.0,
-        downloaded_mb: 0,
-        total_mb: 0,
-        speed_mbps: 0.0,
+        status: DownloadStatus::Completed, // Should be Completed, not InProgress
+        progress_percent: 100.0,
+        downloaded_mb: total_size_mb,
+        total_mb: total_size_mb,
+        speed_mbps,
         eta_seconds: 0,
     })
 }

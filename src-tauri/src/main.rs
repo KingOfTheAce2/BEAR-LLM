@@ -190,7 +190,7 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .manage(app_state.clone())
         .manage(command_state)
-        .setup(move |app| {
+        .setup(move |_app| {
             let state = app_state.clone();
             tauri::async_runtime::spawn(async move {
                 loop {
