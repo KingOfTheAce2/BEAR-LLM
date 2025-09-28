@@ -118,7 +118,7 @@ pub async fn download_model_from_huggingface(
         progress_percent: 100.0,
         downloaded_mb: total_size_mb,
         total_mb: total_size_mb,
-        speed_mbps,
+        speed_mbps: speed_mbps as f32,
         eta_seconds: 0,
     })
 }
@@ -145,9 +145,9 @@ pub enum DownloadStatus {
 
 #[tauri::command]
 pub async fn search_huggingface_models(
-    query: String,
-    filter_size: Option<String>,
-    filter_type: Option<String>,
+    _query: String,
+    _filter_size: Option<String>,
+    _filter_type: Option<String>,
 ) -> Result<Vec<HuggingFaceModel>, String> {
     // This would actually search HuggingFace
     // For now, return real model data structure
@@ -236,7 +236,7 @@ pub struct ModelLoadResult {
 }
 
 #[tauri::command]
-pub async fn unload_model(model_name: String) -> Result<bool, String> {
+pub async fn unload_model(_model_name: String) -> Result<bool, String> {
     // Unload model from memory
     // This would actually free up GPU/CPU memory
     Ok(true)
