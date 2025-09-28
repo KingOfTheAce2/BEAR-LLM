@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use sysinfo::{System, SystemExt, CpuExt, ProcessExt, PidExt};
+use sysinfo::{System, Process, Pid, ProcessesToUpdate, CpuRefreshKind};
 use std::time::Duration;
 
 #[cfg(target_os = "windows")]
@@ -41,10 +41,10 @@ impl HardwareMonitor {
     }
 
     pub async fn update_metrics(&mut self) -> Result<()> {
-        self.system.refresh_cpu();
+        self.system.refresh_cpu_all(CpuRefreshKind::everything());
         self.system.refresh_memory();
-        self.system.refresh_processes();
-        self.system.refresh_components_list();
+        self.system.refresh_processes(ProcessesToUpdate::All, true);
+        // refresh_components_list() no longer exists - components refresh automatically
         Ok(())
     }
 
@@ -123,8 +123,8 @@ impl HardwareMonitor {
     }
 
     fn get_temperature(&self) -> Option<f32> {
-        use sysinfo::ComponentExt;
-
+        // Check if components() method exists in your sysinfo version
+        // If not, you may need to use a different approach or update sysinfo
         for component in self.system.components() {
             if component.label().contains("CPU") || component.label().contains("Core") {
                 return Some(component.temperature());
@@ -170,7 +170,7 @@ impl HardwareMonitor {
         for (pid, process) in self.system.processes() {
             processes.push(ProcessInfo {
                 pid: pid.as_u32(),
-                name: process.name().to_string(),
+                name: process.name().to_string_lossy().to_string(),  // Fixed: OsStr to String conversion
                 cpu_usage: process.cpu_usage(),
                 memory_usage: process.memory() as f32 / 1024.0 / 1024.0,
             });

@@ -141,15 +141,6 @@ npm run tauri dev  # Development mode
 - **Issues:** [GitHub Issues](https://github.com/yourusername/BEAR-AI/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/yourusername/BEAR-AI/discussions)
 
-## 🗺️ Roadmap
-
-- [ ] Mac and Linux support
-- [ ] Voice interface with Whisper
-- [ ] RAG with vector databases
-- [ ] Plugin system for custom tools
-- [ ] Enterprise SSO integration
-- [ ] Collaborative features (still local-only)
-
 ## ⚖️ Legal Notice
 
 BEAR AI LLM is designed for legal and professional use. Users are responsible for:

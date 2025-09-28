@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::{System, SystemExt, CpuExt};
+use sysinfo::System;
 use tauri::State;
 use tokio::sync::RwLock;
 use regex::Regex;

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use sysinfo::{CpuExt, System, SystemExt, ComponentExt, DiskExt, NetworkExt, PidExt, ProcessExt};
+use sysinfo::{System, Process, Component, Disk, Networks, Pid, ProcessesToUpdate, CpuRefreshKind};
 use nvml_wrapper::Nvml;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
