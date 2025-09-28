@@ -27,10 +27,10 @@ pub async fn check_model_compatibility(
         "f32" => Quantization::F32,
         "f16" => Quantization::F16,
         "q8_0" => Quantization::Q8_0,
-        "q5_k_m" => Quantization::Q5_K_M,
-        "q4_k_m" => Quantization::Q4_K_M,
+        "q5_k_m" => Quantization::Q5KM,  
+        "q4_k_m" => Quantization::Q4KM,  
         "q4_0" => Quantization::Q4_0,
-        _ => Quantization::Q4_K_M, // Default to 4-bit
+    _ => Quantization::Q4KM,
     };
 
     let model_params = ModelParams {

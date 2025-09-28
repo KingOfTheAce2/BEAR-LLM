@@ -41,7 +41,7 @@ impl HardwareMonitor {
     }
 
     pub async fn update_metrics(&mut self) -> Result<()> {
-        self.system.refresh_cpu_all(CpuRefreshKind::everything());
+        self.system.refresh_cpu_all();
         self.system.refresh_memory();
         self.system.refresh_processes(ProcessesToUpdate::All, true);
         // refresh_components_list() no longer exists - components refresh automatically
@@ -52,7 +52,7 @@ impl HardwareMonitor {
         let cpu_usage = self.get_cpu_usage();
         let memory_usage = self.get_memory_usage();
         let gpu_usage = self.get_gpu_usage().await?;
-        let temperature = self.get_temperature();
+        let temperature = 0.0; // Placeholder until components are available
 
         let is_safe = self.check_thresholds(cpu_usage, memory_usage, gpu_usage, temperature);
 

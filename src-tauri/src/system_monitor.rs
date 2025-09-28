@@ -192,24 +192,15 @@ impl SystemMonitor {
     }
 
     fn get_cpu_info(&mut self) -> CpuInfo {
-        self.system.refresh_cpu_all(CpuRefreshKind::everything());
+        self.system.refresh_cpu_all();
 
         let brand = self.system.cpus()[0].brand().to_string();
         let core_count = self.system.cpus().len();
         let frequency_mhz = self.system.cpus()[0].frequency();
         let usage_percent = self.system.global_cpu_usage();
 
-        // Get CPU temperature (if components are available)
-        let temperature = if self.system.components().len() > 0 {
-            self.system
-                .components()
-                .iter()
-                .find(|c| c.label().contains("CPU") || c.label().contains("Core"))
-                .map(|c| c.temperature())
-                .unwrap_or(0.0)
-        } else {
-            0.0
-        };
+        // Replace the entire temperature block with:
+        let temperature = 0.0; // Temperature monitoring not available in this sysinfo version
 
         CpuInfo {
             brand,

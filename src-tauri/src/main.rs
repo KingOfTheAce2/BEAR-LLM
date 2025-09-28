@@ -3,11 +3,11 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::System;
+// Remove: use sysinfo::System; (unused)
 use tauri::State;
 use tokio::sync::RwLock;
-use regex::Regex;
-use lazy_static::lazy_static;
+// Remove: use regex::Regex; (unused)
+// Remove: use lazy_static::lazy_static; (unused)
 
 mod pii_detector;
 mod hardware_monitor;
