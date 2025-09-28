@@ -111,6 +111,8 @@ impl SystemMonitor {
                                 total: 0,
                                 free: 0,
                                 used: 0,
+                                reserved: 0,  // Add this line
+                                version: 0,   // Add this line
                             }
                         });
 
@@ -205,7 +207,7 @@ impl SystemMonitor {
             components
                 .iter()
                 .find(|c| c.label().contains("CPU") || c.label().contains("Core"))
-                .map(|c| c.temperature())
+                .and_then(|c| c.temperature())
                 .unwrap_or(0.0)
         };
 
@@ -214,7 +216,7 @@ impl SystemMonitor {
             core_count,
             frequency_mhz,
             usage_percent,
-            temperature,
+            temperature: temperature.unwrap_or(0.0),
         }
     }
 

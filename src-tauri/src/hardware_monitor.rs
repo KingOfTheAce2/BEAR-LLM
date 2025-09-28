@@ -127,7 +127,7 @@ impl HardwareMonitor {
         let components = Components::new_with_refreshed_list();
         for component in &components {
             if component.label().contains("CPU") || component.label().contains("Core") {
-                return Some(component.temperature());
+                return component.temperature();
             }
         }
         None
