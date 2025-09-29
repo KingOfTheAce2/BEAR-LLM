@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+#[cfg(target_os = "windows")]
 use std::process::Command;
 use sysinfo::{System, Components};
 use nvml_wrapper::Nvml;

@@ -104,7 +104,7 @@ impl LLMManager {
     }
 
     pub async fn download_model(&mut self, model_name: &str) -> Result<()> {
-        let _model_config = self.models.get(model_name)
+        let model_config = self.models.get(model_name)
             .ok_or_else(|| anyhow!("Model not found: {}", model_name))?
             .clone();
 
