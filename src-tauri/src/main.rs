@@ -37,7 +37,9 @@ struct AppState {
     file_processor: Arc<FileProcessor>,
     rag_engine: Arc<RwLock<RAGEngine>>,
     database_manager: Arc<RwLock<DatabaseManager>>,
+    #[allow(dead_code)]
     mcp_server: Arc<MCPServer>,
+    #[allow(dead_code)]
     agent_orchestrator: Arc<AgentOrchestrator>,
     hardware_detector: Arc<RwLock<HardwareDetector>>,
 }

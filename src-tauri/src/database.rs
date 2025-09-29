@@ -169,6 +169,7 @@ impl DatabaseManager {
         Ok(conn.last_insert_rowid())
     }
 
+    #[allow(dead_code)]
     pub fn store_pii_detection(&self, document_id: i64, pii_type: &str, original: &str, replacement: &str, confidence: f64) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
@@ -187,6 +188,7 @@ impl DatabaseManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn search_documents(&self, query: &str, limit: usize) -> Result<JsonValue> {
         let conn = Connection::open(&self.db_path)?;
         let start_time = std::time::Instant::now();
@@ -270,6 +272,7 @@ impl DatabaseManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_query_history(&self, limit: usize) -> Result<JsonValue> {
         let conn = Connection::open(&self.db_path)?;
 

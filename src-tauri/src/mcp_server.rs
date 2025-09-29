@@ -29,12 +29,14 @@ pub struct ParameterProperty {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ToolCall {
     pub tool: String,
     pub parameters: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ToolResult {
     pub success: bool,
     pub result: serde_json::Value,
@@ -43,7 +45,9 @@ pub struct ToolResult {
 
 pub struct MCPServer {
     tools: HashMap<String, Tool>,
+    #[allow(dead_code)]
     sandboxed: bool,
+    #[allow(dead_code)]
     allowed_paths: Vec<PathBuf>,
 }
 
@@ -249,10 +253,12 @@ impl MCPServer {
         self.tools.insert(tool.name.clone(), tool);
     }
 
+    #[allow(dead_code)]
     pub fn list_tools(&self) -> Vec<Tool> {
         self.tools.values().cloned().collect()
     }
 
+    #[allow(dead_code)]
     pub async fn execute_tool(&self, call: ToolCall) -> Result<ToolResult> {
         match call.tool.as_str() {
             "read_file" => self.handle_read_file(call.parameters).await,
@@ -272,6 +278,7 @@ impl MCPServer {
         }
     }
 
+    #[allow(dead_code)]
     async fn handle_read_file(&self, params: serde_json::Value) -> Result<ToolResult> {
         let path = params["path"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
@@ -299,6 +306,7 @@ impl MCPServer {
         }
     }
 
+    #[allow(dead_code)]
     async fn handle_write_file(&self, params: serde_json::Value) -> Result<ToolResult> {
         let path = params["path"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
@@ -328,6 +336,7 @@ impl MCPServer {
         }
     }
 
+    #[allow(dead_code)]
     async fn handle_list_directory(&self, params: serde_json::Value) -> Result<ToolResult> {
         let path = params["path"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
@@ -366,10 +375,11 @@ impl MCPServer {
         }
     }
 
+    #[allow(dead_code)]
     async fn handle_search_documents(&self, params: serde_json::Value) -> Result<ToolResult> {
         let query = params["query"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing query parameter"))?;
-        let limit = params["limit"].as_u64().unwrap_or(10);
+        let _limit = params["limit"].as_u64().unwrap_or(10);
 
         // This would integrate with the RAG engine
         // For now, return a mock response
@@ -389,6 +399,7 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     async fn handle_extract_text(&self, _params: serde_json::Value) -> Result<ToolResult> {
         // This would use the file_processor module
         Ok(ToolResult {
@@ -398,8 +409,9 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     async fn handle_analyze_contract(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let content = params["content"].as_str()
+        let _content = params["content"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing content parameter"))?;
 
         // This would perform actual contract analysis
@@ -417,8 +429,9 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     async fn handle_find_precedents(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let case_description = params["case_description"].as_str()
+        let _case_description = params["case_description"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing case_description parameter"))?;
 
         // This would search a legal database
@@ -438,6 +451,7 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     async fn handle_execute_sql(&self, params: serde_json::Value) -> Result<ToolResult> {
         let query = params["query"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing query parameter"))?;
@@ -462,6 +476,7 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     async fn handle_run_python(&self, params: serde_json::Value) -> Result<ToolResult> {
         let code = params["code"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing code parameter"))?;
@@ -494,6 +509,7 @@ impl MCPServer {
         })
     }
 
+    #[allow(dead_code)]
     fn is_path_allowed(&self, path: &str) -> bool {
         let path = PathBuf::from(path);
 
@@ -507,6 +523,7 @@ impl MCPServer {
         false
     }
 
+    #[allow(dead_code)]
     pub fn add_allowed_path(&mut self, path: PathBuf) {
         self.allowed_paths.push(path);
     }
@@ -514,6 +531,7 @@ impl MCPServer {
 
 // Agent orchestrator that uses MCP tools
 pub struct AgentOrchestrator {
+    #[allow(dead_code)]
     mcp_server: MCPServer,
 }
 
@@ -524,6 +542,7 @@ impl AgentOrchestrator {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn execute_agent_task(&self, task: &str, context: &str) -> Result<String> {
         // This would:
         // 1. Send task to LLM with available tools
@@ -536,7 +555,7 @@ impl AgentOrchestrator {
         let tools_json = serde_json::to_string(&tools)?;
 
         // Format prompt with tools
-        let prompt = format!(
+        let _prompt = format!(
             "Task: {}\nContext: {}\nAvailable tools: {}\nExecute the task using the available tools.",
             task, context, tools_json
         );
