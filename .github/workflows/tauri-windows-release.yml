@@ -1,0 +1,61 @@
+name: Build Windows release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-windows:
+    name: Build Windows (tauri)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install JS deps
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Tauri (Windows)
+        run: npm run tauri:build
+
+      - name: Show built bundles
+        run: |
+          echo "Bundle files:" 
+          ls -R src-tauri/target/release/bundle || true
+
+      - name: Create GitHub Release (if missing)
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload bundle assets to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          # upload all files produced by tauri bundler
+          for f in src-tauri/target/release/bundle/**/*; do
+            if [ -f "$f" ]; then
+              echo "Uploading $f"
+              gh release upload "${{ github.ref_name }}" "$f" --clobber || true
+            fi
+          done
