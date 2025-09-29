@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Download, CheckCircle, AlertCircle, Globe, Laptop, MemoryStick, HardDrive } from 'lucide-react';
+import { ChevronDown, Download, CheckCircle, AlertCircle, Globe, Laptop, MemoryStick, HardDrive, Zap } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, HuggingFaceModel } from '../stores/appStore';
 import HuggingFaceBrowser from './HuggingFaceBrowser';
+import HardwareStatus from './HardwareStatus';
 
 
 const ModelSelector: React.FC = () => {
@@ -17,6 +18,7 @@ const ModelSelector: React.FC = () => {
   const [showBrowser, setShowBrowser] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showHardware, setShowHardware] = useState(false);
 
   useEffect(() => {
     loadAvailableModels();
@@ -99,8 +101,16 @@ const ModelSelector: React.FC = () => {
             </div>
           )}
 
-          {/* Browse Models Button */}
+          {/* Hardware Recommendations */}
           <div className="p-3 border-b border-[var(--border-primary)]">
+            <button
+              onClick={() => setShowHardware(!showHardware)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-lg transition-all hover:scale-105 mb-2"
+            >
+              <Zap className="w-4 h-4" />
+              <span className="font-medium">Hardware Recommendations</span>
+            </button>
+
             <button
               onClick={handleBrowseModels}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all hover:scale-105"
@@ -204,6 +214,26 @@ const ModelSelector: React.FC = () => {
         onClose={() => setShowBrowser(false)}
         onModelSelect={handleModelSelect}
       />
+
+      {/* Hardware Status Modal */}
+      {showHardware && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--bg-primary)] rounded-lg border border-[var(--border-primary)] max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[var(--text-primary)]">Hardware Analysis & Recommendations</h2>
+                <button
+                  onClick={() => setShowHardware(false)}
+                  className="p-2 hover:bg-[var(--hover-bg)] rounded-lg transition-all"
+                >
+                  ✕
+                </button>
+              </div>
+              <HardwareStatus />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
