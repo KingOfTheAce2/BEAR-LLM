@@ -18,6 +18,7 @@ mod system_monitor;
 mod commands;
 mod database;
 mod mcp_server;
+mod hardware_detector;
 
 use pii_detector::PIIDetector;
 use hardware_monitor::HardwareMonitor;
@@ -26,6 +27,7 @@ use file_processor::FileProcessor;
 use rag_engine::RAGEngine;
 use database::DatabaseManager;
 use mcp_server::{MCPServer, AgentOrchestrator};
+use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 
 #[derive(Clone)]
 struct AppState {
@@ -37,6 +39,7 @@ struct AppState {
     database_manager: Arc<RwLock<DatabaseManager>>,
     mcp_server: Arc<MCPServer>,
     agent_orchestrator: Arc<AgentOrchestrator>,
+    hardware_detector: Arc<RwLock<HardwareDetector>>,
 }
 
 // Add the new AppState for commands
@@ -121,6 +124,42 @@ async fn send_message(
         .map_err(|e| e.to_string())?;
 
     Ok(response)
+}
+
+#[tauri::command]
+async fn detect_hardware(
+    state: State<'_, AppState>
+) -> Result<HardwareSpecs, String> {
+    let mut detector = state.hardware_detector.write().await;
+    detector.detect_hardware().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_model_recommendations(
+    state: State<'_, AppState>
+) -> Result<Vec<ModelRecommendation>, String> {
+    let mut detector = state.hardware_detector.write().await;
+    let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
+    Ok(detector.recommend_models(&hardware))
+}
+
+#[tauri::command]
+async fn get_system_summary(
+    state: State<'_, AppState>
+) -> Result<String, String> {
+    let mut detector = state.hardware_detector.write().await;
+    let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
+    Ok(detector.get_system_summary(&hardware))
+}
+
+#[tauri::command]
+async fn estimate_model_performance(
+    state: State<'_, AppState>,
+    model_size_gb: f64
+) -> Result<String, String> {
+    let mut detector = state.hardware_detector.write().await;
+    let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
+    Ok(detector.estimate_model_performance(&hardware, model_size_gb))
 }
 
 #[tauri::command]
@@ -350,6 +389,7 @@ fn main() {
         database_manager,
         mcp_server: Arc::new(MCPServer::new(true)), // sandboxed mode
         agent_orchestrator: Arc::new(AgentOrchestrator::new(true)),
+        hardware_detector: Arc::new(RwLock::new(HardwareDetector::new())),
     };
 
     // Initialize the system monitor state
@@ -391,6 +431,11 @@ fn main() {
             upload_document,
             analyze_document_pii,
             get_database_stats,
+            // Hardware detection commands
+            detect_hardware,
+            get_model_recommendations,
+            get_system_summary,
+            estimate_model_performance,
             // Existing commands
             commands::get_system_specs,
             commands::check_model_compatibility,
