@@ -210,7 +210,7 @@ impl LLMManager {
             model_config.max_tokens,
             model_config.context_length,
             model_dir,
-            prompt
+            formatted_prompt
         );
 
         Ok(response)
