@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, HuggingFaceModel } from '../stores/appStore';
+import FloppyDiskIcon from './FloppyDiskIcon';
 
 
 interface HuggingFaceBrowserProps {
@@ -230,7 +231,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
   };
 
   const ModelCard: React.FC<{ model: HuggingFaceModel }> = ({ model }) => (
-    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg p-4 hover:border-[var(--accent)] transition-all">
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg p-4 hover:border-[var(--accent)] hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="font-medium text-[var(--text-primary)] mb-1">{model.name}</h3>
@@ -245,10 +246,10 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
           {model.isLocal ? (
             <button
               onClick={() => onModelSelect(model)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg text-xs transition-all duration-300 transform hover:scale-105 shadow-md"
             >
-              <CheckCircle className="w-3 h-3" />
-              Select
+              <FloppyDiskIcon size="small" className="text-green-400" />
+              Loaded
             </button>
           ) : model.isDownloading ? (
             <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded text-xs">
@@ -258,10 +259,10 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
           ) : (
             <button
               onClick={() => handleDownloadModel(model)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded text-xs transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-xs transition-all duration-300 transform hover:scale-105 shadow-md"
             >
-              <Download className="w-3 h-3" />
-              Download
+              <FloppyDiskIcon size="small" isAnimated={true} />
+              Insert Model
             </button>
           )}
         </div>
@@ -269,8 +270,8 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
 
       <div className="flex items-center gap-4 text-xs text-[var(--text-tertiary)] mb-3">
         <div className="flex items-center gap-1">
-          <Download className="w-3 h-3" />
-          {(model.downloads / 1000000).toFixed(1)}M
+          <Users className="w-3 h-3" />
+          {(model.downloads / 1000000).toFixed(1)}M downloads
         </div>
         <div className="flex items-center gap-1">
           <Star className="w-3 h-3" />
@@ -301,7 +302,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
         {model.tags.slice(0, 3).map(tag => (
           <span
             key={tag}
-            className="px-2 py-1 bg-[var(--bg-primary)] text-[var(--text-tertiary)] text-xs rounded border"
+            className="px-2 py-1 bg-[var(--bg-primary)] text-[var(--text-tertiary)] text-xs rounded-full border border-[var(--border-primary)] hover:border-[var(--accent)] transition-colors"
           >
             {tag}
           </span>
@@ -318,20 +319,20 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <div className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-2xl shadow-2xl backdrop-blur-lg max-w-6xl w-full max-h-[90vh] overflow-hidden animate-slideUp">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-primary)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Globe className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+              <FloppyDiskIcon size="small" theme="dark" isAnimated={true} />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Model Browser
+                AI Model Vault
               </h2>
               <p className="text-sm text-[var(--text-secondary)]">
-                Browse and download AI models for your corporate laptop
+                Insert the perfect AI model into your BEAR system
               </p>
             </div>
           </div>
@@ -367,8 +368,8 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4" />
-              Browse HuggingFace ({hfSearchResults.length})
+              <FloppyDiskIcon size="small" />
+              Model Library ({hfSearchResults.length})
             </div>
           </button>
           <button
@@ -396,8 +397,8 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
                   type="text"
                   value={hfSearchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search HuggingFace models..."
-                  className="w-full pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg focus:outline-none focus:border-[var(--accent)] text-[var(--text-primary)]"
+                  placeholder="Search for the perfect AI model..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 text-[var(--text-primary)] transition-all"
                 />
                 {isSearchingHF && (
                   <Loader2 className="w-4 h-4 absolute right-3 top-3 animate-spin text-[var(--text-tertiary)]" />
@@ -408,7 +409,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg text-sm text-[var(--text-primary)]"
+                  className="px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
                 >
                   <option value="downloads">Sort by Downloads</option>
                   <option value="likes">Sort by Likes</option>
@@ -418,7 +419,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
 
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg hover:bg-[var(--hover-bg)] transition-colors"
+                  className="p-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl hover:bg-[var(--hover-bg)] hover:border-[var(--accent)] transition-all duration-200"
                 >
                   {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
                 </button>
@@ -429,7 +430,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
               <select
                 value={performanceFilter}
                 onChange={(e) => setPerformanceFilter(e.target.value as any)}
-                className="px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded text-sm text-[var(--text-primary)]"
+                className="px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] transition-all"
               >
                 <option value="all">All Performance Levels</option>
                 <option value="low">Low (Basic Laptops)</option>
@@ -444,7 +445,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
           {activeTab === 'corporate' && (
             <div className="space-y-4">
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-purple-800 rounded-xl backdrop-blur-sm">
                 <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                   <Laptop className="w-4 h-4" />
                   <span className="text-sm font-medium">Corporate Laptop Optimized</span>
@@ -498,7 +499,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
                 <span>Source: HuggingFace Hub</span>
               </div>
             </div>
-            <span>Powered by BEAR AI • Corporate Edition</span>
+            <span>Powered by BEAR AI • Insert the Future</span>
           </div>
         </div>
       </div>

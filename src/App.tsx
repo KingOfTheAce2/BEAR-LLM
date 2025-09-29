@@ -9,6 +9,7 @@ import {
 import { useAppStore } from './stores/appStore';
 import ChatMessage from './components/ChatMessage';
 import ModelSelector from './components/ModelSelector';
+import BearLogo from './components/BearLogo';
 
 function App() {
   const [message, setMessage] = useState('');
@@ -221,11 +222,7 @@ function App() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center">
-                <img src="/BEAR_AI_logo.png" alt="BEAR AI" className="w-6 h-6 object-contain" onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }} />
+                <BearLogo size="small" theme={theme} />
                 <Scale className="w-5 h-5 text-white hidden" />
               </div>
               <span className="font-semibold text-lg">BEAR AI Assistant</span>
@@ -248,11 +245,7 @@ function App() {
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fadeIn">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-6">
-                  <img src="/BEAR_AI_logo.png" alt="BEAR AI" className="w-16 h-16 object-contain" onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }} />
+                  <BearLogo size="medium" theme={theme} />
                   <Scale className="w-12 h-12 text-white hidden" />
                 </div>
                 <h2 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">

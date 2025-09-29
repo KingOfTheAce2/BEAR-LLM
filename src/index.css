@@ -138,6 +138,21 @@ body {
   animation: slideInRight 0.3s ease-out;
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+
 .animate-pulse-dots::after {
   content: '...';
   animation: pulse 1.5s infinite;
