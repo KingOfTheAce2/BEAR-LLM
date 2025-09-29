@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Bot, Copy, Check, RefreshCw } from 'lucide-react';
+import { User, Bot, Copy, Check, RefreshCw, Scale, Users } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -42,10 +42,10 @@ function ChatMessage({ message }: ChatMessageProps) {
         <div className="flex-shrink-0">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
             isUser
-              ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
-              : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+              ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-white'
+              : 'bg-gradient-to-br from-amber-600 to-amber-800 text-white'
           }`}>
-            {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+            {isUser ? <Users className="w-5 h-5" /> : <Scale className="w-5 h-5" />}
           </div>
         </div>
 

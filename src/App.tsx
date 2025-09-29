@@ -4,7 +4,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import {
   Send, Paperclip, Plus, Sun, Moon,
   Bot, ChevronLeft, ChevronRight,
-  Loader2, Sparkles
+  Loader2, Sparkles, Scale, Users
 } from 'lucide-react';
 import { useAppStore } from './stores/appStore';
 import ChatMessage from './components/ChatMessage';
@@ -31,6 +31,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.body.className = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -219,15 +220,24 @@ function App() {
               {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center">
+                <img src="/BEAR_AI_logo.png" alt="BEAR AI" className="w-6 h-6 object-contain" onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }} />
+                <Scale className="w-5 h-5 text-white hidden" />
               </div>
               <span className="font-semibold text-lg">BEAR AI Assistant</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-1 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-full">
-              {selectedModel}
+            <div className="flex items-center gap-1 text-xs px-2 py-1 bg-[var(--bg-secondary)] text-[var(--text-secondary)] rounded-full">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>{selectedModel}</span>
+            </div>
+            <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full">
+              🔒 Local
             </span>
           </div>
         </header>
@@ -237,8 +247,13 @@ function App() {
           <div className="max-w-4xl mx-auto">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fadeIn">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6">
-                  <Sparkles className="w-12 h-12 text-white" />
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-6">
+                  <img src="/BEAR_AI_logo.png" alt="BEAR AI" className="w-16 h-16 object-contain" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }} />
+                  <Scale className="w-12 h-12 text-white hidden" />
                 </div>
                 <h2 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">
                   Welcome to BEAR AI
@@ -280,8 +295,8 @@ function App() {
                 ))}
                 {isLoading && (
                   <div className="flex items-start gap-3 px-6 py-4 animate-fadeIn">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-5 h-5 text-white" />
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center flex-shrink-0">
+                      <Scale className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] rounded-lg">
                       <Loader2 className="w-4 h-4 animate-spin" />

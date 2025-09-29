@@ -30,6 +30,9 @@ async-trait = "0.1"
 hf-hub = { version = "0.4", features = ["tokio"] }
 dirs = "6.0"
 nvml-wrapper = "0.11"
+zip = "0.6"
+pdf-extract = "0.7"
+rusqlite = { version = "0.31", features = ["bundled"] }
 
 [features]
 default = ["custom-protocol"]
