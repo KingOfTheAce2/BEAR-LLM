@@ -105,3 +105,6 @@ temp/
 
 # Development tools
 .claude/
+
+# WebView2 Runtime
+src-tauri/WebView2Loader.dll
