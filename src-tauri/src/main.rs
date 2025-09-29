@@ -19,6 +19,7 @@ mod commands;
 mod database;
 mod mcp_server;
 mod hardware_detector;
+mod inference_engine;
 
 use pii_detector::PIIDetector;
 use hardware_monitor::HardwareMonitor;

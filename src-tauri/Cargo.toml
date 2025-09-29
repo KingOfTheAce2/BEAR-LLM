@@ -35,6 +35,8 @@ pdf-extract = "0.7"
 rusqlite = { version = "0.31", features = ["bundled"] }
 calamine = { version = "0.26", features = ["dates"] }
 docx-rs = "0.4"
+# For now, we'll implement a mock inference engine
+# Future: Add proper GGUF runtime like llama-cpp-rs when it's more stable
 
 [features]
 default = ["custom-protocol"]

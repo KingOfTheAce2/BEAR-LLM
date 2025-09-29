@@ -6,6 +6,7 @@ use tokio::fs;
 use hf_hub::{api::tokio::Api, Repo, RepoType};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use crate::inference_engine::{InferenceEngine, InferenceConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelConfig {
@@ -23,6 +24,7 @@ pub struct LLMManager {
     active_model: Option<String>,
     models_dir: PathBuf,
     generation_config: Arc<RwLock<GenerationConfig>>,
+    inference_engine: Arc<RwLock<InferenceEngine>>,
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +60,7 @@ impl LLMManager {
             active_model: None,
             models_dir,
             generation_config: Arc::new(RwLock::new(GenerationConfig::default())),
+            inference_engine: Arc::new(RwLock::new(InferenceEngine::new())),
         }
     }
 
@@ -152,6 +155,20 @@ impl LLMManager {
             self.download_model(model_name).await?;
         }
 
+        // Load the model into the inference engine
+        let mut engine = self.inference_engine.write().await;
+        engine.load_model(model_file, model_config.model_type.clone()).await?;
+
+        // Update inference configuration
+        let inference_config = InferenceConfig {
+            max_tokens: model_config.max_tokens,
+            temperature: model_config.temperature,
+            top_p: 0.95,
+            top_k: 40,
+            repeat_penalty: 1.1,
+        };
+        engine.update_config(inference_config).await?;
+
         self.active_model = Some(model_name.to_string());
 
         let mut config = self.generation_config.write().await;
@@ -181,39 +198,13 @@ impl LLMManager {
             ));
         }
 
-        let formatted_prompt = match model_config.model_type.as_str() {
-            "llama" | "mistral" => {
-                format!("<s>[INST] {} [/INST]", prompt)
-            }
-            "phi" => {
-                format!("Instruct: {}\nOutput:", prompt)
-            }
-            _ => prompt.to_string(),
-        };
-
-    println!("Processing prompt with model: {}", model_name);
+        println!("Processing prompt with model: {}", model_name);
         println!("Model type: {}", model_config.model_type);
         println!("Model file location: {:?}", model_file);
 
-        let response = format!(
-            "Model '{}' loaded from {:?}\n\
-            Configuration:\n\
-            - Type: {}\n\
-            - Temperature: {}\n\
-            - Max tokens: {}\n\
-            - Context length: {}\n\n\
-            To enable actual inference, a compatible GGUF runtime needs to be integrated.\n\
-            The model files are ready at: {:?}\n\n\
-            Your prompt: {}",
-            model_name,
-            model_file,
-            model_config.model_type,
-            model_config.temperature,
-            model_config.max_tokens,
-            model_config.context_length,
-            model_dir,
-            formatted_prompt
-        );
+        // Use the inference engine to generate response
+        let engine = self.inference_engine.read().await;
+        let response = engine.generate(prompt).await?;
 
         Ok(response)
     }
