@@ -370,32 +370,6 @@ Regardless of jurisdiction, BEAR AI LLM supports:
 - **Industry Collaboration**: Work with legal industry on privacy standards
 - **Expert Consultation**: Regular consultation with privacy law experts
 
-## Contact Information
-
-### Privacy Officer
-- **Email**: privacy@bearai.com
-- **Phone**: +1-555-PRIVACY (1-555-774-8229)
-- **Address**: BEAR AI Legal Technologies, Privacy Department
-- **Office Hours**: Monday-Friday, 9 AM - 5 PM EST
-
-### Data Protection Officer (EU)
-- **Email**: dpo@bearai.com
-- **Phone**: +33-1-PRIVACY (Available during EU business hours)
-- **Address**: BEAR AI Europe, Data Protection Officer
-
-### Legal and Compliance
-- **General Legal**: legal@bearai.com
-- **Compliance Questions**: compliance@bearai.com
-- **Security Issues**: security@bearai.com
-- **Professional Responsibility**: ethics@bearai.com
-
-### Regulatory Authority Contacts
-We maintain direct relationships with key data protection authorities:
-- **EU**: edpb@bearai.com
-- **US**: state-privacy@bearai.com
-- **Asia-Pacific**: apac-privacy@bearai.com
-- **Global**: global-privacy@bearai.com
-
 ## Conclusion
 
 BEAR AI LLM's privacy-by-design architecture ensures that legal professionals can leverage AI technology while maintaining the highest standards of client confidentiality and regulatory compliance. Our commitment to local processing eliminates many traditional privacy concerns while providing the transparency and control that legal professionals require.
@@ -409,6 +383,6 @@ For questions about this privacy policy or our privacy practices, please contact
 - **Version**: 1.0
 - **Classification**: Public
 - **Review Date**: March 28, 2026
-- **Approved By**: Chief Privacy Officer, Legal Counsel
+- **Approved By**: Me
 
 **Legal Disclaimer**: This privacy policy is designed to provide comprehensive privacy protection for legal professionals. However, each legal organization should conduct its own privacy impact assessment to ensure compliance with their specific regulatory requirements and professional obligations.
