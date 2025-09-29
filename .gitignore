@@ -132,3 +132,6 @@ coordination/orchestration/*
 claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
+
+# WebView2 Runtime
+src-tauri/WebView2Loader.dll

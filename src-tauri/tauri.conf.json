@@ -43,7 +43,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": ["WebView2Loader.dll"],
     "copyright": "© 2025 Legal AI Assistant",
     "category": "DeveloperTool",
     "shortDescription": "Secure AI Assistant for Legal Professionals",
@@ -63,16 +63,7 @@
   },
   "plugins": {
     "fs": {
-      "scope": [
-        "$DESKTOP/*",
-        "$DOCUMENT/*",
-        "$DOWNLOAD/*",
-        "$HOME/Documents/**",
-        "$HOME/Downloads/**",
-        "$HOME/Desktop/**",
-        "$APPDATA/*",
-        "$LOCALDATA/*"
-      ]
+      "requireLiteralLeadingDot": true
     }
   }
 }
