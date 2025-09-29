@@ -1,5 +1,5 @@
 [package]
-name = "legal-ai-assistant"
+name = "bear-ai-llm"
 version = "1.0.1"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Legal AI Team"]
@@ -36,5 +36,5 @@ default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 
 [[bin]]
-name = "legal-ai-assistant"
+name = "bear-ai-llm"
 path = "src/main.rs"

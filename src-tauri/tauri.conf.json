@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Legal AI Assistant",
+  "productName": "BEAR AI LLM",
   "version": "1.0.1",
   "identifier": "com.legalai.assistant",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Legal AI Assistant",
+        "title": "BEAR AI LLM",
         "width": 1400,
         "height": 900,
         "minWidth": 800,
