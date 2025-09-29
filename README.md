@@ -7,13 +7,17 @@ BEAR AI LLM is a desktop application that runs large language models entirely on
 ## ✨ Key Features
 
 - **🔒 100% Local & Private** - All processing on your hardware, no cloud services
-- **🛡️ PII Protection** - Automatic detection and removal of sensitive information
+- **🛡️ Advanced PII Protection** - Real-time detection and scrubbing of sensitive information
+- **🧠 Agentic RAG System** - Intelligent document search with reasoning and query rewriting
+- **📚 Smart Document Processing** - 14+ file formats with automatic indexing
 - **🎯 System-Aware** - Intelligent hardware compatibility checking prevents crashes
 - **🤖 Agent Capabilities** - Local tool use with MCP (Model Context Protocol)
+- **💼 Corporate-Optimized Models** - Pre-selected models for business laptops
+- **🔍 HuggingFace Integration** - Browse 300,000+ models with smart filtering
 - **📊 Real-Time Monitoring** - GPU/CPU usage tracking with safety limits
-- **🤗 Hugging Face Integration** - Browse and download open-source models
 - **⚡ GPU Acceleration** - NVIDIA CUDA, AMD ROCm, and CPU fallback support
-- **📱 Dual Interface** - Native desktop app + web browser access
+- **📱 Case-Based Interface** - Professional workflow with conversation management
+- **🛡️ System Guardrails** - Crash prevention and resource management
 
 ## 🖥️ System Requirements
 
@@ -80,30 +84,82 @@ npm run tauri build
 - Model performance metrics
 - **None of this data is transmitted anywhere**
 
+## 🧠 Agentic RAG & Document Intelligence
+
+### Advanced RAG Capabilities
+- **🤖 AgenticRAG Mode** - Multi-step reasoning with query rewriting and result reranking
+- **📄 Smart Document Processing** - Automatic text extraction from 14+ file formats
+- **🔍 Semantic Search** - Vector embeddings with relevance scoring
+- **🧩 Intelligent Chunking** - Context-aware document segmentation
+- **📝 Answer Generation** - Cited responses with confidence scoring
+- **🔄 Query Enhancement** - Automatic question expansion and refinement
+
+### Document Format Support
+| Category | Formats | PII Detection | RAG Indexing |
+|----------|---------|---------------|--------------|
+| **Text** | TXT, MD, RTF | ✅ | ✅ |
+| **Office** | PDF, DOCX, DOC | ✅ | ✅ |
+| **Data** | JSON, CSV, XML, HTML | ✅ | ✅ |
+| **Spreadsheets** | XLSX, XLS | ✅ | ✅ |
+| **Presentations** | PPTX, PPT | ✅ | ✅ |
+
+### AgenticRAG Workflow
+1. **Query Analysis** - Intent detection and complexity assessment
+2. **Query Rewriting** - Multiple formulation strategies for better retrieval
+3. **Semantic Retrieval** - Vector search across indexed documents
+4. **Context Ranking** - Relevance scoring and result reordering
+5. **Answer Synthesis** - Multi-source reasoning with citations
+6. **Quality Assessment** - Confidence scoring and result validation
+
 ## 🔧 Advanced Features
 
+### Case-Based Professional Interface
+- **📋 Case Management** - Organize conversations by legal cases or projects
+- **🔒 PII-Safe Conversations** - Real-time sensitive data detection and blocking
+- **📖 Conversation History** - Persistent storage with search capabilities
+- **🎯 Context Awareness** - Maintains case context across sessions
+- **👥 Multi-Case Support** - Switch between different matters seamlessly
+
+### Corporate Model Selection
+- **🏢 Pre-Screened Models** - Optimized for HP/Lenovo/Dell corporate laptops
+- **📊 Performance Metrics** - Words/second alongside tokens/second
+- **💾 Resource Monitoring** - RAM, disk, and GPU usage tracking
+- **⚖️ Size Categories** - Lightweight (<1GB), Medium (1-5GB), Large (5GB+)
+- **🔧 Auto-Configuration** - Automatic settings based on hardware detection
+
 ### Agent Capabilities (MCP Tools)
-- **File Operations:** Read/write documents (sandboxed)
-- **Document Search:** Query your local knowledge base
-- **Contract Analysis:** Extract key terms and risks
-- **Code Execution:** Run Python/SQL safely
-- **Legal Research:** Find precedents and citations
+- **📁 File Operations** - Read/write documents (sandboxed)
+- **🔍 Document Search** - Query your local knowledge base with AgenticRAG
+- **📄 Contract Analysis** - Extract key terms, risks, and obligations
+- **💻 Code Execution** - Run Python/SQL safely in isolated environment
+- **⚖️ Legal Research** - Find precedents, citations, and case law
+- **🛡️ PII Detection** - Advanced pattern matching for sensitive data
+- **📊 Data Analytics** - Statistical analysis and reporting tools
 
 ### Model Management
-- **Quantization Support:** 4-bit, 8-bit, 16-bit models
-- **Context Length:** Up to 32K tokens
-- **Multi-Model:** Run multiple models simultaneously
-- **Auto-Updates:** Download model updates automatically
+- **📦 Quantization Support** - 4-bit, 8-bit, 16-bit models for efficiency
+- **📏 Context Length** - Up to 32K tokens for large documents
+- **🔄 Multi-Model** - Run multiple specialized models simultaneously
+- **🔄 Auto-Updates** - Smart model updates with rollback capability
+- **🌐 HuggingFace Browser** - Search and filter 300,000+ available models
+- **⚡ Performance Optimization** - Dynamic model switching based on task complexity
 
 ## 📊 Performance
 
 ### Typical Inference Speeds
-| GPU | Model Size | Tokens/Second |
-|-----|------------|---------------|
-| RTX 3060 | 7B | 25-35 |
-| RTX 3080 | 13B | 20-30 |
-| RTX 4090 | 30B | 15-25 |
-| CPU Only | 7B | 2-5 |
+| GPU | Model Size | Tokens/Second | Words/Second | Use Case |
+|-----|------------|---------------|--------------|----------|
+| RTX 3060 | 7B | 25-35 | 18-26 | Legal research, contract review |
+| RTX 3080 | 13B | 20-30 | 15-22 | Complex reasoning, document analysis |
+| RTX 4090 | 30B | 15-25 | 11-18 | Advanced legal AI, multi-document synthesis |
+| CPU Only | 7B | 2-5 | 1.5-3.7 | Basic document processing |
+
+### Corporate Laptop Performance
+| Laptop Category | Recommended Model | RAM Usage | Performance |
+|-----------------|-------------------|-----------|-------------|
+| **Budget Business** | TinyLlama 1.1B | 3-4GB | 12-18 words/sec |
+| **Standard Corporate** | DialoGPT Medium | 6-8GB | 18-26 words/sec |
+| **High-Performance** | Phi-2 2.7B | 8-12GB | 15-22 words/sec |
 
 ## 🔄 Web Interface
 
