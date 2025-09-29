@@ -1,6 +1,6 @@
 [package]
 name = "legal-ai-assistant"
-version = "0.1.0"
+version = "1.0.0"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Legal AI Team"]
 edition = "2021"
