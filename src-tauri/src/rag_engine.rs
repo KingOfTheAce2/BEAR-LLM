@@ -31,6 +31,7 @@ pub struct RAGEngine {
     chunk_overlap: usize,
 }
 
+#[allow(dead_code)]
 impl RAGEngine {
     pub fn new() -> Self {
         let index_path = dirs::data_local_dir()

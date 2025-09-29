@@ -26,6 +26,7 @@ pub struct PIIDetector {
     entity_counter: std::sync::atomic::AtomicUsize,
 }
 
+#[allow(dead_code)]
 impl PIIDetector {
     pub fn new() -> Self {
         Self {

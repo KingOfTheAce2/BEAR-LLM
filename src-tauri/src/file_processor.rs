@@ -8,6 +8,7 @@ pub struct FileProcessor {
     supported_formats: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl FileProcessor {
     pub fn new() -> Self {
         Self {

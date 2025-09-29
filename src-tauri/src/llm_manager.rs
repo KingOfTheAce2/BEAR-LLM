@@ -45,6 +45,7 @@ impl Default for GenerationConfig {
     }
 }
 
+#[allow(dead_code)]
 impl LLMManager {
     pub fn new() -> Self {
         let models_dir = dirs::data_local_dir()

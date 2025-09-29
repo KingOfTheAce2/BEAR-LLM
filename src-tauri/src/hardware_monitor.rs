@@ -19,6 +19,7 @@ pub struct HardwareMonitor {
     nvml: Option<Nvml>,
 }
 
+#[allow(dead_code)]
 impl HardwareMonitor {
     pub fn new() -> Self {
         let mut system = System::new_all();
