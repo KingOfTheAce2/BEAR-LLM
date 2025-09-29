@@ -1,4 +1,9 @@
+
 name: Release BEAR AI
+
+permissions:
+  contents: write
+  packages: write
 
 on:
   push:
@@ -36,8 +41,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'BEAR AI v__VERSION__'
+          # Use the tag that triggered the workflow so release/tag names match
+          tagName: ${{ github.ref_name }}
+          releaseName: 'BEAR AI ${{ github.ref_name }}'
           releaseBody: |
             🐻 BEAR AI Local LLM Assistant
 
