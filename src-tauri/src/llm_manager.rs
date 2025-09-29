@@ -189,7 +189,7 @@ impl LLMManager {
             _ => prompt.to_string(),
         };
 
-        println!("Processing prompt with model: {}", model_name);
+    println!("Processing prompt with model: {}", model_name);
         println!("Model type: {}", model_config.model_type);
         println!("Model file location: {:?}", model_file);
 

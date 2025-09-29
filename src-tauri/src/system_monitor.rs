@@ -112,8 +112,8 @@ impl SystemMonitor {
                                 total: 0,
                                 free: 0,
                                 used: 0,
-                                reserved: 0,  // Add this line
-                                version: 0,   // Add this line
+                                reserved: 0,
+                                version: 0,
                             }
                         });
 
