@@ -45,6 +45,7 @@ struct SystemStatus {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 struct ChatMessage {
     role: String,
     content: String,

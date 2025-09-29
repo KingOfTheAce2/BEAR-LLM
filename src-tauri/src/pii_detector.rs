@@ -19,6 +19,7 @@ lazy_static! {
     static ref MEDICAL_RECORD_REGEX: Regex = Regex::new(r"\b(?:MRN|Medical Record Number)\s*:?\s*[A-Z0-9]+\b").unwrap();
 }
 
+#[allow(dead_code)]
 pub struct PIIDetector {
     custom_patterns: HashMap<String, Regex>,
     replacement_map: HashMap<String, String>,
@@ -172,6 +173,7 @@ impl PIIDetector {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PIIMatch {
     pub pii_type: String,
     pub start: usize,

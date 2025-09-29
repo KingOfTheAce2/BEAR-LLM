@@ -26,6 +26,7 @@ pub struct LLMManager {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct GenerationConfig {
     temperature: f32,
     max_tokens: usize,

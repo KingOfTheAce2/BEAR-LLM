@@ -199,6 +199,7 @@ impl HardwareMonitor {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ProcessInfo {
     pub pid: u32,
     pub name: String,

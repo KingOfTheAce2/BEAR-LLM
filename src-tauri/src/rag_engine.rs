@@ -15,6 +15,7 @@ pub struct Document {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct SearchResult {
     pub document_id: String,
     pub content: String,
