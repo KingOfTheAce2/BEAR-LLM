@@ -137,8 +137,8 @@
         </div>
 
         <div class="error-actions">
-          <button class="error-button" onclick="location.reload()">🔄 Reload Application</button>
-          <button class="error-button" onclick="window.__TAURI__ && window.__TAURI__.process.exit(1)">❌ Close Application</button>
+          <button class="error-button" id="reload-btn">🔄 Reload Application</button>
+          <button class="error-button" id="close-btn">❌ Close Application</button>
         </div>
 
         <div class="error-message" style="margin-top: 24px; font-size: 14px; opacity: 0.7;">
@@ -163,6 +163,10 @@
             const resource = e.target.src || e.target.href;
             errors.push(`Failed to load: ${resource}`);
             console.error('Resource loading failed:', resource);
+          } else if (e.message) {
+            // Catch general JavaScript errors
+            errors.push(`JS Error: ${e.message} at ${e.filename}:${e.lineno}`);
+            console.error('JavaScript error:', e);
           }
         }, true);
 
@@ -175,8 +179,14 @@
         // Check if React has mounted after a timeout
         setTimeout(function() {
           const root = document.getElementById('root');
-          if (!root || !root.hasChildNodes() || root.innerHTML.trim() === '') {
+          if (!root) {
+            errors.push('CRITICAL: Root element (#root) not found in DOM');
+            showFailsafeError();
+          } else if (!root.hasChildNodes() || root.innerHTML.trim() === '') {
             errors.push('React application failed to mount - empty root element');
+            errors.push(`Root element exists but is empty. innerHTML length: ${root.innerHTML.length}`);
+            errors.push(`Script tags in head: ${document.querySelectorAll('head script').length}`);
+            errors.push(`Link tags in head: ${document.querySelectorAll('head link').length}`);
             showFailsafeError();
           }
         }, 5000); // Give 5 seconds for the app to load
@@ -208,6 +218,30 @@
           mainScriptLoaded = true;
           reactMounted = true;
         };
+
+        // Wire up error screen buttons
+        document.getElementById('reload-btn').addEventListener('click', function() {
+          console.log('Reloading application...');
+          window.location.reload();
+        });
+
+        document.getElementById('close-btn').addEventListener('click', async function() {
+          console.log('Closing application...');
+          try {
+            // Try to use Tauri API if available
+            if (window.__TAURI__ && window.__TAURI__.process) {
+              await window.__TAURI__.process.exit(1);
+            } else if (window.__TAURI__ && window.__TAURI__.app) {
+              await window.__TAURI__.app.exit(1);
+            } else {
+              // Fallback: close the window
+              window.close();
+            }
+          } catch (error) {
+            console.error('Failed to close application:', error);
+            window.close();
+          }
+        });
       })();
     </script>
 
