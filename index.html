@@ -5,9 +5,212 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Legal AI Assistant - Private & Secure</title>
+    <style>
+      /* Failsafe error message styling */
+      .failsafe-error {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e8e8e8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        padding: 40px;
+        z-index: 999999;
+        overflow-y: auto;
+      }
+      .failsafe-error.show {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .error-container {
+        max-width: 600px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 68, 68, 0.3);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .error-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .error-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #ff4444;
+        text-align: center;
+      }
+      .error-message {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        color: #cccccc;
+      }
+      .error-details {
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 3px solid #ff4444;
+        padding: 16px;
+        margin: 20px 0;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        color: #ffaaaa;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .error-steps {
+        margin: 20px 0;
+      }
+      .error-steps ol {
+        margin-left: 20px;
+      }
+      .error-steps li {
+        margin: 12px 0;
+        line-height: 1.6;
+      }
+      .error-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin: 8px;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .error-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+      .error-actions {
+        text-align: center;
+        margin-top: 24px;
+      }
+      /* Loading indicator */
+      .loading-indicator {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #667eea;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Failsafe error message -->
+    <div id="failsafe-error" class="failsafe-error">
+      <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <h1 class="error-title">Application Failed to Load</h1>
+        <div class="error-message">
+          BEAR AI failed to load properly. This usually happens when application assets are missing or corrupted.
+        </div>
+
+        <div class="error-details">
+          <strong>Technical Details:</strong><br>
+          <span id="error-details-text">Checking...</span>
+        </div>
+
+        <div class="error-steps">
+          <strong>Try these solutions:</strong>
+          <ol>
+            <li><strong>Restart the application</strong> - Close and reopen BEAR AI</li>
+            <li><strong>Clear application cache</strong> - Delete the cache folder and restart</li>
+            <li><strong>Reinstall</strong> - Download the latest version from GitHub</li>
+            <li><strong>Check for updates</strong> - A newer version might fix this issue</li>
+          </ol>
+        </div>
+
+        <div class="error-actions">
+          <button class="error-button" onclick="location.reload()">🔄 Reload Application</button>
+          <button class="error-button" onclick="window.__TAURI__ && window.__TAURI__.process.exit(1)">❌ Close Application</button>
+        </div>
+
+        <div class="error-message" style="margin-top: 24px; font-size: 14px; opacity: 0.7;">
+          If this problem persists, please report it on GitHub:<br>
+          <a href="https://github.com/KingOfTheAce2/BEAR-LLM/issues" target="_blank" style="color: #667eea;">github.com/KingOfTheAce2/BEAR-LLM/issues</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Failsafe error detection system
+      (function() {
+        const failsafeError = document.getElementById('failsafe-error');
+        const errorDetailsText = document.getElementById('error-details-text');
+        let mainScriptLoaded = false;
+        let reactMounted = false;
+        let errors = [];
+
+        // Detect script loading failures
+        window.addEventListener('error', function(e) {
+          if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+            const resource = e.target.src || e.target.href;
+            errors.push(`Failed to load: ${resource}`);
+            console.error('Resource loading failed:', resource);
+          }
+        }, true);
+
+        // Detect unhandled promise rejections (module loading failures)
+        window.addEventListener('unhandledrejection', function(e) {
+          errors.push(`Module loading error: ${e.reason}`);
+          console.error('Unhandled rejection:', e.reason);
+        });
+
+        // Check if React has mounted after a timeout
+        setTimeout(function() {
+          const root = document.getElementById('root');
+          if (!root || !root.hasChildNodes() || root.innerHTML.trim() === '') {
+            errors.push('React application failed to mount - empty root element');
+            showFailsafeError();
+          }
+        }, 5000); // Give 5 seconds for the app to load
+
+        // Additional check for critical errors
+        setTimeout(function() {
+          if (errors.length > 0) {
+            showFailsafeError();
+          }
+        }, 3000);
+
+        function showFailsafeError() {
+          if (errors.length === 0) {
+            errors.push('Unknown error - Application did not initialize properly');
+          }
+
+          errorDetailsText.textContent = errors.join('\n');
+          failsafeError.classList.add('show');
+
+          // Log to console for debugging
+          console.error('=== BEAR AI FAILSAFE ERROR TRIGGERED ===');
+          console.error('Errors detected:', errors);
+          console.error('Current HTML:', document.documentElement.innerHTML);
+        }
+
+        // Expose a way for the app to signal successful loading
+        window.__BEAR_AI_LOADED__ = function() {
+          console.log('✅ BEAR AI loaded successfully');
+          mainScriptLoaded = true;
+          reactMounted = true;
+        };
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -30,6 +30,11 @@ if (!rootElement) {
       </React.StrictMode>,
     );
     console.log('✅ BEAR AI React app mounted successfully');
+
+    // Signal to failsafe that the app loaded successfully
+    if (typeof window.__BEAR_AI_LOADED__ === 'function') {
+      window.__BEAR_AI_LOADED__();
+    }
   } catch (error) {
     console.error('🔴 Fatal error rendering app:', error);
     rootElement.innerHTML = '<div style="padding: 20px; font-family: system-ui;">Fatal Error: Failed to render application. Please check console for details.</div>';
