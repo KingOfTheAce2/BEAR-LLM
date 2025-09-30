@@ -38,6 +38,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use regex::Regex;
 use lazy_static::lazy_static;
+use crate::process_helper::ProcessCommandExt;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::process::Command as AsyncCommand;
@@ -220,6 +221,7 @@ print(json.dumps(entities))
         tokio::fs::write(&temp_script, script).await?;
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .arg(&temp_script)
             .arg(text)
             .output()

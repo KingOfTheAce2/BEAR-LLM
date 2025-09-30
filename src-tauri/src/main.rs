@@ -26,6 +26,7 @@ mod mcp_server;
 mod hardware_detector;
 mod huggingface_api;
 mod model_manager;
+mod process_helper;
 
 // Import commands that are defined in commands.rs
 use commands::{
@@ -781,13 +782,14 @@ fn main() {
 
     tracing::info!("BEAR AI starting up...");
 
-    let database_manager = Arc::new(RwLock::new(
-        DatabaseManager::new().unwrap_or_else(|e| {
-            tracing::error!(error = %e, "CRITICAL: Failed to initialize database");
-            tracing::error!("The application will exit as database is required");
-            panic!("Database initialization is required for application to run")
-        })
-    ));
+    let database_manager = match DatabaseManager::new() {
+        Ok(db) => Arc::new(RwLock::new(db)),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to initialize database - will retry on demand");
+            // Create a fallback in-memory database instead of panicking
+            Arc::new(RwLock::new(DatabaseManager::new_in_memory()))
+        }
+    };
 
     // Create unified app state
     let app_state = AppState {

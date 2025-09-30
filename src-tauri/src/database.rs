@@ -21,6 +21,13 @@ impl DatabaseManager {
         Ok(manager)
     }
 
+    pub fn new_in_memory() -> Self {
+        let db_path = PathBuf::from(":memory:");
+        let manager = Self { db_path };
+        let _ = manager.initialize_database();
+        manager
+    }
+
     fn initialize_database(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 

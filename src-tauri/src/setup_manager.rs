@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio::sync::{RwLock, mpsc};
 use std::sync::Arc;
+use crate::process_helper::ProcessCommandExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetupProgress {

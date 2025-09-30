@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::process::Command as AsyncCommand;
+use crate::process_helper::ProcessCommandExt;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +106,7 @@ impl PresidioBridge {
         for cmd in python_commands {
             if let Ok(output) = Command::new(cmd)
                 .arg("--version")
+                .no_window()
                 .output()
             {
                 if output.status.success() {
@@ -167,8 +169,10 @@ scipy>=1.10.0
         println!("📥 Installing packages (this may take a few minutes on first run)...");
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .args(&["-m", "pip", "install", "-r"])
             .arg(&requirements_path)
+            .no_window()
             .output()
             .await?;
 
@@ -180,7 +184,9 @@ scipy>=1.10.0
         // Download spaCy model
         println!("📥 Downloading spaCy NER model...");
         let output = AsyncCommand::new(python)
+            .no_window()
             .args(&["-m", "spacy", "download", "en_core_web_lg"])
+            .no_window()
             .output()
             .await?;
 
@@ -258,6 +264,7 @@ if __name__ == "__main__":
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .arg(&script_path)
             .output()
             .await?;
@@ -302,6 +309,7 @@ except ImportError as e:
         tokio::fs::write(&script_path, verification_script).await?;
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .arg(&script_path)
             .output()
             .await?;
@@ -408,6 +416,7 @@ if __name__ == "__main__":
         let config_json = serde_json::to_string(&*config)?;
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .arg(&script_path)
             .arg(text)
             .arg(&config_json)
@@ -491,6 +500,7 @@ if __name__ == "__main__":
         let entities_json = serde_json::to_string(&entities)?;
 
         let output = AsyncCommand::new(python)
+            .no_window()
             .arg(&script_path)
             .arg(text)
             .arg(&entities_json)
