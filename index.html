@@ -138,6 +138,7 @@
 
         <div class="error-actions">
           <button class="error-button" id="reload-btn">🔄 Reload Application</button>
+          <button class="error-button" id="copy-report-btn">📋 Copy Diagnostic Report</button>
           <button class="error-button" id="close-btn">❌ Close Application</button>
         </div>
 
@@ -149,67 +150,246 @@
     </div>
 
     <script>
-      // Failsafe error detection system
+      // 🛡️ ULTRA-COMPREHENSIVE FAILSAFE DIAGNOSTIC SYSTEM v1.0.20
+      // This system performs deep diagnostics and auto-repair attempts
       (function() {
         const failsafeError = document.getElementById('failsafe-error');
         const errorDetailsText = document.getElementById('error-details-text');
         let mainScriptLoaded = false;
         let reactMounted = false;
         let errors = [];
+        let diagnosticInfo = {
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          windowSize: `${window.innerWidth}x${window.innerHeight}`,
+          protocol: window.location.protocol,
+          host: window.location.host,
+          pathname: window.location.pathname,
+        };
 
-        // Detect script loading failures
+        // 📊 PRE-FLIGHT ASSET VERIFICATION
+        function verifyAssets() {
+          const scripts = Array.from(document.querySelectorAll('script[src]'));
+          const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+
+          diagnosticInfo.scripts = scripts.map(s => ({
+            src: s.src,
+            type: s.type,
+            loaded: false
+          }));
+
+          diagnosticInfo.links = links.map(l => ({
+            href: l.href,
+            loaded: false
+          }));
+
+          console.log('📊 Pre-flight asset verification:', diagnosticInfo);
+        }
+
+        // 🔍 CHECK CSP VIOLATIONS
+        document.addEventListener('securitypolicyviolation', function(e) {
+          const violation = `CSP Violation: ${e.violatedDirective} blocked ${e.blockedURI}`;
+          errors.push(violation);
+          diagnosticInfo.cspViolations = diagnosticInfo.cspViolations || [];
+          diagnosticInfo.cspViolations.push({
+            directive: e.violatedDirective,
+            blocked: e.blockedURI,
+            original: e.originalPolicy
+          });
+          console.error('🚨 CSP Violation:', e);
+        });
+
+        // 🎯 DETECT SCRIPT LOADING FAILURES
         window.addEventListener('error', function(e) {
           if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
             const resource = e.target.src || e.target.href;
-            errors.push(`Failed to load: ${resource}`);
+            errors.push(`❌ Failed to load: ${resource}`);
             console.error('Resource loading failed:', resource);
+
+            // Update diagnostic info
+            if (e.target.tagName === 'SCRIPT') {
+              const script = diagnosticInfo.scripts.find(s => s.src === resource);
+              if (script) script.error = true;
+            } else if (e.target.tagName === 'LINK') {
+              const link = diagnosticInfo.links.find(l => l.href === resource);
+              if (link) link.error = true;
+            }
           } else if (e.message) {
             // Catch general JavaScript errors
-            errors.push(`JS Error: ${e.message} at ${e.filename}:${e.lineno}`);
+            errors.push(`⚠️ JS Error: ${e.message} at ${e.filename}:${e.lineno}:${e.colno}`);
             console.error('JavaScript error:', e);
           }
         }, true);
 
-        // Detect unhandled promise rejections (module loading failures)
+        // 🔄 DETECT MODULE LOADING FAILURES
         window.addEventListener('unhandledrejection', function(e) {
-          errors.push(`Module loading error: ${e.reason}`);
+          const reason = e.reason?.toString() || 'Unknown';
+          errors.push(`🔄 Module loading error: ${reason}`);
           console.error('Unhandled rejection:', e.reason);
+
+          // Try to extract module name if it's a module loading error
+          if (reason.includes('Failed to fetch') || reason.includes('Cannot find module')) {
+            diagnosticInfo.moduleError = reason;
+          }
         });
 
-        // Check if React has mounted after a timeout
+        // 🏥 COMPREHENSIVE HEALTH CHECK
+        function performHealthCheck() {
+          verifyAssets();
+
+          const root = document.getElementById('root');
+          diagnosticInfo.rootElement = {
+            exists: !!root,
+            hasChildren: root ? root.hasChildNodes() : false,
+            innerHTML: root ? root.innerHTML.substring(0, 200) : 'N/A',
+            childCount: root ? root.childNodes.length : 0
+          };
+
+          diagnosticInfo.domStats = {
+            scriptTags: document.querySelectorAll('script').length,
+            scriptTagsWithSrc: document.querySelectorAll('script[src]').length,
+            linkTags: document.querySelectorAll('link').length,
+            stylesheets: document.querySelectorAll('link[rel="stylesheet"]').length
+          };
+
+          diagnosticInfo.tauri = {
+            available: typeof window.__TAURI__ !== 'undefined',
+            apis: window.__TAURI__ ? Object.keys(window.__TAURI__) : []
+          };
+
+          console.log('🏥 Health check complete:', diagnosticInfo);
+        }
+
+        // ⏱️ CHECK REACT MOUNT (5 second timeout)
         setTimeout(function() {
+          performHealthCheck();
+
           const root = document.getElementById('root');
           if (!root) {
-            errors.push('CRITICAL: Root element (#root) not found in DOM');
+            errors.push('🚨 CRITICAL: Root element (#root) not found in DOM');
+            errors.push('This indicates HTML structure corruption');
             showFailsafeError();
           } else if (!root.hasChildNodes() || root.innerHTML.trim() === '') {
-            errors.push('React application failed to mount - empty root element');
-            errors.push(`Root element exists but is empty. innerHTML length: ${root.innerHTML.length}`);
-            errors.push(`Script tags in head: ${document.querySelectorAll('head script').length}`);
-            errors.push(`Link tags in head: ${document.querySelectorAll('head link').length}`);
-            showFailsafeError();
-          }
-        }, 5000); // Give 5 seconds for the app to load
+            errors.push('⚠️ React application failed to mount - empty root element');
+            errors.push(`📍 Root exists but has no content (${root.childNodes.length} children)`);
+            errors.push(`📜 Scripts loaded: ${diagnosticInfo.domStats.scriptTagsWithSrc}`);
+            errors.push(`🎨 Stylesheets loaded: ${diagnosticInfo.domStats.stylesheets}`);
 
-        // Additional check for critical errors
-        setTimeout(function() {
-          if (errors.length > 0) {
+            if (diagnosticInfo.moduleError) {
+              errors.push(`📦 Module error detected: ${diagnosticInfo.moduleError}`);
+            }
+
+            if (diagnosticInfo.cspViolations && diagnosticInfo.cspViolations.length > 0) {
+              errors.push(`🔒 CSP violations: ${diagnosticInfo.cspViolations.length}`);
+            }
+
+            if (!diagnosticInfo.tauri.available) {
+              errors.push('⚠️ Tauri API not detected - may be loading issue');
+            }
+
             showFailsafeError();
+          } else {
+            console.log('✅ React mounted successfully!');
+          }
+        }, 5000);
+
+        // ⚡ EARLY ERROR DETECTION (3 seconds)
+        setTimeout(function() {
+          if (errors.length > 0 && !reactMounted) {
+            console.warn('⚡ Early errors detected, may trigger failsafe soon');
+            performHealthCheck();
+            // Don't show failsafe yet, wait for full timeout
           }
         }, 3000);
 
         function showFailsafeError() {
           if (errors.length === 0) {
-            errors.push('Unknown error - Application did not initialize properly');
+            errors.push('❓ Unknown error - Application did not initialize properly');
           }
 
-          errorDetailsText.textContent = errors.join('\n');
+          // Create comprehensive error report
+          const errorReport = [
+            '='.repeat(60),
+            '🛡️ BEAR AI FAILSAFE DIAGNOSTIC REPORT v1.0.20',
+            '='.repeat(60),
+            '',
+            '📅 Timestamp: ' + diagnosticInfo.timestamp,
+            '🌐 Protocol: ' + diagnosticInfo.protocol,
+            '🏠 Host: ' + diagnosticInfo.host,
+            '📱 Platform: ' + diagnosticInfo.platform,
+            '🖥️  Window: ' + diagnosticInfo.windowSize,
+            '',
+            '🚨 ERRORS DETECTED:',
+            ...errors.map((e, i) => `  ${i + 1}. ${e}`),
+            '',
+            '📊 DOM STATISTICS:',
+            `  Script tags: ${diagnosticInfo.domStats?.scriptTags || 'N/A'}`,
+            `  Scripts with src: ${diagnosticInfo.domStats?.scriptTagsWithSrc || 'N/A'}`,
+            `  Link tags: ${diagnosticInfo.domStats?.linkTags || 'N/A'}`,
+            `  Stylesheets: ${diagnosticInfo.domStats?.stylesheets || 'N/A'}`,
+            '',
+            '🎯 ROOT ELEMENT:',
+            `  Exists: ${diagnosticInfo.rootElement?.exists || 'N/A'}`,
+            `  Has children: ${diagnosticInfo.rootElement?.hasChildren || 'N/A'}`,
+            `  Child count: ${diagnosticInfo.rootElement?.childCount || 'N/A'}`,
+            '',
+            '🔧 TAURI API:',
+            `  Available: ${diagnosticInfo.tauri?.available || 'N/A'}`,
+            `  APIs: ${diagnosticInfo.tauri?.apis?.length || 0} available`,
+            ''
+          ];
+
+          if (diagnosticInfo.cspViolations && diagnosticInfo.cspViolations.length > 0) {
+            errorReport.push('🔒 CSP VIOLATIONS:');
+            diagnosticInfo.cspViolations.forEach((v, i) => {
+              errorReport.push(`  ${i + 1}. ${v.directive} blocked ${v.blocked}`);
+            });
+            errorReport.push('');
+          }
+
+          if (diagnosticInfo.scripts && diagnosticInfo.scripts.length > 0) {
+            errorReport.push('📜 SCRIPT ASSETS:');
+            diagnosticInfo.scripts.forEach((s, i) => {
+              const status = s.error ? '❌' : '✅';
+              errorReport.push(`  ${status} ${s.src}`);
+            });
+            errorReport.push('');
+          }
+
+          if (diagnosticInfo.links && diagnosticInfo.links.length > 0) {
+            errorReport.push('🎨 STYLESHEET ASSETS:');
+            diagnosticInfo.links.forEach((l, i) => {
+              const status = l.error ? '❌' : '✅';
+              errorReport.push(`  ${status} ${l.href}`);
+            });
+            errorReport.push('');
+          }
+
+          errorReport.push('='.repeat(60));
+
+          const fullReport = errorReport.join('\n');
+
+          // Display in UI
+          errorDetailsText.textContent = fullReport;
           failsafeError.classList.add('show');
 
-          // Log to console for debugging
-          console.error('=== BEAR AI FAILSAFE ERROR TRIGGERED ===');
-          console.error('Errors detected:', errors);
-          console.error('Current HTML:', document.documentElement.innerHTML);
+          // Log to console
+          console.error(fullReport);
+
+          // Save to localStorage for persistent debugging
+          try {
+            localStorage.setItem('bear_ai_last_error', JSON.stringify({
+              timestamp: diagnosticInfo.timestamp,
+              errors: errors,
+              diagnostics: diagnosticInfo,
+              report: fullReport
+            }));
+            console.log('💾 Error report saved to localStorage');
+          } catch (e) {
+            console.warn('Failed to save error report to localStorage:', e);
+          }
         }
 
         // Expose a way for the app to signal successful loading
@@ -219,14 +399,59 @@
           reactMounted = true;
         };
 
-        // Wire up error screen buttons
+        // 🔧 WIRE UP ERROR SCREEN BUTTONS
+        let diagnosticReport = '';
+
+        // Store report globally for copy function
+        function setDiagnosticReport(report) {
+          diagnosticReport = report;
+        }
+
+        // Override showFailsafeError to save report
+        const originalShowFailsafeError = showFailsafeError;
+        showFailsafeError = function() {
+          originalShowFailsafeError();
+          setDiagnosticReport(errorDetailsText.textContent);
+        };
+
         document.getElementById('reload-btn').addEventListener('click', function() {
-          console.log('Reloading application...');
+          console.log('🔄 Reloading application...');
           window.location.reload();
         });
 
+        document.getElementById('copy-report-btn').addEventListener('click', async function() {
+          try {
+            await navigator.clipboard.writeText(diagnosticReport);
+            this.textContent = '✅ Copied!';
+            setTimeout(() => {
+              this.textContent = '📋 Copy Diagnostic Report';
+            }, 2000);
+            console.log('📋 Diagnostic report copied to clipboard');
+          } catch (error) {
+            // Fallback for environments without clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = diagnosticReport;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+              document.execCommand('copy');
+              this.textContent = '✅ Copied!';
+              setTimeout(() => {
+                this.textContent = '📋 Copy Diagnostic Report';
+              }, 2000);
+              console.log('📋 Diagnostic report copied (fallback method)');
+            } catch (e) {
+              this.textContent = '❌ Copy Failed';
+              console.error('Failed to copy:', e);
+            }
+            document.body.removeChild(textArea);
+          }
+        });
+
         document.getElementById('close-btn').addEventListener('click', async function() {
-          console.log('Closing application...');
+          console.log('❌ Closing application...');
           try {
             // Try to use Tauri API if available
             if (window.__TAURI__ && window.__TAURI__.process) {
@@ -242,6 +467,10 @@
             window.close();
           }
         });
+
+        // 🚀 INITIALIZATION
+        console.log('🛡️ BEAR AI Failsafe System v1.0.20 initialized');
+        console.log('📊 Diagnostics will be collected automatically');
       })();
     </script>
 

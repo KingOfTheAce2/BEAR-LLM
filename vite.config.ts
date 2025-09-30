@@ -27,6 +27,7 @@ export default defineConfig(async () => ({
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
     rollupOptions: {
+      // Tauri modules are provided by the runtime, not bundled
       external: [
         '@tauri-apps/api/tauri',
         '@tauri-apps/api/event',
