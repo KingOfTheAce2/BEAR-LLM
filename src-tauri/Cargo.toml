@@ -2,7 +2,7 @@
 name = "bear-ai-llm"
 version = "1.0.10"
 description = "A secure, private AI assistant for legal professionals"
-authors = ["Legal AI Team"]
+authors = ["Ernst van Gassen <ernst@example.com>"]
 edition = "2021"
 
 [build-dependencies]

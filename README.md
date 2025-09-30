@@ -2,9 +2,10 @@
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-![Version](https://img.shields.io/badge/version-1.0.5-blue)
+![Version](https://img.shields.io/badge/version-1.0.10-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
+![Author](https://img.shields.io/badge/author-Ernst%20van%20Gassen-green)
 
 BEAR AI LLM is a fully production-ready desktop application that runs large language models entirely on your local hardware. Complete privacy, enterprise-grade PII protection, and professional features.
 
@@ -49,8 +50,8 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 
 ### For End Users (Pre-built Installer)
 
-1. **Download** the latest release from [GitHub Releases](https://github.com/yourusername/BEAR-LLM/releases)
-2. **Run** the MSI or NSIS installer
+1. **Download** the latest release (v1.0.10) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.10)
+2. **Run** the MSI or NSIS (.exe) installer - both work identically
 3. **Launch** BEAR AI - the setup wizard will guide you through first-time configuration
 4. **(Optional)** The setup wizard will offer to install Microsoft Presidio for enhanced PII protection
 
@@ -77,7 +78,7 @@ winget install Rustlang.Rust.MSVC
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/BEAR-LLM.git
+git clone https://github.com/KingOfTheAce2/BEAR-LLM.git
 cd BEAR-LLM
 
 # Install dependencies
@@ -340,7 +341,7 @@ This software is proprietary and provided for transparency and security auditing
 
 ## 🆘 Support
 
-- **GitHub Issues**: https://github.com/yourusername/BEAR-LLM/issues
+- **GitHub Issues**: https://github.com/KingOfTheAce2/BEAR-LLM/issues
 - **Documentation**: https://docs.bear-ai.com
 - **Discord**: https://discord.gg/bear-ai
 - **Email**: support@bear-ai.com

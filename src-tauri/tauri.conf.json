@@ -45,7 +45,7 @@
       "icons/icon.ico"
     ],
     "resources": ["WebView2Loader.dll"],
-    "copyright": "© 2025 Legal AI Assistant",
+    "copyright": "© 2025 Ernst van Gassen",
     "category": "DeveloperTool",
     "shortDescription": "Secure AI Assistant for Legal Professionals",
     "longDescription": "A private, secure AI assistant designed specifically for lawyers and legal professionals, with local processing and PII protection.",
