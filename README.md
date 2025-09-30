@@ -2,7 +2,7 @@
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-![Version](https://img.shields.io/badge/version-1.0.11-blue)
+![Version](https://img.shields.io/badge/version-1.0.12-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Author](https://img.shields.io/badge/author-Ernst%20van%20Gassen-green)
@@ -50,7 +50,7 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 
 ### For End Users (Pre-built Installer)
 
-1. **Download** the latest release (v1.0.11) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.11)
+1. **Download** the latest release (v1.0.12) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.12)
 2. **Run** the MSI or NSIS (.exe) installer - both work identically
 3. **Launch** BEAR AI - the setup wizard will guide you through first-time configuration
 4. **(Optional)** The setup wizard will offer to install Microsoft Presidio for enhanced PII protection

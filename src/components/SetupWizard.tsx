@@ -101,7 +101,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     },
     {
       title: 'AI Models',
-      description: 'Select model size and capabilities',
+      description: 'Select model size and download RAG embeddings',
       icon: Brain,
     },
     {

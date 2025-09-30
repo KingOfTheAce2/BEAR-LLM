@@ -195,7 +195,14 @@ impl SetupManager {
     }
 
     async fn download_ai_models(&self, config: &SetupConfig) -> Result<()> {
-        // Download models based on size preference
+        // Step 1: Download RAG embeddings model (CRITICAL - required for document processing)
+        self.send_progress("Downloading models", 50.0, "Downloading RAG embeddings model (~150MB, one-time download)...").await?;
+
+        if let Err(e) = self.download_rag_embeddings().await {
+            tracing::warn!("Failed to download RAG embeddings during setup: {}. Will download on first use.", e);
+        }
+
+        // Step 2: Download LLM models based on size preference
         let models_to_download = match config.model_size.as_str() {
             "small" => vec![
                 ("TinyLlama-1.1B", "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF"),
@@ -216,7 +223,7 @@ impl SetupManager {
 
         let total_models = models_to_download.len();
         for (i, (name, _repo)) in models_to_download.iter().enumerate() {
-            let progress = 50.0 + (30.0 * (i as f32) / total_models as f32);
+            let progress = 60.0 + (20.0 * (i as f32) / total_models as f32);
             let msg = format!("Downloading {} model...", name);
             self.send_progress("Downloading models", progress, &msg).await?;
 
@@ -225,6 +232,21 @@ impl SetupManager {
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
 
+        Ok(())
+    }
+
+    async fn download_rag_embeddings(&self) -> Result<()> {
+        use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
+
+        tracing::info!("📥 Downloading BGE embeddings model for RAG engine...");
+
+        // This will download the model to .fastembed_cache if not present
+        let _model = TextEmbedding::try_new(
+            InitOptions::new(EmbeddingModel::BGESmallENV15)
+                .with_show_download_progress(true)
+        )?;
+
+        tracing::info!("✅ RAG embeddings model downloaded successfully");
         Ok(())
     }
 

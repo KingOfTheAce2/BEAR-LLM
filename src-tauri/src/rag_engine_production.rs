@@ -94,7 +94,7 @@ impl RAGEngine {
         Ok(())
     }
 
-    // Lazy-load embeddings model on first use
+    // Lazy-load embeddings model on first use (if not downloaded during setup)
     async fn ensure_embeddings_model(&self) -> Result<()> {
         let model_lock = self.embeddings_model.read().await;
         if model_lock.is_some() {
@@ -102,9 +102,11 @@ impl RAGEngine {
         }
         drop(model_lock);
 
-        tracing::info!("📥 Downloading embeddings model (first use only, ~150MB)...");
+        // If model was already downloaded during setup, this will be instant
+        // If not, it will download now (fallback)
+        tracing::info!("📥 Loading RAG embeddings model...");
 
-        // Initialize embeddings model
+        // Initialize embeddings model (uses cache if available)
         let model = TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::BGESmallENV15)
                 .with_show_download_progress(true)
@@ -113,7 +115,7 @@ impl RAGEngine {
         let mut model_lock = self.embeddings_model.write().await;
         *model_lock = Some(model);
 
-        tracing::info!("✅ Embeddings model ready");
+        tracing::info!("✅ RAG embeddings model ready");
         Ok(())
     }
 
