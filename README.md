@@ -2,7 +2,7 @@
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-![Version](https://img.shields.io/badge/version-1.0.12-blue)
+![Version](https://img.shields.io/badge/version-1.0.13-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Author](https://img.shields.io/badge/author-Ernst%20van%20Gassen-green)
@@ -50,7 +50,7 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 
 ### For End Users (Pre-built Installer)
 
-1. **Download** the latest release (v1.0.12) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.12)
+1. **Download** the latest release (v1.0.13) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.13)
 2. **Run** the MSI or NSIS (.exe) installer - both work identically
 3. **Launch** BEAR AI - the setup wizard will guide you through first-time configuration
 4. **(Optional)** The setup wizard will offer to install Microsoft Presidio for enhanced PII protection
@@ -115,6 +115,14 @@ On first launch, BEAR AI will guide you through an interactive setup wizard:
 - **Model Formats**: GGUF, ONNX, SafeTensors support
 - **Smart Selection**: Hardware-based recommendations
 - **Model Library**: Pre-configured popular models
+- **Switchable LLM Models**: Download and switch between different LLMs at runtime
+
+### RAG Embedding Model Management
+- **Multiple Models**: BGE-Small/Base/Large, All-MiniLM-L6-v2
+- **Model Switching**: Change embedding models without reinstalling
+- **Automatic Selection**: Default to BGE-Small-EN-V1.5 (150MB, fast)
+- **Upgrade Options**: Switch to larger models for better accuracy
+- **See docs/ARCHITECTURE.md** for detailed explanation of LLM vs RAG models
 
 ### Document Processing
 - **RAG Engine**: Production retrieval-augmented generation

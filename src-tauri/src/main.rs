@@ -39,6 +39,11 @@ use commands::{
     unload_model,
     emergency_stop,
     set_resource_limits,
+    get_available_rag_models,
+    get_active_rag_model,
+    switch_rag_model,
+    get_rag_config,
+    update_rag_config,
 };
 
 // Use production modules
@@ -975,6 +980,13 @@ fn main() {
             check_first_run,
             run_initial_setup,
             get_setup_status,
+
+            // RAG Model Management
+            get_available_rag_models,
+            get_active_rag_model,
+            switch_rag_model,
+            get_rag_config,
+            update_rag_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -347,3 +347,55 @@ pub async fn set_resource_limits(
 
     Ok(true)
 }
+// ========== RAG Model Management Commands ==========
+
+#[tauri::command]
+pub async fn get_available_rag_models() -> Result<String, String> {
+    use crate::rag_engine_production::RAGEngine;
+
+    let models = RAGEngine::get_available_models();
+    serde_json::to_string(&models).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_active_rag_model(state: State<'_, crate::AppState>) -> Result<String, String> {
+    let rag_engine = state.rag_engine.read().await;
+    let active_model = rag_engine.get_active_model().await;
+    Ok(active_model)
+}
+
+#[tauri::command]
+pub async fn switch_rag_model(
+    state: State<'_, crate::AppState>,
+    model_id: String,
+) -> Result<String, String> {
+    let rag_engine = state.rag_engine.write().await;
+    rag_engine.switch_rag_model(model_id.clone()).await
+        .map_err(|e| e.to_string())?;
+
+    Ok(format!("Successfully switched to RAG model: {}", model_id))
+}
+
+#[tauri::command]
+pub async fn get_rag_config(state: State<'_, crate::AppState>) -> Result<String, String> {
+    let rag_engine = state.rag_engine.read().await;
+    let config = rag_engine.get_config().await;
+    serde_json::to_string(&config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_rag_config(
+    state: State<'_, crate::AppState>,
+    config_json: String,
+) -> Result<String, String> {
+    use crate::rag_engine_production::RAGConfig;
+
+    let config: RAGConfig = serde_json::from_str(&config_json)
+        .map_err(|e| format!("Invalid config JSON: {}", e))?;
+
+    let rag_engine = state.rag_engine.write().await;
+    rag_engine.update_config(config).await
+        .map_err(|e| e.to_string())?;
+
+    Ok("RAG configuration updated successfully".to_string())
+}

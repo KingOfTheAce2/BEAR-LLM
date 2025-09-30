@@ -57,6 +57,66 @@ impl Default for RAGConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RAGModelInfo {
+    pub name: String,
+    pub model_id: String,
+    #[serde(skip)]
+    pub embedding_model: EmbeddingModel,
+    pub description: String,
+    pub dimensions: usize,
+    pub size_mb: u64,
+    pub use_case: String,
+    pub is_active: bool,
+}
+
+impl RAGEngine {
+    pub fn get_available_models() -> Vec<RAGModelInfo> {
+        vec![
+            RAGModelInfo {
+                name: "BGE Small EN v1.5".to_string(),
+                model_id: "BAAI/bge-small-en-v1.5".to_string(),
+                embedding_model: EmbeddingModel::BGESmallENV15,
+                description: "Fast, efficient, general-purpose embeddings".to_string(),
+                dimensions: 384,
+                size_mb: 150,
+                use_case: "General documents, fast search".to_string(),
+                is_active: true,
+            },
+            RAGModelInfo {
+                name: "BGE Base EN v1.5".to_string(),
+                model_id: "BAAI/bge-base-en-v1.5".to_string(),
+                embedding_model: EmbeddingModel::BGEBaseENV15,
+                description: "Balanced quality and speed".to_string(),
+                dimensions: 768,
+                size_mb: 440,
+                use_case: "Better accuracy, moderate speed".to_string(),
+                is_active: false,
+            },
+            RAGModelInfo {
+                name: "BGE Large EN v1.5".to_string(),
+                model_id: "BAAI/bge-large-en-v1.5".to_string(),
+                embedding_model: EmbeddingModel::BGELargeENV15,
+                description: "Highest quality embeddings".to_string(),
+                dimensions: 1024,
+                size_mb: 1340,
+                use_case: "Best accuracy, requires more resources".to_string(),
+                is_active: false,
+            },
+            RAGModelInfo {
+                name: "All MiniLM L6 v2".to_string(),
+                model_id: "sentence-transformers/all-MiniLM-L6-v2".to_string(),
+                embedding_model: EmbeddingModel::AllMiniLML6V2,
+                description: "Lightweight, very fast".to_string(),
+                dimensions: 384,
+                size_mb: 90,
+                use_case: "Resource-constrained systems".to_string(),
+                is_active: false,
+            },
+        ]
+    }
+}
+
 pub struct RAGEngine {
     documents: Arc<RwLock<HashMap<String, Document>>>,
     embeddings_model: Arc<RwLock<Option<TextEmbedding>>>,
@@ -102,20 +162,74 @@ impl RAGEngine {
         }
         drop(model_lock);
 
+        // Get configured model from config
+        let config = self.config.read().await;
+        let model_id = config.embedding_model.clone();
+        drop(config);
+
+        // Map model ID to EmbeddingModel enum
+        let embedding_model = self.get_embedding_model_from_id(&model_id)?;
+
         // If model was already downloaded during setup, this will be instant
         // If not, it will download now (fallback)
-        tracing::info!("📥 Loading RAG embeddings model...");
+        tracing::info!("📥 Loading RAG embeddings model: {}...", model_id);
 
         // Initialize embeddings model (uses cache if available)
         let model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::BGESmallENV15)
+            InitOptions::new(embedding_model)
                 .with_show_download_progress(true)
         )?;
 
         let mut model_lock = self.embeddings_model.write().await;
         *model_lock = Some(model);
 
-        tracing::info!("✅ RAG embeddings model ready");
+        tracing::info!("✅ RAG embeddings model ready: {}", model_id);
+        Ok(())
+    }
+
+    fn get_embedding_model_from_id(&self, model_id: &str) -> Result<EmbeddingModel> {
+        match model_id {
+            "BAAI/bge-small-en-v1.5" => Ok(EmbeddingModel::BGESmallENV15),
+            "BAAI/bge-base-en-v1.5" => Ok(EmbeddingModel::BGEBaseENV15),
+            "BAAI/bge-large-en-v1.5" => Ok(EmbeddingModel::BGELargeENV15),
+            "sentence-transformers/all-MiniLM-L6-v2" => Ok(EmbeddingModel::AllMiniLML6V2),
+            _ => Err(anyhow!("Unsupported embedding model: {}", model_id)),
+        }
+    }
+
+    pub async fn switch_rag_model(&self, model_id: String) -> Result<()> {
+        tracing::info!("🔄 Switching RAG model to: {}", model_id);
+
+        // Validate model ID
+        self.get_embedding_model_from_id(&model_id)?;
+
+        // Update config
+        let mut config = self.config.write().await;
+        config.embedding_model = model_id.clone();
+        drop(config);
+
+        // Unload current model
+        let mut model_lock = self.embeddings_model.write().await;
+        *model_lock = None;
+        drop(model_lock);
+
+        tracing::info!("✅ RAG model switched to: {}. Will load on next use.", model_id);
+
+        Ok(())
+    }
+
+    pub async fn get_active_model(&self) -> String {
+        let config = self.config.read().await;
+        config.embedding_model.clone()
+    }
+
+    pub async fn get_config(&self) -> RAGConfig {
+        self.config.read().await.clone()
+    }
+
+    pub async fn update_config(&self, new_config: RAGConfig) -> Result<()> {
+        let mut config = self.config.write().await;
+        *config = new_config;
         Ok(())
     }
 
@@ -665,10 +779,4 @@ impl RAGEngine {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    pub async fn update_config(&self, config: RAGConfig) -> Result<()> {
-        let mut current = self.config.write().await;
-        *current = config;
-        Ok(())
-    }
 }
