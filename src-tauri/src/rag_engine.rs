@@ -62,6 +62,7 @@ pub struct RAGModelInfo {
     pub name: String,
     pub model_id: String,
     #[serde(skip)]
+    #[allow(dead_code)]
     pub embedding_model: EmbeddingModel,
     pub description: String,
     pub dimensions: usize,
