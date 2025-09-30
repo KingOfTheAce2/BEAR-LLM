@@ -1,0 +1,19 @@
+{
+  "version": "1.0.4",
+  "notes": "New version 1.0.4 is available!\n\n## What's New\n- Auto-updater functionality added\n- Enhanced UI with floppy disk model selector\n- Improved performance\n- Bug fixes and stability improvements",
+  "pub_date": "2025-01-30T00:00:00Z",
+  "platforms": {
+    "darwin-universal": {
+      "signature": "PLACEHOLDER_SIGNATURE_WILL_BE_GENERATED_BY_GITHUB_ACTIONS",
+      "url": "https://github.com/BEAR-AI-LLM/bear-ai-llm/releases/download/v1.0.4/BEAR.AI.LLM_1.0.4_universal.dmg.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "PLACEHOLDER_SIGNATURE_WILL_BE_GENERATED_BY_GITHUB_ACTIONS",
+      "url": "https://github.com/BEAR-AI-LLM/bear-ai-llm/releases/download/v1.0.4/bear-ai-llm_1.0.4_amd64.AppImage.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "PLACEHOLDER_SIGNATURE_WILL_BE_GENERATED_BY_GITHUB_ACTIONS",
+      "url": "https://github.com/BEAR-AI-LLM/bear-ai-llm/releases/download/v1.0.4/BEAR.AI.LLM_1.0.4_x64-setup.nsis.zip"
+    }
+  }
+}

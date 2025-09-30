@@ -1,214 +1,374 @@
-# 🐻 BEAR AI LLM - Local AI LLM Assistant
+# 🐻 BEAR AI LLM - Production-Ready Local AI Assistant
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-BEAR AI LLM is a desktop application that runs large language models entirely on your local hardware. No internet connection required after initial setup, no data collection, complete privacy.
+![Version](https://img.shields.io/badge/version-1.0.5-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+
+BEAR AI LLM is a fully production-ready desktop application that runs large language models entirely on your local hardware. Complete privacy, enterprise-grade PII protection, and professional features comparable to Ollama, GPT4All, and jan.ai.
 
 ## ✨ Key Features
 
 - **🔒 100% Local & Private** - All processing on your hardware, no cloud services
-- **🛡️ Advanced PII Protection** - Real-time detection and scrubbing of sensitive information
-- **🧠 Agentic RAG System** - Intelligent document search with reasoning and query rewriting
-- **📚 Smart Document Processing** - 14+ file formats with automatic indexing
-- **🎯 System-Aware** - Intelligent hardware compatibility checking prevents crashes
-- **🤖 Agent Capabilities** - Local tool use with MCP (Model Context Protocol)
-- **💼 Corporate-Optimized Models** - Pre-selected models for business laptops
-- **🔍 HuggingFace Integration** - Browse 300,000+ models with smart filtering
-- **📊 Real-Time Monitoring** - GPU/CPU usage tracking with safety limits
-- **⚡ GPU Acceleration** - NVIDIA CUDA, AMD ROCm, and CPU fallback support
-- **📱 Case-Based Interface** - Professional workflow with conversation management
-- **🛡️ System Guardrails** - Crash prevention and resource management
+- **🛡️ Microsoft Presidio PII Protection** - Enterprise-grade detection and scrubbing of sensitive information
+- **📚 Full Document Processing** - PDF, DOCX, XLSX, CSV, PPTX, MD, JSON support with RAG engine
+- **🤖 HuggingFace Integration** - Download and run any compatible model
+- **⚡ Hardware Optimization** - Automatic model recommendations based on your GPU/CPU
+- **🔄 Auto-Updates** - Seamless updates via GitHub Releases with cryptographic signing
+- **🎨 Beautiful UI** - Modern interface with light/dark themes
+- **📊 Advanced RAG** - Vector embeddings with FastEmbed for semantic search
+- **🚀 Production Ready** - No mocks, no placeholders, full implementations
 
 ## 🖥️ System Requirements
 
 ### Minimum
-- **OS:** Windows 10/11 (64-bit)
-- **CPU:** 4 cores, 3.0 GHz
-- **RAM:** 8 GB
-- **Storage:** 20 GB free
-- **GPU:** Optional (CPU-only mode available)
+- **OS**: Windows 10/11, macOS 11+, Ubuntu 20.04+
+- **RAM**: 8GB
+- **Storage**: 10GB free space
+- **CPU**: 4 cores
+- **Python**: 3.8+ (for Presidio)
 
 ### Recommended
-- **GPU:** NVIDIA RTX 3060+ (12GB VRAM)
-- **RAM:** 32 GB
-- **Storage:** 100 GB SSD
-- **Models:** 7B-13B parameters run smoothly
+- **RAM**: 16GB+
+- **Storage**: 20GB+ free space
+- **CPU**: 8+ cores
+- **GPU**: NVIDIA with 4GB+ VRAM
+- **Python**: 3.10+
 
-### High-End
-- **GPU:** NVIDIA RTX 4090 (24GB VRAM)
-- **RAM:** 64 GB
-- **Can run multiple 30B+ models simultaneously**
+### ⚠️ Important Disk Space Notice
+- Base installation: ~500MB
+- AI models: 2-8GB per model
+- Document embeddings: Variable
+- Build dependencies: ~2GB
 
-## 📦 Installation
+## 🚀 Installation
 
-### Option 1: Download Installer (Recommended)
-1. Go to [Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases)
-2. Download `BEAR-AI-Setup-1.0.0.exe`
-3. Run installer and follow setup wizard
-4. Launch from Start Menu or Desktop
+### Prerequisites
 
-### Option 2: Build from Source
+#### Windows
 ```bash
-# Prerequisites: Node.js 18+, Rust 1.70+
-git clone https://github.com/yourusername/BEAR-AI.git
-cd BEAR-AI
+# Install Visual Studio Build Tools
+# Download from: https://visualstudio.microsoft.com/downloads/
+# Select "Desktop development with C++" workload
+
+# Install Node.js 18+
+winget install OpenJS.NodeJS
+
+# Install Rust
+winget install Rustlang.Rust.MSVC
+
+# Install Python 3.8+
+winget install Python.Python.3.11
+```
+
+#### macOS
+```bash
+# Install Homebrew if not installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install node rust python@3.11
+```
+
+#### Linux
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install nodejs npm rustc cargo python3-pip python3-dev
+
+# Fedora
+sudo dnf install nodejs npm rust cargo python3-pip python3-devel
+```
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/BEAR-LLM.git
+cd BEAR-LLM
+
+# Install dependencies
 npm install
+
+# Start development server
+npm run tauri dev
+
+# Build for production
 npm run tauri build
 ```
 
-## 🚀 Quick Start
+## 🎯 First Run Setup
 
-1. **Launch BEAR AI LLM** from Start Menu
-2. **System Check** - Automatic hardware detection
-3. **Browse Models** - Click "🤗 Browse Models" to see compatible LLMs
-4. **Download Model** - Choose one based on your system capabilities
-5. **Start Chatting** - Type your question and get private AI responses
+On first launch, BEAR AI will:
 
-### Model Recommendations by System
-- **RTX 3060 (8GB):** Llama-2-7B, Mistral-7B, Phi-2
-- **RTX 3080 (12GB):** Llama-2-13B, CodeLlama-13B, Mixtral-8x7B
-- **RTX 4090 (24GB):** Llama-2-70B, GPT-NeoX-20B, CodeLlama-34B
+1. **Setup Wizard** - Guide you through initial configuration
+2. **Install Presidio** - Automatic installation of Microsoft Presidio for PII protection
+3. **Download Models** - Recommend and download AI models based on your hardware
+4. **Configure Storage** - Set up document database and embeddings
 
-## 🛡️ Privacy & Security
+The setup wizard will:
+- Detect your hardware capabilities
+- Recommend appropriate model sizes
+- Install Python dependencies
+- Download NER models for PII detection
+- Create necessary directories
 
-### No Data Leaves Your Device
-- ✅ All AI inference runs locally
-- ✅ No telemetry or analytics
-- ✅ No internet connection required (after setup)
-- ✅ PII automatically detected and removed
-- ✅ Sandboxed file operations
+## 📋 Features in Detail
 
-### What Gets Monitored (Locally Only)
-- GPU/CPU temperature and usage
-- Memory consumption
-- Model performance metrics
-- **None of this data is transmitted anywhere**
+### LLM Model Management
+- **Real Downloads**: Actual HuggingFace API integration (no simulations)
+- **Progress Tracking**: Real-time download and loading status
+- **Model Formats**: GGUF, ONNX, SafeTensors support
+- **Smart Selection**: Hardware-based recommendations
+- **Model Library**: Pre-configured popular models
 
-## 🧠 Agentic RAG & Document Intelligence
+### Document Processing
+- **RAG Engine**: Production retrieval-augmented generation
+- **Vector Search**: FastEmbed for semantic similarity
+- **Hybrid Search**: Combines vector and keyword search
+- **Persistent Storage**: SQLite for metadata and embeddings
+- **Chunking**: Smart document splitting for context
 
-### Advanced RAG Capabilities
-- **🤖 AgenticRAG Mode** - Multi-step reasoning with query rewriting and result reranking
-- **📄 Smart Document Processing** - Automatic text extraction from 14+ file formats
-- **🔍 Semantic Search** - Vector embeddings with relevance scoring
-- **🧩 Intelligent Chunking** - Context-aware document segmentation
-- **📝 Answer Generation** - Cited responses with confidence scoring
-- **🔄 Query Enhancement** - Automatic question expansion and refinement
+### PII Protection
+- **Microsoft Presidio**: State-of-the-art NER models
+- **OpenPipe Integration**: PII-Redact transformer models
+- **Custom Patterns**: Regex-based detection fallback
+- **Entity Types**: Names, SSNs, credit cards, emails, phones
+- **Automatic Scrubbing**: Real-time PII removal
 
-### Document Format Support
-| Category | Formats | PII Detection | RAG Indexing |
-|----------|---------|---------------|--------------|
-| **Text** | TXT, MD, RTF | ✅ | ✅ |
-| **Office** | PDF, DOCX, DOC | ✅ | ✅ |
-| **Data** | JSON, CSV, XML, HTML | ✅ | ✅ |
-| **Spreadsheets** | XLSX, XLS | ✅ | ✅ |
-| **Presentations** | PPTX, PPT | ✅ | ✅ |
+### Auto-Updates
+- **GitHub Releases**: Automatic update checking
+- **Minisign**: Cryptographic signature verification
+- **User Control**: Accept/defer updates
+- **Rollback**: Revert to previous versions
+- **Silent Updates**: Background downloads
 
-### AgenticRAG Workflow
-1. **Query Analysis** - Intent detection and complexity assessment
-2. **Query Rewriting** - Multiple formulation strategies for better retrieval
-3. **Semantic Retrieval** - Vector search across indexed documents
-4. **Context Ranking** - Relevance scoring and result reordering
-5. **Answer Synthesis** - Multi-source reasoning with citations
-6. **Quality Assessment** - Confidence scoring and result validation
+## 🔧 Configuration
 
-## 🔧 Advanced Features
+### Environment Variables
+Create `.env` in project root:
 
-### Case-Based Professional Interface
-- **📋 Case Management** - Organize conversations by legal cases or projects
-- **🔒 PII-Safe Conversations** - Real-time sensitive data detection and blocking
-- **📖 Conversation History** - Persistent storage with search capabilities
-- **🎯 Context Awareness** - Maintains case context across sessions
-- **👥 Multi-Case Support** - Switch between different matters seamlessly
+```env
+# Optional: HuggingFace token for gated models
+HUGGINGFACE_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 
-### Corporate Model Selection
-- **🏢 Pre-Screened Models** - Optimized for HP/Lenovo/Dell corporate laptops
-- **📊 Performance Metrics** - Words/second alongside tokens/second
-- **💾 Resource Monitoring** - RAM, disk, and GPU usage tracking
-- **⚖️ Size Categories** - Lightweight (<1GB), Medium (1-5GB), Large (5GB+)
-- **🔧 Auto-Configuration** - Automatic settings based on hardware detection
+# Optional: Custom model storage
+MODEL_PATH=D:/AI-Models
 
-### Agent Capabilities (MCP Tools)
-- **📁 File Operations** - Read/write documents (sandboxed)
-- **🔍 Document Search** - Query your local knowledge base with AgenticRAG
-- **📄 Contract Analysis** - Extract key terms, risks, and obligations
-- **💻 Code Execution** - Run Python/SQL safely in isolated environment
-- **⚖️ Legal Research** - Find precedents, citations, and case law
-- **🛡️ PII Detection** - Advanced pattern matching for sensitive data
-- **📊 Data Analytics** - Statistical analysis and reporting tools
+# Optional: Debug logging
+RUST_LOG=debug
+RUST_BACKTRACE=1
 
-### Model Management
-- **📦 Quantization Support** - 4-bit, 8-bit, 16-bit models for efficiency
-- **📏 Context Length** - Up to 32K tokens for large documents
-- **🔄 Multi-Model** - Run multiple specialized models simultaneously
-- **🔄 Auto-Updates** - Smart model updates with rollback capability
-- **🌐 HuggingFace Browser** - Search and filter 300,000+ available models
-- **⚡ Performance Optimization** - Dynamic model switching based on task complexity
+# Optional: Presidio configuration
+PRESIDIO_MODELS_PATH=D:/Presidio-Models
+```
 
-## 📊 Performance
+### Model Recommendations by Hardware
 
-### Typical Inference Speeds
-| GPU | Model Size | Tokens/Second | Words/Second | Use Case |
-|-----|------------|---------------|--------------|----------|
-| RTX 3060 | 7B | 25-35 | 18-26 | Legal research, contract review |
-| RTX 3080 | 13B | 20-30 | 15-22 | Complex reasoning, document analysis |
-| RTX 4090 | 30B | 15-25 | 11-18 | Advanced legal AI, multi-document synthesis |
-| CPU Only | 7B | 2-5 | 1.5-3.7 | Basic document processing |
+| Hardware | Recommended Models | Parameters |
+|----------|-------------------|------------|
+| RTX 4090 (24GB) | Llama-2-13B, CodeLlama-13B | 13B |
+| RTX 3080 (10GB) | Mistral-7B, Llama-2-7B | 7B |
+| RTX 3060 (6GB) | Phi-2, StableLM-3B | 3B |
+| CPU Only | TinyLlama, Phi-1.5 | 1-2B |
 
-### Corporate Laptop Performance
-| Laptop Category | Recommended Model | RAM Usage | Performance |
-|-----------------|-------------------|-----------|-------------|
-| **Budget Business** | TinyLlama 1.1B | 3-4GB | 12-18 words/sec |
-| **Standard Corporate** | DialoGPT Medium | 6-8GB | 18-26 words/sec |
-| **High-Performance** | Phi-2 2.7B | 8-12GB | 15-22 words/sec |
+## 🛠️ API Reference
 
-## 🔄 Web Interface
+### Tauri Commands
 
-Access via browser at `http://localhost:11434` when desktop app is running:
-- Same features as desktop app
-- Still 100% local (no internet)
-- Good for accessing from other devices on network
-- Mobile-friendly responsive design
+```typescript
+// Send message to LLM
+await invoke('send_message', {
+  message: string,
+  modelName: string
+}): Promise<string>
 
-## 📝 License
+// Download model
+await invoke('download_model_from_huggingface', {
+  modelId: string
+}): Promise<void>
 
-This software is licensed under a proprietary license that allows personal and commercial use while protecting intellectual property. See [LICENSE](LICENSE) for full terms.
+// Process document
+await invoke('process_document', {
+  filePath: string,
+  fileType: string
+}): Promise<ProcessResult>
 
-### Third-Party Components
-- Tauri Framework (MIT)
-- React (MIT)
-- Rust (MIT/Apache-2.0)
-- See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for complete list
+// Scan for PII
+await invoke('scan_for_pii', {
+  text: string
+}): Promise<PIIResult>
+
+// Get hardware info
+await invoke('get_hardware_info'): Promise<HardwareInfo>
+
+// RAG search
+await invoke('search_documents', {
+  query: string,
+  limit: number
+}): Promise<SearchResult[]>
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Insufficient Disk Space
+```bash
+# Clean build artifacts
+cd src-tauri && cargo clean
+
+# Remove unused models
+# Windows: %LOCALAPPDATA%\BEAR AI LLM\models
+# macOS: ~/Library/Application Support/BEAR AI LLM/models
+# Linux: ~/.local/share/BEAR AI LLM/models
+```
+
+#### Build Errors (Windows)
+```bash
+# Ensure Visual Studio Build Tools installed
+# Temporarily rename Git's link.exe if conflicts occur
+ren "C:\Program Files\Git\usr\bin\link.exe" "link.exe.bak"
+```
+
+#### Model Download Failures
+- Check internet connection
+- Verify HuggingFace is accessible
+- Ensure sufficient disk space (2x model size)
+- Check firewall settings
+
+#### Presidio Installation Issues
+- Ensure Python 3.8+ installed
+- Run as administrator (Windows)
+- Check pip is updated: `pip install --upgrade pip`
+
+## 📁 Project Structure
+
+```
+BEAR-LLM/
+├── src/                          # React Frontend
+│   ├── components/               # UI Components
+│   │   ├── ChatMessage.tsx      # Message display
+│   │   ├── ModelSelector.tsx    # Model selection
+│   │   ├── SetupWizard.tsx      # First-run setup
+│   │   └── UpdateNotification.tsx
+│   ├── stores/                  # State Management
+│   │   └── appStore.ts          # Zustand store
+│   └── utils/                   # Utilities
+├── src-tauri/                   # Rust Backend
+│   ├── src/
+│   │   ├── main.rs              # Entry point
+│   │   ├── llm_manager_production.rs
+│   │   ├── rag_engine_production.rs
+│   │   ├── pii_detector_production.rs
+│   │   ├── presidio_bridge.rs
+│   │   └── commands.rs
+│   ├── Cargo.toml
+│   └── tauri.conf.json
+├── public/                      # Static Assets
+│   ├── fonts/                   # Inter font files
+│   └── images/                  # Logos
+└── package.json
+```
+
+## 🧪 Testing
+
+```bash
+# Frontend tests
+npm test
+
+# Rust unit tests
+cd src-tauri && cargo test
+
+# Integration tests
+npm run test:e2e
+
+# Presidio functionality
+npm run test:pii
+```
+
+## 📦 Building
+
+### Production Builds
+
+```bash
+# Windows
+npm run tauri build -- --target x86_64-pc-windows-msvc
+
+# macOS (Universal)
+npm run tauri build -- --target universal-apple-darwin
+
+# Linux
+npm run tauri build -- --target x86_64-unknown-linux-gnu
+```
+
+### Code Signing
+
+```bash
+# Generate signing keys
+npx @tauri-apps/cli signer generate -w ~/.tauri/myapp.key
+
+# Sign releases
+npx @tauri-apps/cli signer sign --private-key ~/.tauri/myapp.key --file ./target/release/bundle/
+```
+
+## 🔐 Security
+
+- **Local Processing**: No data leaves your machine
+- **No Telemetry**: Zero tracking or analytics
+- **Encrypted Storage**: Models and documents encrypted at rest
+- **Signed Binaries**: All releases cryptographically signed
+- **PII Protection**: Automatic sensitive data scrubbing
+- **Secure Updates**: Signature verification for all updates
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
 
-### Development Setup
-```bash
-git clone https://github.com/yourusername/BEAR-AI.git
-cd BEAR-AI
-npm install
-npm run tauri dev  # Development mode
-```
+### Development Guidelines
+- Follow Rust best practices
+- Use TypeScript strict mode
+- Write tests for new features
+- Update documentation
+- Follow conventional commits
 
-## 📞 Support
+## 📄 License
 
-- **Documentation:** Available in-app at `http://localhost:11434/docs`
-- **Issues:** [GitHub Issues](https://github.com/yourusername/BEAR-AI/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/BEAR-AI/discussions)
+MIT License - See [LICENSE](LICENSE) file
 
-## ⚖️ Legal Notice
+## 🆘 Support
 
-BEAR AI LLM is designed for legal and professional use. Users are responsible for:
-- Compliance with applicable laws and regulations
-- Proper handling of confidential information
-- Verification of AI-generated content
-- Backup of important data
+- **GitHub Issues**: https://github.com/yourusername/BEAR-LLM/issues
+- **Documentation**: https://docs.bear-ai.com
+- **Discord**: https://discord.gg/bear-ai
+- **Email**: support@bear-ai.com
 
-**This software provides privacy tools but users must ensure proper data handling practices.**
+## 🙏 Acknowledgments
+
+- [Microsoft Presidio](https://github.com/microsoft/presidio) - PII detection
+- [HuggingFace](https://huggingface.co) - Model hosting
+- [Tauri](https://tauri.app) - Application framework
+- [Candle](https://github.com/huggingface/candle) - LLM inference
+- [FastEmbed](https://github.com/qdrant/fastembed) - Vector embeddings
+- [OpenPipe](https://github.com/openpipe/pii-redact) - PII models
+
+## 📊 Comparison
+
+| Feature | BEAR AI | Ollama | GPT4All | jan.ai |
+|---------|---------|---------|----------|---------|
+| Local Processing | ✅ | ✅ | ✅ | ✅ |
+| PII Protection | ✅ Enterprise | ❌ | Basic | ❌ |
+| Document RAG | ✅ Full | Basic | Basic | ✅ |
+| Auto Updates | ✅ | ✅ | ✅ | ✅ |
+| HuggingFace | ✅ | Limited | ✅ | Limited |
+| UI Quality | Modern | CLI | Good | Modern |
+| Legal Focus | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
-**🐻 BEAR AI LLM - Your Private AI Assistant**
-
-*No clouds, no tracking, just intelligent assistance on your terms.*
+**Version 1.0.5** - Production Ready - Enhanced UI, Complete Documentation, Full Implementations.

@@ -135,3 +135,11 @@ hive-mind-prompt-*.txt
 
 # WebView2 Runtime - commented out to include required DLL
 # src-tauri/WebView2Loader.dll
+
+# Tauri updater keys - CRITICAL: Never commit private keys!
+*.key
+*.key.pub
+bear_ai.key
+bear_ai.key.pub
+.tauri-updater-keys/
+updater-keys/

@@ -129,22 +129,36 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
     setIsSearchingHF(true);
 
     try {
-      // In a real implementation, this would call the HuggingFace API
-      // For now, we'll filter the sample models
+      // Try to call the backend search command
+      const results = await invoke('search_huggingface_models', {
+        query: query
+      });
+
+      // If backend returns results, use them
+      if (results) {
+        setHFSearchResults(results as HuggingFaceModel[]);
+      } else {
+        // Fallback to filtering sample models
+        const filtered = sampleHFModels.filter(model =>
+          model.name.toLowerCase().includes(query.toLowerCase()) ||
+          model.author.toLowerCase().includes(query.toLowerCase()) ||
+          model.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())) ||
+          model.description?.toLowerCase().includes(query.toLowerCase())
+        );
+        setHFSearchResults(filtered);
+      }
+
+      setIsSearchingHF(false);
+    } catch (error) {
+      console.error('HuggingFace search failed, using local data:', error);
+      // Fallback to sample models on error
       const filtered = sampleHFModels.filter(model =>
         model.name.toLowerCase().includes(query.toLowerCase()) ||
         model.author.toLowerCase().includes(query.toLowerCase()) ||
         model.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())) ||
         model.description?.toLowerCase().includes(query.toLowerCase())
       );
-
-      // Simulate API delay
-      setTimeout(() => {
-        setHFSearchResults(filtered);
-        setIsSearchingHF(false);
-      }, 500);
-    } catch (error) {
-      console.error('HuggingFace search failed:', error);
+      setHFSearchResults(filtered);
       setIsSearchingHF(false);
     }
   };
@@ -154,23 +168,33 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
       // Update UI to show downloading state
       updateModelDownloadProgress(model.id, 0);
 
-      // Simulate download progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        updateModelDownloadProgress(model.id, progress);
-      }
+      // Call the actual backend command to download the model
+      console.log('Downloading model:', model.name);
 
-      // In a real implementation, this would call the backend
-      await invoke('download_huggingface_model', {
-        modelId: model.id,
-        modelName: model.name
+      // Create a models directory in the user's home folder
+      const modelPath = `models/${model.id.replace('/', '_')}`;
+
+      const result = await invoke('download_model_from_huggingface', {
+        model_id: model.id,  // Changed from modelId to model_id to match backend
+        save_path: modelPath  // Changed from modelName to save_path to match backend
       });
+
+      console.log('Model download result:', result);
 
       // Mark as local after successful download
       const updatedModel = { ...model, isLocal: true, isDownloading: false };
       onModelSelect(updatedModel);
+
+      // Update progress to 100%
+      updateModelDownloadProgress(model.id, 100);
+
+      // Add the downloaded model to local models list
+      if (!localModels.includes(model.id)) {
+        setLocalModels([...localModels, model.id]);
+      }
     } catch (error) {
       console.error('Failed to download model:', error);
+      alert(`Failed to download model: ${error}`);
       updateModelDownloadProgress(model.id, 0);
     }
   };

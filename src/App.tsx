@@ -10,12 +10,17 @@ import { useAppStore } from './stores/appStore';
 import ChatMessage from './components/ChatMessage';
 import ModelSelector from './components/ModelSelector';
 import BearLogo from './components/BearLogo';
+import { UpdateNotification } from './components/UpdateNotification';
+import { checkForUpdatesOnStartup } from './utils/updater';
+import SetupWizard from './components/SetupWizard';
 
 function App() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupComplete, setSetupComplete] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,6 +44,28 @@ function App() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
     if (savedTheme) setTheme(savedTheme);
+
+    // Check for first run
+    const checkFirstRun = async () => {
+      try {
+        const isFirstRun = await invoke<boolean>('check_first_run');
+        const setupStatus = await invoke<any>('get_setup_status');
+
+        if (isFirstRun || !setupStatus.setup_complete) {
+          setShowSetup(true);
+        } else {
+          setSetupComplete(true);
+        }
+      } catch (err) {
+        console.error('Error checking setup status:', err);
+        setSetupComplete(true); // Continue anyway
+      }
+    };
+
+    checkFirstRun();
+
+    // Check for updates on app startup
+    checkForUpdatesOnStartup();
   }, []);
 
   useEffect(() => {
@@ -154,7 +181,17 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <>
+      {showSetup && !setupComplete && (
+        <SetupWizard
+          onComplete={() => {
+            setShowSetup(false);
+            setSetupComplete(true);
+          }}
+        />
+      )}
+      <UpdateNotification />
+      <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-[var(--bg-secondary)] border-r border-[var(--border-primary)] flex flex-col overflow-hidden`}>
         <div className="p-4 border-b border-[var(--border-primary)]">
@@ -221,10 +258,7 @@ function App() {
               {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center">
-                <BearLogo size="small" theme={theme} />
-                <Scale className="w-5 h-5 text-white hidden" />
-              </div>
+              <BearLogo size="small" theme={theme} />
               <span className="font-semibold text-lg">BEAR AI Assistant</span>
             </div>
           </div>
@@ -244,10 +278,7 @@ function App() {
           <div className="max-w-4xl mx-auto">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fadeIn">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-6">
-                  <BearLogo size="medium" theme={theme} />
-                  <Scale className="w-12 h-12 text-white hidden" />
-                </div>
+                <BearLogo size="large" theme={theme} className="mb-6" />
                 <h2 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">
                   Welcome to BEAR AI
                 </h2>
@@ -288,9 +319,7 @@ function App() {
                 ))}
                 {isLoading && (
                   <div className="flex items-start gap-3 px-6 py-4 animate-fadeIn">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center flex-shrink-0">
-                      <Scale className="w-5 h-5 text-white" />
-                    </div>
+                    <BearLogo size="small" theme={theme} className="flex-shrink-0" />
                     <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] rounded-lg">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span className="text-sm text-[var(--text-secondary)]">Thinking</span>
@@ -306,7 +335,7 @@ function App() {
 
         {/* Input Area */}
         <div className="border-t border-[var(--border-primary)] bg-[var(--bg-primary)]">
-          <div className="max-w-4xl mx-auto p-4">
+          <div className="p-4">
             <div className="flex items-end gap-3">
               <button
                 onClick={handleFileUpload}
@@ -358,6 +387,7 @@ function App() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

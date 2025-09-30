@@ -145,41 +145,50 @@ pub enum DownloadStatus {
 
 #[tauri::command]
 pub async fn search_huggingface_models(
-    _query: String,
+    query: String,
     _filter_size: Option<String>,
     _filter_type: Option<String>,
-) -> Result<Vec<HuggingFaceModel>, String> {
-    // Implement HuggingFace model search with filtering
-    // Returns curated list of models suitable for legal AI applications
+) -> Result<Vec<serde_json::Value>, String> {
+    use crate::huggingface_api;
 
-    Ok(vec![
-        HuggingFaceModel {
-            model_id: "meta-llama/Llama-2-7b-chat-hf".to_string(),
-            author: "meta-llama".to_string(),
-            model_name: "Llama-2-7b-chat-hf".to_string(),
-            likes: 45234,
-            downloads: 2_145_678,
-            tags: vec!["text-generation".to_string(), "llama".to_string(), "chat".to_string()],
-            size_bytes: 13_476_839_424, // ~13GB
-            last_modified: "2024-01-15".to_string(),
-            description: "Llama 2 7B Chat model fine-tuned for dialogue use cases".to_string(),
-            license: "llama2".to_string(),
-            pipeline_tag: "text-generation".to_string(),
-        },
-        HuggingFaceModel {
-            model_id: "mistralai/Mistral-7B-Instruct-v0.2".to_string(),
-            author: "mistralai".to_string(),
-            model_name: "Mistral-7B-Instruct-v0.2".to_string(),
-            likes: 28567,
-            downloads: 1_567_234,
-            tags: vec!["text-generation".to_string(), "mistral".to_string(), "instruct".to_string()],
-            size_bytes: 14_483_456_000, // ~14GB
-            last_modified: "2024-02-01".to_string(),
-            description: "Mistral 7B fine-tuned for instruction following".to_string(),
-            license: "apache-2.0".to_string(),
-            pipeline_tag: "text-generation".to_string(),
-        },
-    ])
+    let params = huggingface_api::ModelSearchParams {
+        query: query.clone(),
+        filter: None,
+        sort: Some("likes".to_string()),
+        limit: Some(20),
+    };
+
+    match huggingface_api::search_models(&params).await {
+        Ok(models) => {
+            // Convert to JSON values for frontend compatibility
+            let json_models: Vec<serde_json::Value> = models
+                .into_iter()
+                .map(|m| serde_json::json!({
+                    "id": m.id,
+                    "name": m.name,
+                    "author": m.author,
+                    "likes": m.likes,
+                    "downloads": m.downloads,
+                    "tags": m.tags,
+                    "size": m.size,
+                    "description": m.description,
+                    "isLocal": false,
+                    "isDownloading": false,
+                    "systemRequirements": {
+                        "minimumRam": "8GB",
+                        "recommendedRam": "16GB",
+                        "performance": if m.size.contains("GB") && m.size.replace("GB", "").parse::<f32>().unwrap_or(10.0) < 8.0 { "Good" } else { "Moderate" }
+                    }
+                }))
+                .collect();
+            Ok(json_models)
+        }
+        Err(e) => {
+            eprintln!("HuggingFace search error: {}", e);
+            // Return empty array on error, frontend will use fallback
+            Ok(vec![])
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

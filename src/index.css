@@ -8,10 +8,11 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: weight;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+  font-feature-settings: 'liga' 1, 'calt' 1;
 
   --sidebar-width: 260px;
   --header-height: 56px;
@@ -23,9 +24,9 @@
   --bg-secondary: #f7f7f8;
   --bg-tertiary: #ececf1;
   --bg-chat: #ffffff;
-  --text-primary: #0d0d0d;
-  --text-secondary: #6e6e80;
-  --text-tertiary: #9a9aa8;
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a5a;
+  --text-tertiary: #757585;
   --border-primary: #e5e5e5;
   --border-secondary: #d4d4d8;
   --accent: #10a37f;
@@ -72,6 +73,8 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 400;
+  letter-spacing: -0.011em;
 }
 
 #root {
