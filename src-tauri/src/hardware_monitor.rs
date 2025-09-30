@@ -7,6 +7,24 @@ use nvml_wrapper::Nvml;
 
 use crate::SystemStatus;
 
+/// Resource limits for system monitoring and enforcement
+#[derive(Debug, Clone)]
+pub struct ResourceLimits {
+    pub max_gpu_usage: f32,
+    pub max_cpu_usage: f32,
+    pub max_ram_usage: f32,
+}
+
+impl Default for ResourceLimits {
+    fn default() -> Self {
+        Self {
+            max_gpu_usage: 85.0,
+            max_cpu_usage: 85.0,
+            max_ram_usage: 90.0,
+        }
+    }
+}
+
 pub struct HardwareMonitor {
     system: System,
     cpu_threshold: f32,
@@ -15,6 +33,7 @@ pub struct HardwareMonitor {
     temperature_threshold: f32,
     consecutive_high_readings: usize,
     max_consecutive_high: usize,
+    resource_limits: ResourceLimits,
     #[cfg(target_os = "windows")]
     nvml: Option<Nvml>,
 }
@@ -36,6 +55,7 @@ impl HardwareMonitor {
             temperature_threshold: 80.0,
             consecutive_high_readings: 0,
             max_consecutive_high: 3,
+            resource_limits: ResourceLimits::default(),
             #[cfg(target_os = "windows")]
             nvml,
         }
@@ -165,6 +185,124 @@ impl HardwareMonitor {
         self.temperature_threshold = temperature;
     }
 
+    /// Set and enforce resource limits for GPU, CPU, and RAM usage
+    pub fn set_resource_limits(&mut self, max_gpu_usage: f32, max_cpu_usage: f32, max_ram_usage: f32) -> Result<()> {
+        // Validate limits
+        if !(0.0..=100.0).contains(&max_gpu_usage) {
+            return Err(anyhow::anyhow!("GPU usage limit must be between 0 and 100"));
+        }
+        if !(0.0..=100.0).contains(&max_cpu_usage) {
+            return Err(anyhow::anyhow!("CPU usage limit must be between 0 and 100"));
+        }
+        if !(0.0..=100.0).contains(&max_ram_usage) {
+            return Err(anyhow::anyhow!("RAM usage limit must be between 0 and 100"));
+        }
+
+        // Store the validated limits
+        self.resource_limits = ResourceLimits {
+            max_gpu_usage,
+            max_cpu_usage,
+            max_ram_usage,
+        };
+
+        // Update thresholds to match the resource limits
+        self.cpu_threshold = max_cpu_usage;
+        self.memory_threshold = max_ram_usage;
+        self.gpu_threshold = max_gpu_usage;
+
+        tracing::info!(
+            gpu_limit = max_gpu_usage,
+            cpu_limit = max_cpu_usage,
+            ram_limit = max_ram_usage,
+            "Resource limits updated and will be enforced"
+        );
+
+        Ok(())
+    }
+
+    /// Get current resource limits
+    pub fn get_resource_limits(&self) -> ResourceLimits {
+        self.resource_limits.clone()
+    }
+
+    /// Check if current resource usage is within configured limits
+    pub async fn check_resource_limits(&self) -> Result<ResourceLimitStatus> {
+        let cpu_usage = self.get_cpu_usage();
+        let memory_usage = self.get_memory_usage();
+        let gpu_usage = self.get_gpu_usage().await?;
+
+        let cpu_exceeded = cpu_usage > self.resource_limits.max_cpu_usage;
+        let ram_exceeded = memory_usage > self.resource_limits.max_ram_usage;
+        let gpu_exceeded = if let Some(gpu) = gpu_usage {
+            gpu > self.resource_limits.max_gpu_usage
+        } else {
+            false
+        };
+
+        let within_limits = !cpu_exceeded && !ram_exceeded && !gpu_exceeded;
+
+        Ok(ResourceLimitStatus {
+            within_limits,
+            cpu_usage,
+            cpu_limit: self.resource_limits.max_cpu_usage,
+            cpu_exceeded,
+            memory_usage,
+            memory_limit: self.resource_limits.max_ram_usage,
+            memory_exceeded: ram_exceeded,
+            gpu_usage,
+            gpu_limit: self.resource_limits.max_gpu_usage,
+            gpu_exceeded,
+        })
+    }
+
+    /// Enforce resource limits by rejecting operations that would exceed them
+    pub async fn enforce_resource_limits(&self, operation_name: &str) -> Result<()> {
+        let status = self.check_resource_limits().await?;
+
+        if !status.within_limits {
+            let mut exceeded = Vec::new();
+
+            if status.cpu_exceeded {
+                exceeded.push(format!(
+                    "CPU usage ({:.1}%) exceeds limit ({:.1}%)",
+                    status.cpu_usage, status.cpu_limit
+                ));
+            }
+
+            if status.memory_exceeded {
+                exceeded.push(format!(
+                    "RAM usage ({:.1}%) exceeds limit ({:.1}%)",
+                    status.memory_usage, status.memory_limit
+                ));
+            }
+
+            if status.gpu_exceeded {
+                if let Some(gpu) = status.gpu_usage {
+                    exceeded.push(format!(
+                        "GPU usage ({:.1}%) exceeds limit ({:.1}%)",
+                        gpu, status.gpu_limit
+                    ));
+                }
+            }
+
+            let error_msg = format!(
+                "Operation '{}' rejected: Resource limits exceeded. {}",
+                operation_name,
+                exceeded.join(", ")
+            );
+
+            tracing::warn!(
+                operation = operation_name,
+                exceeded = ?exceeded,
+                "Operation rejected due to resource limit enforcement"
+            );
+
+            return Err(anyhow::anyhow!(error_msg));
+        }
+
+        Ok(())
+    }
+
     pub async fn get_process_info(&self) -> Vec<ProcessInfo> {
         let mut processes = Vec::new();
 
@@ -177,7 +315,8 @@ impl HardwareMonitor {
             });
         }
 
-        processes.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap());
+        // Sort by CPU usage, handling NaN values safely
+        processes.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap_or(std::cmp::Ordering::Equal));
         processes.truncate(10);
         processes
     }
@@ -206,4 +345,19 @@ pub struct ProcessInfo {
     pub name: String,
     pub cpu_usage: f32,
     pub memory_usage: f32,
+}
+
+/// Status of resource limits enforcement
+#[derive(Debug, Clone)]
+pub struct ResourceLimitStatus {
+    pub within_limits: bool,
+    pub cpu_usage: f32,
+    pub cpu_limit: f32,
+    pub cpu_exceeded: bool,
+    pub memory_usage: f32,
+    pub memory_limit: f32,
+    pub memory_exceeded: bool,
+    pub gpu_usage: Option<f32>,
+    pub gpu_limit: f32,
+    pub gpu_exceeded: bool,
 }

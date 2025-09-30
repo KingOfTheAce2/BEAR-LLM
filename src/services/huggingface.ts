@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { HuggingFaceModel } from '../stores/appStore';
+import { logger } from '../utils/logger';
 
 /**
  * HuggingFace API integration service
@@ -41,7 +42,7 @@ class HuggingFaceService {
       });
       return result;
     } catch (error) {
-      console.warn('Backend search failed, using fallback:', error);
+      logger.warn('Backend search failed, using fallback', { error, options });
       return this.fallbackSearch(options);
     }
   }
@@ -56,7 +57,7 @@ class HuggingFaceService {
       });
       return result;
     } catch (error) {
-      console.warn('Failed to get model info:', error);
+      logger.warn('Failed to get model info', { modelId, error });
       return null;
     }
   }
@@ -79,7 +80,7 @@ class HuggingFaceService {
 
       return result;
     } catch (error) {
-      console.error('Model download failed:', error);
+      logger.error('Model download failed', error, { modelId, options });
       throw new Error(`Failed to download model ${modelId}: ${error}`);
     }
   }
@@ -92,7 +93,7 @@ class HuggingFaceService {
       const result = await invoke<HuggingFaceModel[]>('list_local_models');
       return result;
     } catch (error) {
-      console.warn('Failed to list local models:', error);
+      logger.warn('Failed to list local models', { error });
       return [];
     }
   }
@@ -107,7 +108,7 @@ class HuggingFaceService {
       });
       return result;
     } catch (error) {
-      console.error('Failed to delete local model:', error);
+      logger.error('Failed to delete local model', error, { modelId });
       return false;
     }
   }

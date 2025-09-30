@@ -112,17 +112,33 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn execute_sql_query(&self, query: &str) -> Result<JsonValue> {
-        let conn = Connection::open(&self.db_path)?;
+    pub fn validate_query_security(query: &str) -> Result<()> {
+        let query_upper = query.trim().to_uppercase();
 
-        // Security check: only allow SELECT, WITH statements for read-only access
-        let trimmed_query = query.trim().to_uppercase();
-        if !trimmed_query.starts_with("SELECT") &&
-           !trimmed_query.starts_with("WITH") &&
-           !trimmed_query.starts_with("PRAGMA") {
-            return Err(anyhow!("Only SELECT, WITH, and PRAGMA statements are allowed for security"));
+        // 1. Only allow SELECT statements
+        if !query_upper.starts_with("SELECT") {
+            return Err(anyhow!(
+                "Only SELECT queries are allowed. Found: {}",
+                query_upper.split_whitespace().next().unwrap_or("UNKNOWN")
+            ));
         }
 
+        // 2. Block dangerous keywords
+        let dangerous = ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "EXEC", "EXECUTE", "CREATE"];
+        for keyword in dangerous {
+            if query_upper.contains(keyword) {
+                return Err(anyhow!("Query contains forbidden keyword: {}", keyword));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn execute_sql_query(&self, query: &str) -> Result<JsonValue> {
+        // Validate query security before execution
+        Self::validate_query_security(query)?;
+
+        let conn = Connection::open(&self.db_path)?;
         let start_time = std::time::Instant::now();
 
         let mut stmt = conn.prepare(query)?;

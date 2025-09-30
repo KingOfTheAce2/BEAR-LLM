@@ -47,8 +47,7 @@ impl InferenceEngine {
             return Err(anyhow!("Model file not found: {:?}", model_path));
         }
 
-        println!("Loading model from: {:?}", model_path);
-        println!("Model type: {}", model_type);
+        tracing::info!(path = ?model_path, model_type = %model_type, "Loading model");
 
         // Validate model file format and accessibility
         let file_size = std::fs::metadata(&model_path)?.len();
@@ -58,14 +57,15 @@ impl InferenceEngine {
 
         // Perform basic model file validation
         if !model_path.extension().map_or(false, |ext| ext == "gguf" || ext == "bin") {
-            println!("Warning: Model file may not be in expected GGUF format");
+            tracing::warn!(path = ?model_path, "Model file may not be in expected GGUF format");
         }
 
         self.model_path = Some(model_path.clone());
         self.model_type = model_type;
         self.is_loaded = true;
 
-        println!("Model loaded successfully (file size: {} MB)", file_size / 1024 / 1024);
+        let size_mb = file_size / 1024 / 1024;
+        tracing::info!(size_mb, "Model loaded successfully");
         Ok(())
     }
 
@@ -79,9 +79,13 @@ impl InferenceEngine {
         // Format prompt based on model type
         let formatted_prompt = self.format_prompt(prompt);
 
-        println!("Generating response for prompt: {}", prompt);
-        println!("Model type: {}", self.model_type);
-        println!("Using config: max_tokens={}, temperature={}", config.max_tokens, config.temperature);
+        tracing::debug!(
+            prompt_len = prompt.len(),
+            model_type = %self.model_type,
+            max_tokens = config.max_tokens,
+            temperature = config.temperature,
+            "Generating response"
+        );
 
         // Generate response using our enhanced inference engine
         let response = self.generate_contextual_response(&formatted_prompt, &config).await?;
@@ -299,8 +303,13 @@ impl InferenceEngine {
 
     pub async fn update_config(&self, new_config: InferenceConfig) -> Result<()> {
         let mut config = self.config.write().await;
+        tracing::info!(
+            max_tokens = new_config.max_tokens,
+            temperature = new_config.temperature,
+            top_p = new_config.top_p,
+            "Inference config updated"
+        );
         *config = new_config;
-        println!("Inference config updated");
         Ok(())
     }
 
@@ -316,10 +325,11 @@ impl InferenceEngine {
 
     #[allow(dead_code)]
     pub async fn unload_model(&mut self) -> Result<()> {
+        let model_type = self.model_type.clone();
         self.model_path = None;
         self.is_loaded = false;
         self.model_type = "unknown".to_string();
-        println!("Model unloaded");
+        tracing::info!(model_type = %model_type, "Model unloaded");
         Ok(())
     }
 }

@@ -173,7 +173,7 @@ impl SetupManager {
 
         // Check available disk space
         let config = self.config.read().await;
-        let required_space_mb = match config.model_size.as_str() {
+        let _required_space_mb = match config.model_size.as_str() {
             "small" => 2000,  // 2GB
             "medium" => 5000, // 5GB
             "large" => 10000, // 10GB

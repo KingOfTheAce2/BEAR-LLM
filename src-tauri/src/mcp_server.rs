@@ -8,7 +8,7 @@ use tokio::fs;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::rag_engine::RAGEngine;
+use crate::rag_engine_production::RAGEngine;
 use crate::file_processor::FileProcessor;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -407,16 +407,14 @@ impl MCPServer {
         // Use the RAG engine if available, otherwise return a helpful message
         if let Some(rag_engine) = &self.rag_engine {
             let rag = rag_engine.read().await;
-            match rag.search(query, limit).await {
+            match rag.search(query, Some(limit)).await {
                 Ok(results) => {
                     let formatted_results: Vec<serde_json::Value> = results.iter().map(|doc| {
-                        let content = doc.get("content")
-                            .and_then(|c| c.as_str())
-                            .unwrap_or("No content available");
+                        let content = &doc.content;
 
-                        let title = doc.get("title")
+                        let title = doc.metadata.get("title")
                             .and_then(|t| t.as_str())
-                            .or_else(|| doc.get("filename").and_then(|f| f.as_str()))
+                            .or_else(|| doc.metadata.get("filename").and_then(|f| f.as_str()))
                             .unwrap_or("Document");
 
                         serde_json::json!({

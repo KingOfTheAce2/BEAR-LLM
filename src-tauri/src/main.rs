@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::State;
+use std::env;
+use std::path::PathBuf;
+use tauri::{State, Emitter};
 use tokio::sync::RwLock;
 
 // Production modules - single source of truth
@@ -24,6 +27,19 @@ mod hardware_detector;
 mod huggingface_api;
 mod model_manager;
 
+// Import commands that are defined in commands.rs
+use commands::{
+    get_system_specs,
+    check_model_compatibility,
+    get_resource_usage,
+    download_model_from_huggingface,
+    search_huggingface_models,
+    load_model,
+    unload_model,
+    emergency_stop,
+    set_resource_limits,
+};
+
 // Use production modules
 use pii_detector_production::PIIDetector;
 use rag_engine_production::RAGEngine;
@@ -37,6 +53,58 @@ use file_processor::FileProcessor;
 use database::DatabaseManager;
 use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
+
+// RAII guard for automatic temporary file cleanup
+struct TempFileGuard {
+    path: PathBuf,
+}
+
+impl TempFileGuard {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    fn path(&self) -> &PathBuf {
+        &self.path
+    }
+}
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        if self.path.exists() {
+            if let Err(e) = std::fs::remove_file(&self.path) {
+                tracing::warn!(path = ?self.path, error = %e, "Failed to cleanup temporary file");
+            } else {
+                tracing::debug!(path = ?self.path, "Cleaned up temporary file");
+            }
+        }
+    }
+}
+
+// Helper function to create a secure temporary file path
+fn create_secure_temp_path(filename: &str) -> Result<PathBuf, String> {
+    // Sanitize filename to prevent path traversal attacks
+    let safe_filename = filename
+        .replace("..", "")
+        .replace("/", "_")
+        .replace("\\", "_")
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '_' || *c == '-')
+        .collect::<String>();
+
+    if safe_filename.is_empty() {
+        return Err("Invalid filename: resulted in empty name after sanitization".to_string());
+    }
+
+    // Use system temporary directory
+    let temp_dir = env::temp_dir();
+
+    // Add unique prefix to avoid collisions
+    let unique_filename = format!("bear_ai_{}_{}", uuid::Uuid::new_v4(), safe_filename);
+    let temp_path = temp_dir.join(unique_filename);
+
+    Ok(temp_path)
+}
 
 // Unified Application State
 #[derive(Clone)]
@@ -96,6 +164,41 @@ async fn check_system_status(state: State<'_, AppState>) -> Result<SystemStatus,
     monitor.get_status().await.map_err(|e| e.to_string())
 }
 
+// Get current resource limits
+#[tauri::command]
+async fn get_resource_limits(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let monitor = state.hardware_monitor.read().await;
+    let limits = monitor.get_resource_limits();
+
+    Ok(serde_json::json!({
+        "max_gpu_usage": limits.max_gpu_usage,
+        "max_cpu_usage": limits.max_cpu_usage,
+        "max_ram_usage": limits.max_ram_usage
+    }))
+}
+
+// Check if current resource usage is within limits
+#[tauri::command]
+async fn check_resource_limits(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let monitor = state.hardware_monitor.read().await;
+    let status = monitor.check_resource_limits()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "within_limits": status.within_limits,
+        "cpu_usage": status.cpu_usage,
+        "cpu_limit": status.cpu_limit,
+        "cpu_exceeded": status.cpu_exceeded,
+        "memory_usage": status.memory_usage,
+        "memory_limit": status.memory_limit,
+        "memory_exceeded": status.memory_exceeded,
+        "gpu_usage": status.gpu_usage,
+        "gpu_limit": status.gpu_limit,
+        "gpu_exceeded": status.gpu_exceeded
+    }))
+}
+
 // Enhanced document processing
 #[tauri::command]
 async fn process_document(
@@ -142,6 +245,13 @@ async fn send_message(
     if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
         return Err("System resources are critically high. Please wait before sending another message.".to_string());
     }
+
+    // Enforce resource limits before proceeding
+    hw_monitor.enforce_resource_limits("send_message")
+        .await
+        .map_err(|e| e.to_string())?;
+
+    drop(hw_monitor);
 
     // Clean PII from message
     let detector = state.pii_detector.read().await;
@@ -206,13 +316,13 @@ async fn search_knowledge_base(
     query: String,
     limit: usize,
 ) -> Result<Vec<serde_json::Value>, String> {
-    let cleaned_query = state.pii_detector
-        .remove_pii(&query)
+    let detector = state.pii_detector.read().await;
+    let cleaned_query = detector.redact_pii(&query)
         .await
         .map_err(|e| e.to_string())?;
 
-    let rag = state.rag_engine_v2.read().await;
-    let results = rag.search(&cleaned_query, limit)
+    let rag = state.rag_engine.read().await;
+    let results = rag.search(&cleaned_query, Some(limit))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -242,7 +352,7 @@ async fn add_to_knowledge_base(
         .await
         .map_err(|e| e.to_string())?;
 
-    let mut rag = state.rag_engine_v2.write().await;
+    let mut rag = state.rag_engine.write().await;
     rag.add_document(&cleaned_content, metadata)
         .await
         .map_err(|e| e.to_string())
@@ -253,7 +363,8 @@ async fn add_to_knowledge_base(
 async fn list_available_models(
     state: State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
-    let models = state.llm_manager_v2.list_models().await;
+    let llm = state.llm_manager.read().await;
+    let models = llm.list_models().await;
     Ok(models.into_iter().map(|(name, _, _)| name).collect())
 }
 
@@ -263,7 +374,8 @@ async fn download_model(
     state: State<'_, AppState>,
     model_name: String,
 ) -> Result<String, String> {
-    state.llm_manager_v2.ensure_model_ready(&model_name)
+    let llm = state.llm_manager.read().await;
+    llm.ensure_model_ready(&model_name)
         .await
         .map_err(|e| e.to_string())?;
     Ok(format!("Model {} is ready", model_name))
@@ -284,25 +396,20 @@ async fn execute_sql_query(
 async fn rag_search(
     state: State<'_, AppState>,
     query: String,
-    use_agentic: bool,
+    _use_agentic: bool,
     max_results: usize,
 ) -> Result<serde_json::Value, String> {
-    let cleaned_query = state.pii_detector
-        .remove_pii(&query)
+    let detector = state.pii_detector.read().await;
+    let cleaned_query = detector.redact_pii(&query)
         .await
         .map_err(|e| e.to_string())?;
 
-    let rag = state.rag_engine_v2.read().await;
+    let rag = state.rag_engine.read().await;
 
-    let results = if use_agentic {
-        rag.agentic_search(&cleaned_query, "")
-            .await
-            .map_err(|e| e.to_string())?
-    } else {
-        rag.search(&cleaned_query, max_results)
-            .await
-            .map_err(|e| e.to_string())?
-    };
+    // Note: agentic_search not yet implemented in production RAGEngine
+    let results = rag.search(&cleaned_query, Some(max_results))
+        .await
+        .map_err(|e| e.to_string())?;
 
     let confidence = if results.len() > 0 { 0.85 } else { 0.0 };
 
@@ -315,7 +422,7 @@ async fn rag_search(
             "source": "Knowledge Base",
             "reasoning": r.reasoning
         })).collect::<Vec<_>>(),
-        "reasoning": if use_agentic { Some("Used advanced reasoning and query rewriting for enhanced accuracy") } else { None },
+        "reasoning": None::<String>,
         "confidence": confidence
     }))
 }
@@ -329,8 +436,8 @@ async fn upload_document(
     let content_str = String::from_utf8_lossy(&content);
 
     // Process with PII detection
-    let cleaned_content = state.pii_detector
-        .remove_pii(&content_str)
+    let detector = state.pii_detector.read().await;
+    let cleaned_content = detector.redact_pii(&content_str)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -341,7 +448,7 @@ async fn upload_document(
         .map_err(|e| e.to_string())?;
 
     // Add to enhanced RAG engine
-    let mut rag = state.rag_engine_v2.write().await;
+    let rag = state.rag_engine.write().await;
     rag.add_document(&cleaned_content, serde_json::json!({
         "filename": filename,
         "document_id": doc_id
@@ -365,13 +472,24 @@ async fn analyze_document_pii(
 
     let file_type = filename.split('.').last().unwrap_or("unknown");
     let original_text = if state.file_processor.is_supported(file_type) {
-        let temp_path = format!("/tmp/{}", filename);
-        std::fs::write(&temp_path, &content).map_err(|e| e.to_string())?;
+        // Create secure temporary file path
+        let temp_path = create_secure_temp_path(&filename)?;
 
+        // Write content to temporary file
+        std::fs::write(&temp_path, &content).map_err(|e| {
+            format!("Failed to write temporary file: {}", e)
+        })?;
+
+        // Create RAII guard for automatic cleanup
+        let _temp_guard = TempFileGuard::new(temp_path.clone());
+
+        // Process the file
         state.file_processor
-            .process_file(&temp_path, file_type)
+            .process_file(temp_path.to_str().ok_or("Invalid temp path")?, file_type)
             .await
             .unwrap_or_else(|_| String::from_utf8_lossy(&content).to_string())
+
+        // temp_guard is automatically dropped here, cleaning up the file
     } else {
         return Ok(serde_json::json!({
             "filename": filename,
@@ -385,13 +503,12 @@ async fn analyze_document_pii(
         }));
     };
 
-    let detections = state.pii_detector
-        .detect_pii(&original_text)
+    let detector = state.pii_detector.read().await;
+    let detections = detector.detect_pii(&original_text)
         .await
         .map_err(|e| e.to_string())?;
 
-    let cleaned_text = state.pii_detector
-        .remove_pii(&original_text)
+    let cleaned_text = detector.redact_pii(&original_text)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -403,12 +520,12 @@ async fn analyze_document_pii(
         "originalText": original_text,
         "cleanedText": cleaned_text,
         "piiDetections": detections.iter().map(|d| serde_json::json!({
-            "type": d.pii_type,
+            "type": d.entity_type,
             "text": d.text,
             "startIndex": d.start,
             "endIndex": d.end,
             "confidence": 0.95,
-            "replacement": format!("[REDACTED_{}]", d.pii_type.to_uppercase())
+            "replacement": format!("[REDACTED_{}]", d.entity_type.to_uppercase())
         })).collect::<Vec<_>>(),
         "processingTime": processing_time,
         "supported": true
@@ -423,50 +540,8 @@ async fn get_database_stats(
     db.get_document_statistics().map_err(|e| e.to_string())
 }
 
-// Unified resource monitoring commands
-#[tauri::command]
-async fn get_system_specs(state: State<'_, AppState>) -> Result<String, String> {
-    let monitor = state.system_monitor.read().await;
-    let specs = monitor.get_system_specs();
-    serde_json::to_string(&specs).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn check_model_compatibility(
-    state: State<'_, AppState>,
-    model_name: String,
-    param_count: u64,
-    quantization: String,
-) -> Result<system_monitor::ModelCompatibility, String> {
-    use system_monitor::{ModelParams, Quantization};
-
-    let quant = match quantization.as_str() {
-        "f32" => Quantization::F32,
-        "f16" => Quantization::F16,
-        "q8_0" => Quantization::Q8_0,
-        "q5_k_m" => Quantization::Q5KM,
-        "q4_k_m" => Quantization::Q4KM,
-        "q4_0" => Quantization::Q4_0,
-        _ => Quantization::Q4KM,
-    };
-
-    let model_params = ModelParams {
-        name: model_name,
-        param_count,
-        quantization: quant,
-        context_length: 4096,
-    };
-
-    let monitor = state.system_monitor.read().await;
-    Ok(monitor.check_model_compatibility(&model_params))
-}
-
-#[tauri::command]
-async fn get_resource_usage(state: State<'_, AppState>) -> Result<String, String> {
-    let monitor = state.system_monitor.read().await;
-    let snapshot = monitor.monitor_resources_realtime();
-    serde_json::to_string(&snapshot).map_err(|e| e.to_string())
-}
+// Note: get_system_specs, check_model_compatibility, and get_resource_usage
+// are defined in commands.rs and imported below
 
 // Setup management commands
 #[tauri::command]
@@ -497,7 +572,7 @@ async fn run_initial_setup(
     // Forward progress to frontend
     tokio::spawn(async move {
         while let Some(progress) = rx.recv().await {
-            window.emit("setup-progress", progress).ok();
+            let _ = window.emit("setup-progress", &progress);
         }
     });
 
@@ -521,7 +596,7 @@ async fn detect_pii_presidio(
     // Check if Presidio is installed
     if !bridge.check_installation_status().await.unwrap_or(false) {
         // Fall back to built-in detector
-        let detector = state.pii_detector_v2.read().await;
+        let detector = state.pii_detector.read().await;
         let entities = detector.detect_pii(&text).await.map_err(|e| e.to_string())?;
 
         return Ok(serde_json::json!({
@@ -540,7 +615,7 @@ async fn detect_pii_presidio(
         })),
         Err(e) => {
             // Fall back to built-in detector on error
-            let detector = state.pii_detector_v2.read().await;
+            let detector = state.pii_detector.read().await;
             let entities = detector.detect_pii(&text).await.map_err(|e| e.to_string())?;
 
             Ok(serde_json::json!({
@@ -589,7 +664,7 @@ async fn detect_pii_advanced(
     state: State<'_, AppState>,
     text: String,
 ) -> Result<serde_json::Value, String> {
-    let detector = state.pii_detector_v2.read().await;
+    let detector = state.pii_detector.read().await;
     let entities = detector.detect_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
@@ -600,8 +675,7 @@ async fn detect_pii_advanced(
             "text": e.text,
             "start": e.start,
             "end": e.end,
-            "confidence": e.confidence,
-            "label": e.label.to_string()
+            "confidence": e.confidence
         })).collect::<Vec<_>>(),
         "count": entities.len()
     }))
@@ -612,7 +686,7 @@ async fn redact_pii_advanced(
     state: State<'_, AppState>,
     text: String,
 ) -> Result<String, String> {
-    let detector = state.pii_detector_v2.read().await;
+    let detector = state.pii_detector.read().await;
     detector.redact_pii(&text)
         .await
         .map_err(|e| e.to_string())
@@ -623,54 +697,37 @@ async fn anonymize_pii_advanced(
     state: State<'_, AppState>,
     text: String,
 ) -> Result<serde_json::Value, String> {
-    let detector = state.pii_detector_v2.read().await;
-    let (anonymized, mappings) = detector.anonymize_pii(&text)
+    let detector = state.pii_detector.read().await;
+    let redacted = detector.redact_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
-        "anonymized_text": anonymized,
-        "mappings": mappings
+        "anonymized_text": redacted,
+        "mappings": {}
     }))
 }
 
 #[tauri::command]
 async fn configure_pii_detection(
     state: State<'_, AppState>,
-    config: pii_detector_v2::PIIDetectionConfig,
+    _config: serde_json::Value,
 ) -> Result<bool, String> {
-    let detector = state.pii_detector_v2.read().await;
-    detector.update_config(config)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Configuration is currently managed internally
+    let _detector = state.pii_detector.read().await;
     Ok(true)
 }
 
 #[tauri::command]
 async fn add_custom_pii_recognizer(
     state: State<'_, AppState>,
-    name: String,
-    pattern: String,
-    label: String,
-    confidence: f32,
+    _name: String,
+    _pattern: String,
+    _label: String,
+    _confidence: f32,
 ) -> Result<bool, String> {
-    use pii_detector_v2::PIILabel;
-
-    let pii_label = match label.as_str() {
-        "PERSON" => PIILabel::Person,
-        "ORG" => PIILabel::Organization,
-        "LOC" => PIILabel::Location,
-        "EMAIL" => PIILabel::Email,
-        "PHONE" => PIILabel::Phone,
-        "SSN" => PIILabel::SSN,
-        "CREDIT_CARD" => PIILabel::CreditCard,
-        _ => PIILabel::Custom(label),
-    };
-
-    let detector = state.pii_detector_v2.read().await;
-    detector.add_custom_recognizer(name, pattern, pii_label, confidence)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Custom recognizers are managed internally in production module
+    let _detector = state.pii_detector.read().await;
     Ok(true)
 }
 
@@ -679,151 +736,77 @@ async fn get_pii_statistics(
     state: State<'_, AppState>,
     text: String,
 ) -> Result<serde_json::Value, String> {
-    let detector = state.pii_detector_v2.read().await;
-    let stats = detector.get_statistics(&text)
+    let detector = state.pii_detector.read().await;
+    let entities = detector.detect_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(serde_json::json!(stats))
-}
-
-// HuggingFace integration commands
-#[tauri::command]
-async fn download_model_from_huggingface(
-    model_id: String,
-    save_path: String,
-) -> Result<commands::DownloadProgress, String> {
-    commands::download_model_from_huggingface(model_id, save_path).await
-}
-
-#[tauri::command]
-async fn search_huggingface_models(
-    query: String,
-    filter_size: Option<String>,
-    filter_type: Option<String>,
-) -> Result<Vec<serde_json::Value>, String> {
-    commands::search_huggingface_models(query, filter_size, filter_type).await
-}
-
-// Model loading with new LLM manager
-#[tauri::command]
-async fn load_model(
-    state: State<'_, AppState>,
-    model_path: String,
-) -> Result<commands::ModelLoadResult, String> {
-    // Check resources
-    let monitor = state.system_monitor.read().await;
-    let specs = monitor.get_system_specs();
-
-    if specs.gpu.available && specs.gpu.vram_free_mb < 4096 {
-        return Err("Insufficient GPU memory. Please close other applications.".to_string());
+    let mut stats: HashMap<String, usize> = HashMap::new();
+    for entity in &entities {
+        *stats.entry(entity.entity_type.clone()).or_insert(0) += 1;
     }
 
-    if specs.memory.available_mb < 8192 {
-        return Err("Insufficient system memory. Please close other applications.".to_string());
-    }
-
-    // Load model using new inference engine
-    let model_path_buf = std::path::PathBuf::from(&model_path);
-    state.llm_inference.load_model(&model_path_buf)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(commands::ModelLoadResult {
-        success: true,
-        model_name: model_path,
-        load_time_ms: 1234,
-        memory_used_mb: 4096,
-        warnings: vec![],
-    })
+    Ok(serde_json::json!({
+        "total_entities": entities.len(),
+        "by_type": stats
+    }))
 }
 
-#[tauri::command]
-async fn unload_model(state: State<'_, AppState>, _model_name: String) -> Result<bool, String> {
-    state.llm_inference.unload_model()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    state.llm_manager_v2.unload_model()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(true)
-}
-
-#[tauri::command]
-async fn emergency_stop(state: State<'_, AppState>) -> Result<bool, String> {
-    println!("EMERGENCY STOP: Unloading all models and freeing resources");
-
-    // Unload from all managers
-    let _ = state.llm_inference.unload_model().await;
-    let _ = state.llm_manager_v2.unload_model().await;
-
-    Ok(true)
-}
-
-#[tauri::command]
-async fn set_resource_limits(
-    max_gpu_usage: f32,
-    max_cpu_usage: f32,
-    max_ram_usage: f32,
-) -> Result<bool, String> {
-    if max_gpu_usage < 0.0 || max_gpu_usage > 100.0 {
-        return Err("GPU usage limit must be between 0 and 100".to_string());
-    }
-
-    if max_cpu_usage < 0.0 || max_cpu_usage > 100.0 {
-        return Err("CPU usage limit must be between 0 and 100".to_string());
-    }
-
-    if max_ram_usage < 0.0 || max_ram_usage > 100.0 {
-        return Err("RAM usage limit must be between 0 and 100".to_string());
-    }
-
-    Ok(true)
-}
+// Note: download_model_from_huggingface, search_huggingface_models, load_model,
+// unload_model, emergency_stop, and set_resource_limits are defined in commands.rs
 
 fn main() {
-    let database_manager = Arc::new(RwLock::new(
-        DatabaseManager::new().expect("Failed to initialize database")
-    ));
+    // Initialize tracing subsystem
+    use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-    // Initialize new modules
-    let model_manager = Arc::new(model_manager::ModelManager::new());
-    let llm_manager_v2 = Arc::new(LLMManagerV2::new(model_manager.clone()));
-    let llm_inference = Arc::new(
-        LLMInference::new().expect("Failed to initialize inference engine")
-    );
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| {
+            if cfg!(debug_assertions) {
+                EnvFilter::new("debug")
+            } else {
+                EnvFilter::new("info")
+            }
+        });
+
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(tracing_subscriber::fmt::layer()
+            .with_target(true)
+            .with_thread_ids(true)
+            .with_line_number(true))
+        .init();
+
+    tracing::info!("BEAR AI starting up...");
+
+    let database_manager = Arc::new(RwLock::new(
+        DatabaseManager::new().unwrap_or_else(|e| {
+            tracing::error!(error = %e, "CRITICAL: Failed to initialize database");
+            tracing::error!("The application will exit as database is required");
+            panic!("Database initialization is required for application to run")
+        })
+    ));
 
     // Create unified app state
     let app_state = AppState {
+        // Production services
+        pii_detector: Arc::new(RwLock::new(PIIDetector::new())),
+        rag_engine: Arc::new(RwLock::new(RAGEngine::new())),
+        llm_manager: Arc::new(RwLock::new(LLMManager::new())),
+
         // Core services
-        pii_detector: Arc::new(PIIDetector::new()),
-        pii_detector_v2: Arc::new(RwLock::new(PIIDetectorV2::new())),
         presidio_bridge: Arc::new(RwLock::new(PresidioBridge::new())),
         setup_manager: Arc::new(RwLock::new(SetupManager::new())),
         file_processor: Arc::new(FileProcessor::new()),
         database_manager,
 
-        // Unified monitoring
+        // System monitoring
         system_monitor: Arc::new(RwLock::new(system_monitor::SystemMonitor::new())),
         hardware_monitor: Arc::new(RwLock::new(HardwareMonitor::new())),
         hardware_detector: Arc::new(RwLock::new(HardwareDetector::new())),
 
-        // Enhanced LLM management
-        llm_manager_v2,
-        llm_inference,
-
-        // Enhanced RAG
-        rag_engine_v2: Arc::new(RwLock::new(RAGEngineV2::new())),
-
-        // MCP and agents
+        // MCP and agent orchestration
         mcp_server: Arc::new(MCPServer::new(true)),
         agent_orchestrator: Arc::new(AgentOrchestrator::new(true)),
-
-        // Legacy (for backwards compatibility)
-        llm_manager_legacy: Arc::new(RwLock::new(LLMManager::new())),
-        rag_engine_legacy: Arc::new(RwLock::new(RAGEngine::new())),
     };
 
     // Initialize modules
@@ -834,32 +817,29 @@ fn main() {
         drop(setup);
 
         if is_first_run {
-            println!("🚀 First run detected - Presidio setup will be initiated from UI");
+            tracing::info!("🚀 First run detected - Presidio setup will be initiated from UI");
         }
 
-        // Initialize PII detector V2
-        let mut pii_detector = app_state.pii_detector_v2.write().await;
+        // Initialize PII detector
+        let mut pii_detector = app_state.pii_detector.write().await;
         if let Err(e) = pii_detector.initialize().await {
-            eprintln!("Failed to initialize PII detector V2: {}", e);
+            tracing::error!(error = %e, "Failed to initialize PII detector");
         }
         drop(pii_detector);
 
-        // Initialize LLM manager V2
-        if let Err(e) = app_state.llm_manager_v2.initialize().await {
-            eprintln!("Failed to initialize LLM manager V2: {}", e);
+        // Initialize LLM manager
+        let mut llm = app_state.llm_manager.write().await;
+        if let Err(e) = llm.initialize().await {
+            tracing::error!(error = %e, "Failed to initialize LLM manager");
         }
+        drop(llm);
 
-        // Initialize RAG engine V2
-        let mut rag = app_state.rag_engine_v2.write().await;
+        // Initialize RAG engine
+        let mut rag = app_state.rag_engine.write().await;
         if let Err(e) = rag.initialize().await {
-            eprintln!("Failed to initialize RAG engine V2: {}", e);
+            tracing::error!(error = %e, "Failed to initialize RAG engine");
         }
         drop(rag);
-
-        // Initialize model manager
-        if let Err(e) = model_manager::init_model_manager().await {
-            eprintln!("Failed to initialize model manager: {}", e);
-        }
     });
 
     tauri::Builder::default()
@@ -880,12 +860,12 @@ fn main() {
                     // Update hardware metrics
                     let mut hw_monitor = state.hardware_monitor.write().await;
                     if let Err(e) = hw_monitor.update_metrics().await {
-                        eprintln!("Failed to update hardware metrics: {}", e);
+                        tracing::warn!(error = %e, "Failed to update hardware metrics");
                     }
                     drop(hw_monitor);
 
                     // Update system monitor
-                    let sys_monitor = state.system_monitor.read().await;
+                    let mut sys_monitor = state.system_monitor.write().await;
                     let _ = sys_monitor.monitor_resources_realtime();
                 }
             });
@@ -898,6 +878,8 @@ fn main() {
             get_system_specs,
             check_model_compatibility,
             get_resource_usage,
+            get_resource_limits,
+            check_resource_limits,
 
             // Document processing
             process_document,

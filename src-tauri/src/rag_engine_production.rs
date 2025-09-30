@@ -87,11 +87,8 @@ impl RAGEngine {
 
         // Initialize embeddings model
         let model = TextEmbedding::try_new(
-            InitOptions {
-                model_name: EmbeddingModel::BGESmallENV15,
-                show_download_progress: true,
-                ..Default::default()
-            }
+            InitOptions::new(EmbeddingModel::BGESmallENV15)
+                .with_show_download_progress(true)
         )?;
 
         let mut model_lock = self.embeddings_model.write().await;
@@ -111,8 +108,8 @@ impl RAGEngine {
         let chunks = self.chunk_text(content).await;
         let total_chunks = chunks.len();
 
-        let model_lock = self.embeddings_model.read().await;
-        let model = model_lock.as_ref()
+        let mut model_lock = self.embeddings_model.write().await;
+        let model = model_lock.as_mut()
             .ok_or_else(|| anyhow!("Embeddings model not initialized"))?;
 
         let mut documents = self.documents.write().await;
@@ -159,8 +156,8 @@ impl RAGEngine {
         let limit = limit.unwrap_or(config.max_results);
 
         // Generate query embedding
-        let model_lock = self.embeddings_model.read().await;
-        let model = model_lock.as_ref()
+        let mut model_lock = self.embeddings_model.write().await;
+        let model = model_lock.as_mut()
             .ok_or_else(|| anyhow!("Embeddings model not initialized"))?;
 
         let query_embedding = model.embed(vec![query], None)?
@@ -199,8 +196,8 @@ impl RAGEngine {
             }
         }
 
-        // Sort by score
-        scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        // Sort by score, handling NaN values safely
+        scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         scores.truncate(limit);
 
         // Convert to SearchResult
@@ -256,7 +253,7 @@ impl RAGEngine {
             })
             .collect();
 
-        final_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        final_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
         final_results.truncate(limit);
 
         Ok(final_results)
@@ -303,7 +300,7 @@ impl RAGEngine {
             }
         }
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
         results.truncate(limit);
 
         Ok(results)
@@ -340,8 +337,8 @@ impl RAGEngine {
             result.score = (result.score + boost).min(1.0);
         }
 
-        // Re-sort after reranking
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        // Re-sort after reranking, handling NaN values safely
+        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
 
         Ok(results)
     }

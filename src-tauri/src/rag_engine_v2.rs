@@ -115,8 +115,8 @@ impl RAGEngineV2 {
             }
         }
 
-        // Sort by score
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        // Sort by score, handling NaN values safely
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         // Apply reranking if enabled
         if self.reranking_enabled && !results.is_empty() {
@@ -212,8 +212,8 @@ impl RAGEngineV2 {
             result.1 += boost;
         }
 
-        // Re-sort after reranking
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        // Re-sort after reranking, handling NaN values safely
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         Ok(results)
     }

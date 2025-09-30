@@ -1,3 +1,21 @@
+//! # DEPRECATED - DO NOT USE
+//!
+//! This module is deprecated and maintained only for backward compatibility.
+//! Use `pii_detector_production` instead for all new code.
+//!
+//! **Production module:** `pii_detector_production`
+//!
+//! While this v2 implementation has advanced features (NER models, custom recognizers),
+//! the production version provides better real-world performance with Presidio integration
+//! and built-in fallback mechanisms.
+//!
+//! **Migration path:** All code should use `pii_detector_production::PIIDetector`
+
+#![deprecated(
+    since = "1.0.5",
+    note = "Use pii_detector_production instead. This module will be removed in v2.0.0"
+)]
+
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -113,38 +131,45 @@ impl PIIDetectorV2 {
         // High-confidence regex patterns
         regex_patterns.insert(
             "ssn".to_string(),
-            Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap()
+            Regex::new(r"\b\d{3}-\d{2}-\d{4}\b")
+                .expect("CRITICAL: SSN regex pattern is invalid - this should never fail")
         );
 
         regex_patterns.insert(
             "credit_card".to_string(),
-            Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b").unwrap()
+            Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b")
+                .expect("CRITICAL: Credit card regex pattern is invalid - this should never fail")
         );
 
         regex_patterns.insert(
             "email".to_string(),
-            Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap()
+            Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+                .expect("CRITICAL: Email regex pattern is invalid - this should never fail")
         );
 
         regex_patterns.insert(
             "phone".to_string(),
-            Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b").unwrap()
+            Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+                .expect("CRITICAL: Phone regex pattern is invalid - this should never fail")
         );
 
         regex_patterns.insert(
             "ip_address".to_string(),
-            Regex::new(r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b").unwrap()
+            Regex::new(r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b")
+                .expect("CRITICAL: IP address regex pattern is invalid - this should never fail")
         );
 
         // Legal-specific patterns
         regex_patterns.insert(
             "case_number".to_string(),
-            Regex::new(r"\b(?:Case\s*(?:No\.?|Number)?:?\s*)?(\d{2,4}[-\s]?[A-Z]{2,4}[-\s]?\d{3,6})\b").unwrap()
+            Regex::new(r"\b(?:Case\s*(?:No\.?|Number)?:?\s*)?(\d{2,4}[-\s]?[A-Z]{2,4}[-\s]?\d{3,6})\b")
+                .expect("CRITICAL: Case number regex pattern is invalid - this should never fail")
         );
 
         regex_patterns.insert(
             "medical_record".to_string(),
-            Regex::new(r"\b(?:MRN|Medical Record(?:\s*Number)?):?\s*([A-Z0-9]{6,12})\b").unwrap()
+            Regex::new(r"\b(?:MRN|Medical Record(?:\s*Number)?):?\s*([A-Z0-9]{6,12})\b")
+                .expect("CRITICAL: Medical record regex pattern is invalid - this should never fail")
         );
 
         Self {
@@ -271,10 +296,12 @@ impl PIIDetectorV2 {
         let mut entities = Vec::new();
 
         // Common name patterns
-        let name_pattern = Regex::new(r"\b([A-Z][a-z]+ (?:[A-Z]\. )?[A-Z][a-z]+)\b").unwrap();
+        let name_pattern = Regex::new(r"\b([A-Z][a-z]+ (?:[A-Z]\. )?[A-Z][a-z]+)\b")
+            .expect("CRITICAL: Name pattern regex is invalid - this should never fail");
 
         // Title patterns that often precede names
-        let title_pattern = Regex::new(r"\b(?:Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Judge|Attorney|Counselor)\s+([A-Z][a-z]+ ?[A-Z]?[a-z]*)\b").unwrap();
+        let title_pattern = Regex::new(r"\b(?:Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Judge|Attorney|Counselor)\s+([A-Z][a-z]+ ?[A-Z]?[a-z]*)\b")
+            .expect("CRITICAL: Title pattern regex is invalid - this should never fail");
 
         for capture in name_pattern.find_iter(text) {
             let name = capture.as_str();
@@ -314,10 +341,12 @@ impl PIIDetectorV2 {
         // Organization patterns
         let org_suffixes = vec!["Inc", "LLC", "LLP", "Corp", "Corporation", "Company", "Partners", "Group", "Associates", "Firm", "LTD", "Limited"];
         let pattern_str = format!(r"\b([A-Z][A-Za-z&\s]+ (?:{})\b)", org_suffixes.join("|"));
-        let org_pattern = Regex::new(&pattern_str).unwrap();
+        let org_pattern = Regex::new(&pattern_str)
+            .expect("CRITICAL: Organization pattern regex is invalid - this should never fail");
 
         // Legal entity patterns
-        let legal_pattern = Regex::new(r"\b(?:Law (?:Office|Firm) of |The )([A-Z][a-z]+ (?:& )?[A-Z][a-z]+)\b").unwrap();
+        let legal_pattern = Regex::new(r"\b(?:Law (?:Office|Firm) of |The )([A-Z][a-z]+ (?:& )?[A-Z][a-z]+)\b")
+            .expect("CRITICAL: Legal pattern regex is invalid - this should never fail");
 
         for capture in org_pattern.find_iter(text) {
             entities.push(PIIEntity {
@@ -350,10 +379,12 @@ impl PIIDetectorV2 {
         let mut entities = Vec::new();
 
         // US state patterns
-        let state_pattern = Regex::new(r"\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b").unwrap();
+        let state_pattern = Regex::new(r"\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b")
+            .expect("CRITICAL: State pattern regex is invalid - this should never fail");
 
         // City patterns (simplified)
-        let city_pattern = Regex::new(r"\b([A-Z][a-z]+(?: [A-Z][a-z]+)*), ([A-Z]{2})\b").unwrap();
+        let city_pattern = Regex::new(r"\b([A-Z][a-z]+(?: [A-Z][a-z]+)*), ([A-Z]{2})\b")
+            .expect("CRITICAL: City pattern regex is invalid - this should never fail");
 
         for capture in state_pattern.find_iter(text) {
             entities.push(PIIEntity {

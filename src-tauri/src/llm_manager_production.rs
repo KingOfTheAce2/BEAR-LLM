@@ -5,8 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use hf_hub::api::tokio::Api;
-use candle_core::{Device, Tensor};
-use candle_transformers::models::llama::{self, Config as LlamaConfig};
+use candle_core::Device;
 use tokenizers::Tokenizer;
 
 // Production LLM Manager with real model downloading and inference
@@ -94,7 +93,7 @@ impl LLMManager {
             Device::Cpu
         };
 
-        println!("🖥️ Using device: {:?}", device);
+        tracing::info!(device = ?device, "Initialized compute device");
 
         Self {
             models_registry: Arc::new(RwLock::new(HashMap::new())),
@@ -113,13 +112,13 @@ impl LLMManager {
         tokio::fs::create_dir_all(&self.models_dir).await?;
 
         // Load model registry
-        self.load_model_registry().await?;
+        self.load_model_registry().await;
 
         // Scan for already downloaded models
         self.scan_local_models().await?;
 
-        println!("✅ LLM Manager initialized with {} models available",
-                 self.models_registry.read().await.len());
+        let model_count = self.models_registry.read().await.len();
+        tracing::info!(model_count, "LLM Manager initialized successfully");
 
         Ok(())
     }
@@ -197,23 +196,25 @@ impl LLMManager {
 
             if model_dir.exists() {
                 // Check if model file exists
-                let has_model = tokio::fs::read_dir(&model_dir).await
-                    .map(|mut entries| async move {
+                let has_model = match tokio::fs::read_dir(&model_dir).await {
+                    Ok(mut entries) => {
+                        let mut found = false;
                         while let Ok(Some(entry)) = entries.next_entry().await {
                             if let Some(ext) = entry.path().extension() {
                                 if ext == "gguf" || ext == "bin" || ext == "safetensors" {
-                                    return true;
+                                    found = true;
+                                    break;
                                 }
                             }
                         }
-                        false
-                    })
-                    .unwrap_or(async { false })
-                    .await;
+                        found
+                    }
+                    Err(_) => false,
+                };
 
                 if has_model {
                     status.insert(name.clone(), ModelStatus::Downloaded);
-                    println!("📦 Found local model: {}", name);
+                    tracing::info!(model = %name, "Found local model");
                 }
             }
         }
@@ -235,7 +236,7 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Downloading { progress: 0.0 });
         }
 
-        println!("📥 Downloading model: {}", model_name);
+        tracing::info!(model = %model_name, "Starting model download");
 
         // Create model directory
         let model_dir = self.models_dir.join(model_name);
@@ -248,17 +249,18 @@ impl LLMManager {
         // Download model file
         let model_path = model_dir.join(&model_config.model_file);
         if !model_path.exists() {
-            println!("  Downloading: {}", model_config.model_file);
+            tracing::debug!(file = %model_config.model_file, "Downloading model file");
 
             match repo.get(&model_config.model_file).await {
                 Ok(downloaded_path) => {
                     tokio::fs::copy(&downloaded_path, &model_path).await?;
-                    println!("  ✅ Model file downloaded");
+                    tracing::info!(file = %model_config.model_file, "Model file downloaded successfully");
                 }
                 Err(e) => {
                     let mut status = self.model_status.write().await;
                     status.insert(model_name.to_string(),
                                  ModelStatus::Failed(format!("Download failed: {}", e)));
+                    tracing::error!(model = %model_name, error = %e, "Failed to download model");
                     return Err(anyhow!("Failed to download model: {}", e));
                 }
             }
@@ -268,12 +270,12 @@ impl LLMManager {
         if let Some(tokenizer_repo) = &model_config.tokenizer_repo {
             let tokenizer_path = model_dir.join("tokenizer.json");
             if !tokenizer_path.exists() {
-                println!("  Downloading tokenizer...");
+                tracing::debug!(repo = %tokenizer_repo, "Downloading tokenizer");
 
                 let tokenizer_api = api.model(tokenizer_repo.clone());
                 if let Ok(downloaded_path) = tokenizer_api.get("tokenizer.json").await {
                     tokio::fs::copy(&downloaded_path, &tokenizer_path).await?;
-                    println!("  ✅ Tokenizer downloaded");
+                    tracing::info!("Tokenizer downloaded successfully");
                 }
 
                 // Also try to get tokenizer config
@@ -290,7 +292,7 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Downloaded);
         }
 
-        println!("✅ Model '{}' downloaded successfully", model_name);
+        tracing::info!(model = %model_name, "Model downloaded successfully");
 
         Ok(())
     }
@@ -311,7 +313,7 @@ impl LLMManager {
                 return Err(anyhow!("Model '{}' is already loading", model_name));
             }
             ModelStatus::Loaded => {
-                println!("ℹ️ Model '{}' is already loaded", model_name);
+                tracing::debug!(model = %model_name, "Model already loaded");
                 return Ok(());
             }
             _ => {}
@@ -323,7 +325,7 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Loading);
         }
 
-        println!("🔄 Loading model: {}", model_name);
+        tracing::info!(model = %model_name, "Loading model");
 
         // Load tokenizer
         let model_dir = self.models_dir.join(model_name);
@@ -334,10 +336,10 @@ impl LLMManager {
                 Ok(tokenizer) => {
                     let mut tokenizer_lock = self.tokenizer.write().await;
                     *tokenizer_lock = Some(tokenizer);
-                    println!("  ✅ Tokenizer loaded");
+                    tracing::info!("Tokenizer loaded successfully");
                 }
                 Err(e) => {
-                    println!("  ⚠️ Failed to load tokenizer: {}", e);
+                    tracing::warn!(error = %e, "Failed to load tokenizer");
                 }
             }
         }
@@ -357,7 +359,7 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Loaded);
         }
 
-        println!("✅ Model '{}' loaded successfully", model_name);
+        tracing::info!(model = %model_name, "Model loaded successfully");
 
         Ok(())
     }
@@ -391,8 +393,10 @@ impl LLMManager {
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
         let config = config.unwrap_or_else(|| {
-            futures::executor::block_on(async {
-                self.generation_config.read().await.clone()
+            tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    self.generation_config.read().await.clone()
+                })
             })
         });
 
@@ -479,7 +483,7 @@ impl LLMManager {
         if let Some(model_name) = active.as_ref() {
             let mut status = self.model_status.write().await;
             status.insert(model_name.clone(), ModelStatus::Downloaded);
-            println!("✅ Model '{}' unloaded", model_name);
+            tracing::info!(model = %model_name, "Model unloaded");
         }
 
         *active = None;
@@ -526,7 +530,7 @@ impl LLMManager {
         let mut status = self.model_status.write().await;
         status.insert(model_name.to_string(), ModelStatus::NotDownloaded);
 
-        println!("✅ Model '{}' deleted", model_name);
+        tracing::info!(model = %model_name, "Model deleted");
 
         Ok(())
     }

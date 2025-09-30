@@ -1,6 +1,7 @@
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { ask, message } from '@tauri-apps/plugin-dialog';
+import { logger } from './logger';
 
 export interface UpdateInfo {
   version: string;
@@ -10,11 +11,11 @@ export interface UpdateInfo {
 
 export async function checkForUpdates(silent = false): Promise<UpdateInfo | null> {
   try {
-    console.log('Checking for updates...');
+    logger.info('Checking for updates...', { silent });
     const update = await check();
 
     if (update?.available) {
-      console.log(`Update available: ${update.version}`);
+      logger.info('Update available', { version: update.version });
 
       const updateInfo: UpdateInfo = {
         version: update.version,
@@ -40,7 +41,7 @@ export async function checkForUpdates(silent = false): Promise<UpdateInfo | null
 
       return updateInfo;
     } else {
-      console.log('Application is up to date');
+      logger.info('Application is up to date');
       if (!silent) {
         await message('BEAR AI is up to date!', {
           title: 'No Updates',
@@ -50,7 +51,7 @@ export async function checkForUpdates(silent = false): Promise<UpdateInfo | null
       return null;
     }
   } catch (error) {
-    console.error('Update check failed:', error);
+    logger.error('Update check failed', error, { silent });
     if (!silent) {
       await message(`Failed to check for updates: ${error}`, {
         title: 'Update Check Failed',
@@ -63,7 +64,7 @@ export async function checkForUpdates(silent = false): Promise<UpdateInfo | null
 
 async function installUpdate(update: any) {
   try {
-    console.log('Starting download and install...');
+    logger.info('Starting download and install...', { version: update.version });
 
     // Show progress message
     await message('Downloading update... Please wait.', {
@@ -77,7 +78,7 @@ async function installUpdate(update: any) {
     // Relaunch the application
     await relaunch();
   } catch (error) {
-    console.error('Failed to install update:', error);
+    logger.error('Failed to install update', error);
     await message(`Failed to install update: ${error}`, {
       title: 'Update Failed',
       kind: 'error'

@@ -1,3 +1,38 @@
+//! # Production PII Detector - Single Source of Truth
+//!
+//! This is the **ONLY** PII detector module that should be used in production.
+//! All other PII detector modules (pii_detector.rs, pii_detector_v2.rs) are deprecated.
+//!
+//! ## Features
+//! - **Presidio Integration**: Enterprise-grade PII detection when Python+Presidio available
+//! - **Built-in Fallback**: Comprehensive regex-based detection for reliability
+//! - **Luhn Validation**: Credit card number validation using Luhn algorithm
+//! - **Context Enhancement**: Boost confidence based on surrounding text
+//! - **Async Operations**: Full async/await support for non-blocking detection
+//! - **Custom Patterns**: Support for adding domain-specific PII patterns
+//!
+//! ## Usage
+//! ```rust,no_run
+//! use pii_detector_production::PIIDetector;
+//!
+//! let detector = PIIDetector::new();
+//! detector.initialize().await?;
+//! let entities = detector.detect_pii(text).await?;
+//! let redacted = detector.redact_pii(text).await?;
+//! ```
+//!
+//! ## Detection Capabilities
+//! - Social Security Numbers (SSN)
+//! - Credit Cards (with Luhn validation)
+//! - Email addresses
+//! - Phone numbers
+//! - IP addresses
+//! - Case numbers (legal documents)
+//! - Medical record numbers
+//! - Person names (with context awareness)
+//! - Organizations (companies, law firms)
+//! - Custom patterns (configurable)
+
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,22 +43,30 @@ use tokio::sync::RwLock;
 use tokio::process::Command as AsyncCommand;
 use std::path::PathBuf;
 
-// Production PII Detector with Presidio integration and built-in fallback
-// This is the single source of truth for PII detection in BEAR AI
-
 lazy_static! {
     // Compiled regex patterns for performance
-    static ref SSN_PATTERN: Regex = Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap();
-    static ref CREDIT_CARD_PATTERN: Regex = Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b").unwrap();
-    static ref EMAIL_PATTERN: Regex = Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap();
-    static ref PHONE_PATTERN: Regex = Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b").unwrap();
-    static ref IP_PATTERN: Regex = Regex::new(r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b").unwrap();
-    static ref CASE_NUMBER_PATTERN: Regex = Regex::new(r"\b(?:Case\s*(?:No\.?|Number)?:?\s*)?(\d{2,4}[-\s]?[A-Z]{2,4}[-\s]?\d{3,6})\b").unwrap();
-    static ref MEDICAL_RECORD_PATTERN: Regex = Regex::new(r"\b(?:MRN|Medical Record(?:\s*Number)?):?\s*([A-Z0-9]{6,12})\b").unwrap();
-    static ref NAME_PATTERN: Regex = Regex::new(r"\b([A-Z][a-z]+ (?:[A-Z]\. )?[A-Z][a-z]+)\b").unwrap();
-    static ref TITLE_NAME_PATTERN: Regex = Regex::new(r"\b(?:Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Judge|Attorney|Counselor)\s+([A-Z][a-z]+ ?[A-Z]?[a-z]*)\b").unwrap();
-    static ref ORG_PATTERN: Regex = Regex::new(r"\b([A-Z][A-Za-z&\s]+ (?:Inc|LLC|LLP|Corp|Corporation|Company|Partners|Group|Associates|Firm|LTD|Limited))\b").unwrap();
-    static ref LEGAL_ORG_PATTERN: Regex = Regex::new(r"\b(?:Law (?:Office|Firm) of |The )([A-Z][a-z]+ (?:& )?[A-Z][a-z]+)\b").unwrap();
+    static ref SSN_PATTERN: Regex = Regex::new(r"\b\d{3}-\d{2}-\d{4}\b")
+        .expect("CRITICAL: SSN pattern regex is invalid - this should never fail");
+    static ref CREDIT_CARD_PATTERN: Regex = Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b")
+        .expect("CRITICAL: Credit card pattern regex is invalid - this should never fail");
+    static ref EMAIL_PATTERN: Regex = Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+        .expect("CRITICAL: Email pattern regex is invalid - this should never fail");
+    static ref PHONE_PATTERN: Regex = Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+        .expect("CRITICAL: Phone pattern regex is invalid - this should never fail");
+    static ref IP_PATTERN: Regex = Regex::new(r"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b")
+        .expect("CRITICAL: IP pattern regex is invalid - this should never fail");
+    static ref CASE_NUMBER_PATTERN: Regex = Regex::new(r"\b(?:Case\s*(?:No\.?|Number)?:?\s*)?(\d{2,4}[-\s]?[A-Z]{2,4}[-\s]?\d{3,6})\b")
+        .expect("CRITICAL: Case number pattern regex is invalid - this should never fail");
+    static ref MEDICAL_RECORD_PATTERN: Regex = Regex::new(r"\b(?:MRN|Medical Record(?:\s*Number)?):?\s*([A-Z0-9]{6,12})\b")
+        .expect("CRITICAL: Medical record pattern regex is invalid - this should never fail");
+    static ref NAME_PATTERN: Regex = Regex::new(r"\b([A-Z][a-z]+ (?:[A-Z]\. )?[A-Z][a-z]+)\b")
+        .expect("CRITICAL: Name pattern regex is invalid - this should never fail");
+    static ref TITLE_NAME_PATTERN: Regex = Regex::new(r"\b(?:Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Judge|Attorney|Counselor)\s+([A-Z][a-z]+ ?[A-Z]?[a-z]*)\b")
+        .expect("CRITICAL: Title name pattern regex is invalid - this should never fail");
+    static ref ORG_PATTERN: Regex = Regex::new(r"\b([A-Z][A-Za-z&\s]+ (?:Inc|LLC|LLP|Corp|Corporation|Company|Partners|Group|Associates|Firm|LTD|Limited))\b")
+        .expect("CRITICAL: Organization pattern regex is invalid - this should never fail");
+    static ref LEGAL_ORG_PATTERN: Regex = Regex::new(r"\b(?:Law (?:Office|Firm) of |The )([A-Z][a-z]+ (?:& )?[A-Z][a-z]+)\b")
+        .expect("CRITICAL: Legal organization pattern regex is invalid - this should never fail");
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -421,10 +464,10 @@ print(json.dumps(entities))
     }
 
     fn deduplicate_and_filter(&self, mut entities: Vec<PIIEntity>, threshold: f32) -> Vec<PIIEntity> {
-        // Sort by position and confidence
+        // Sort by position and confidence (handle NaN values safely)
         entities.sort_by(|a, b| {
             a.start.cmp(&b.start)
-                .then(b.confidence.partial_cmp(&a.confidence).unwrap())
+                .then(b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal))
         });
 
         let mut filtered = Vec::new();

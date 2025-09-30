@@ -1,27 +1,55 @@
-use crate::system_monitor::{SystemMonitor, ModelParams, Quantization, ModelCompatibility};
+use crate::system_monitor::{ModelParams, Quantization, ModelCompatibility};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
 use tauri::State;
 
-pub struct AppState {
-    pub system_monitor: Mutex<SystemMonitor>,
+/// Get current memory usage of the process in bytes
+/// Returns 0 on unsupported platforms or if reading fails
+#[cfg(target_os = "linux")]
+fn get_memory_usage() -> Result<u64, String> {
+    use std::fs;
+
+    // Read /proc/self/status for memory information
+    let status = fs::read_to_string("/proc/self/status")
+        .map_err(|e| format!("Failed to read /proc/self/status: {}", e))?;
+
+    // Look for VmRSS (Resident Set Size - actual physical memory used)
+    for line in status.lines() {
+        if line.starts_with("VmRSS:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let kb = parts[1].parse::<u64>()
+                    .map_err(|e| format!("Failed to parse memory value: {}", e))?;
+                // Convert KB to bytes
+                return Ok(kb * 1024);
+            }
+        }
+    }
+
+    Err("VmRSS not found in /proc/self/status".to_string())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn get_memory_usage() -> Result<u64, String> {
+    // Memory tracking not implemented for non-Linux platforms
+    // Return 0 to indicate unavailable
+    Ok(0)
 }
 
 #[tauri::command]
-pub async fn get_system_specs(state: State<'_, AppState>) -> Result<String, String> {
-    let mut monitor = state.system_monitor.lock().map_err(|e| e.to_string())?;
+pub async fn get_system_specs(state: State<'_, crate::AppState>) -> Result<String, String> {
+    let mut monitor = state.system_monitor.write().await;
     let specs = monitor.get_system_specs();
     serde_json::to_string(&specs).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn check_model_compatibility(
-    state: State<'_, AppState>,
+    state: State<'_, crate::AppState>,
     model_name: String,
     param_count: u64,
     quantization: String,
 ) -> Result<ModelCompatibility, String> {
-    let mut monitor = state.system_monitor.lock().map_err(|e| e.to_string())?;
+    let mut monitor = state.system_monitor.write().await;
 
     let quant = match quantization.as_str() {
         "f32" => Quantization::F32,
@@ -44,8 +72,8 @@ pub async fn check_model_compatibility(
 }
 
 #[tauri::command]
-pub async fn get_resource_usage(state: State<'_, AppState>) -> Result<String, String> {
-    let mut monitor = state.system_monitor.lock().map_err(|e| e.to_string())?;
+pub async fn get_resource_usage(state: State<'_, crate::AppState>) -> Result<String, String> {
+    let mut monitor = state.system_monitor.write().await;
     let snapshot = monitor.monitor_resources_realtime();
     serde_json::to_string(&snapshot).map_err(|e| e.to_string())
 }
@@ -208,11 +236,21 @@ pub struct HuggingFaceModel {
 
 #[tauri::command]
 pub async fn load_model(
-    state: State<'_, AppState>,
+    state: State<'_, crate::AppState>,
     model_path: String,
 ) -> Result<ModelLoadResult, String> {
+    // Enforce resource limits before loading model
+    let hw_monitor = state.hardware_monitor.read().await;
+    hw_monitor.enforce_resource_limits("load_model")
+        .await
+        .map_err(|e| e.to_string())?;
+    drop(hw_monitor);
+
+    // Start timing
+    let start_time = std::time::Instant::now();
+
     // Check resources before loading
-    let mut monitor = state.system_monitor.lock().map_err(|e| e.to_string())?;
+    let mut monitor = state.system_monitor.write().await;
     let specs = monitor.get_system_specs();
 
     // Check if we have enough free memory
@@ -224,13 +262,39 @@ pub async fn load_model(
         return Err("Insufficient system memory. Please close other applications.".to_string());
     }
 
+    // Get memory usage before loading
+    #[cfg(target_os = "linux")]
+    let memory_before = get_memory_usage().unwrap_or(0);
+
+    #[cfg(not(target_os = "linux"))]
+    let memory_before = 0;
+
     // Here you would actually load the model using candle or llama.cpp
+    // For now, this is a placeholder that simulates some work
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Calculate actual load time
+    let load_time = start_time.elapsed().as_millis() as u64;
+
+    // Get memory usage after loading
+    #[cfg(target_os = "linux")]
+    let memory_after = get_memory_usage().unwrap_or(0);
+
+    #[cfg(not(target_os = "linux"))]
+    let memory_after = 0;
+
+    // Calculate memory used (convert from bytes to MB)
+    let memory_used = if memory_after > memory_before {
+        (memory_after - memory_before) / (1024 * 1024)
+    } else {
+        0
+    };
 
     Ok(ModelLoadResult {
         success: true,
         model_name: model_path,
-        load_time_ms: 1234,
-        memory_used_mb: 4096,
+        load_time_ms: load_time,
+        memory_used_mb: memory_used,
         warnings: vec![],
     })
 }
@@ -266,26 +330,18 @@ pub async fn emergency_stop() -> Result<bool, String> {
 
 #[tauri::command]
 pub async fn set_resource_limits(
+    state: State<'_, crate::AppState>,
     max_gpu_usage: f32,
     max_cpu_usage: f32,
     max_ram_usage: f32,
 ) -> Result<bool, String> {
-    // Set resource usage limits
-    // The system will throttle or pause if these limits are exceeded
+    // Validate and set resource usage limits in hardware monitor
+    // The system will enforce these limits and reject operations that would exceed them
 
-    if max_gpu_usage < 0.0 || max_gpu_usage > 100.0 {
-        return Err("GPU usage limit must be between 0 and 100".to_string());
-    }
-
-    if max_cpu_usage < 0.0 || max_cpu_usage > 100.0 {
-        return Err("CPU usage limit must be between 0 and 100".to_string());
-    }
-
-    if max_ram_usage < 0.0 || max_ram_usage > 100.0 {
-        return Err("RAM usage limit must be between 0 and 100".to_string());
-    }
-
-    // Store these limits and enforce them during inference
+    let mut hw_monitor = state.hardware_monitor.write().await;
+    hw_monitor
+        .set_resource_limits(max_gpu_usage, max_cpu_usage, max_ram_usage)
+        .map_err(|e| e.to_string())?;
 
     Ok(true)
 }

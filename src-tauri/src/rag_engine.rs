@@ -86,7 +86,7 @@ impl RAGEngine {
             results.push((id.clone(), score, doc.clone()));
         }
 
-        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         results.truncate(limit);
 
         let search_results: Vec<JsonValue> = results
@@ -169,7 +169,7 @@ impl RAGEngine {
         reranked.sort_by(|a, b| {
             let score_a = a["score"].as_f64().unwrap_or(0.0);
             let score_b = b["score"].as_f64().unwrap_or(0.0);
-            score_b.partial_cmp(&score_a).unwrap()
+            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         Ok(reranked)

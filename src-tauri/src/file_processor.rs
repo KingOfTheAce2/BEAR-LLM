@@ -4,6 +4,8 @@ use tokio::fs;
 use serde_json::Value as JsonValue;
 use calamine::{Reader, Xlsx, Xls, open_workbook, Data};
 use docx_rs::*;
+use encoding_rs::{Encoding, WINDOWS_1252, UTF_8};
+use std::io::Read;
 
 pub struct FileProcessor {
     max_file_size: usize,
@@ -98,8 +100,20 @@ impl FileProcessor {
                 }
             }
         } else {
-            // DOC files require more complex parsing - use basic extraction for now
-            Ok(format!("Word document content from: {} (Legacy DOC format support limited)", file_path))
+            // Legacy DOC format - use binary text extraction
+            match self.extract_doc_text(file_path).await {
+                Ok(text) => {
+                    if text.is_empty() || text.trim().is_empty() {
+                        Ok(format!("Word document from: {} (No readable text content found)", file_path))
+                    } else {
+                        Ok(text)
+                    }
+                },
+                Err(e) => {
+                    println!("DOC parsing failed: {}", e);
+                    Ok(format!("Word document from: {} (Legacy DOC format - text extraction error: {})", file_path, e))
+                }
+            }
         }
     }
 
@@ -128,7 +142,20 @@ impl FileProcessor {
                 }
             }
         } else {
-            Ok(format!("PowerPoint presentation content from: {} (Legacy PPT format support limited)", file_path))
+            // Legacy PPT format - use binary text extraction
+            match self.extract_ppt_text(file_path).await {
+                Ok(text) => {
+                    if text.is_empty() || text.trim().is_empty() {
+                        Ok(format!("PowerPoint presentation from: {} (No readable text content found)", file_path))
+                    } else {
+                        Ok(text)
+                    }
+                },
+                Err(e) => {
+                    println!("PPT parsing failed: {}", e);
+                    Ok(format!("PowerPoint presentation from: {} (Legacy PPT format - text extraction error: {})", file_path, e))
+                }
+            }
         }
     }
 
@@ -364,5 +391,277 @@ impl FileProcessor {
         }
 
         extracted_text.join(" ")
+    }
+
+    // Legacy DOC format text extraction
+    async fn extract_doc_text(&self, file_path: &str) -> Result<String> {
+        // Read the file as binary
+        let bytes = std::fs::read(file_path)?;
+
+        // Try to parse as OLE compound file format
+        match self.extract_doc_from_ole(&bytes) {
+            Ok(text) => {
+                if !text.is_empty() {
+                    return Ok(text);
+                }
+            }
+            Err(e) => {
+                println!("OLE parsing failed, trying binary extraction: {}", e);
+            }
+        }
+
+        // Fallback: extract printable text from binary data
+        let text = self.extract_text_from_binary(&bytes);
+        Ok(text)
+    }
+
+    // Extract text from OLE compound file (DOC format)
+    fn extract_doc_from_ole(&self, bytes: &[u8]) -> Result<String> {
+        use std::io::Cursor;
+
+        let cursor = Cursor::new(bytes);
+        let mut comp = cfb::CompoundFile::open(cursor)?;
+
+        // Try to read the WordDocument stream
+        if let Ok(mut stream) = comp.open_stream("/WordDocument") {
+            let mut buffer = Vec::new();
+            stream.read_to_end(&mut buffer)?;
+
+            // Extract text from the Word binary format
+            // This is a simplified extraction - Word binary format is complex
+            let text = self.extract_text_from_word_stream(&buffer);
+            return Ok(text);
+        }
+
+        Err(anyhow!("WordDocument stream not found"))
+    }
+
+    // Extract text from Word binary stream
+    fn extract_text_from_word_stream(&self, data: &[u8]) -> String {
+        // Word 97-2003 binary format is complex with many structures
+        // This is a basic extraction that looks for printable text sequences
+        let mut text = Vec::new();
+        let mut current_word = Vec::new();
+
+        for &byte in data {
+            // Look for printable ASCII and common extended characters
+            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+                current_word.push(byte);
+            } else {
+                // Non-printable character - end current word
+                if current_word.len() >= 3 {
+                    // Only keep sequences of at least 3 characters
+                    if let Ok(word) = String::from_utf8(current_word.clone()) {
+                        let cleaned = word.trim();
+                        if !cleaned.is_empty() {
+                            text.push(cleaned.to_string());
+                        }
+                    }
+                }
+                current_word.clear();
+            }
+        }
+
+        // Don't forget the last word
+        if current_word.len() >= 3 {
+            if let Ok(word) = String::from_utf8(current_word) {
+                let cleaned = word.trim();
+                if !cleaned.is_empty() {
+                    text.push(cleaned.to_string());
+                }
+            }
+        }
+
+        text.join(" ")
+    }
+
+    // Legacy PPT format text extraction
+    async fn extract_ppt_text(&self, file_path: &str) -> Result<String> {
+        // Read the file as binary
+        let bytes = std::fs::read(file_path)?;
+
+        // Try to parse as OLE compound file format
+        match self.extract_ppt_from_ole(&bytes) {
+            Ok(text) => {
+                if !text.is_empty() {
+                    return Ok(text);
+                }
+            }
+            Err(e) => {
+                println!("OLE parsing failed, trying binary extraction: {}", e);
+            }
+        }
+
+        // Fallback: extract printable text from binary data
+        let text = self.extract_text_from_binary(&bytes);
+        Ok(text)
+    }
+
+    // Extract text from OLE compound file (PPT format)
+    fn extract_ppt_from_ole(&self, bytes: &[u8]) -> Result<String> {
+        use std::io::Cursor;
+
+        let cursor = Cursor::new(bytes);
+        let mut comp = cfb::CompoundFile::open(cursor)?;
+
+        let mut all_text = Vec::new();
+
+        // Try to read PowerPoint Document stream
+        if let Ok(mut stream) = comp.open_stream("/PowerPoint Document") {
+            let mut buffer = Vec::new();
+            stream.read_to_end(&mut buffer)?;
+
+            let text = self.extract_text_from_ppt_stream(&buffer);
+            if !text.is_empty() {
+                all_text.push(text);
+            }
+        }
+
+        // Try to read Current User stream
+        if let Ok(mut stream) = comp.open_stream("/Current User") {
+            let mut buffer = Vec::new();
+            stream.read_to_end(&mut buffer)?;
+
+            let text = self.extract_text_from_ppt_stream(&buffer);
+            if !text.is_empty() {
+                all_text.push(text);
+            }
+        }
+
+        if all_text.is_empty() {
+            return Err(anyhow!("No readable text streams found"));
+        }
+
+        Ok(all_text.join("\n\n"))
+    }
+
+    // Extract text from PowerPoint binary stream
+    fn extract_text_from_ppt_stream(&self, data: &[u8]) -> String {
+        // PowerPoint binary format stores text in various record types
+        // This is a simplified extraction that looks for text patterns
+        let mut text = Vec::new();
+        let mut current_word = Vec::new();
+        let mut in_text_sequence = false;
+        let mut char_count = 0;
+
+        for &byte in data {
+            // Look for printable ASCII and Unicode characters
+            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+                current_word.push(byte);
+                char_count += 1;
+                in_text_sequence = true;
+            } else {
+                if in_text_sequence && current_word.len() >= 3 {
+                    // Only keep sequences of at least 3 characters
+                    if let Ok(word) = String::from_utf8(current_word.clone()) {
+                        let cleaned = word.trim();
+                        if !cleaned.is_empty() && !cleaned.chars().all(|c| c.is_ascii_punctuation()) {
+                            text.push(cleaned.to_string());
+                        }
+                    }
+                }
+                current_word.clear();
+
+                // Reset text sequence flag after multiple non-printable bytes
+                if char_count > 0 {
+                    char_count = 0;
+                } else {
+                    in_text_sequence = false;
+                }
+            }
+        }
+
+        // Don't forget the last word
+        if in_text_sequence && current_word.len() >= 3 {
+            if let Ok(word) = String::from_utf8(current_word) {
+                let cleaned = word.trim();
+                if !cleaned.is_empty() && !cleaned.chars().all(|c| c.is_ascii_punctuation()) {
+                    text.push(cleaned.to_string());
+                }
+            }
+        }
+
+        text.join(" ")
+    }
+
+    // Generic binary text extraction with encoding detection
+    fn extract_text_from_binary(&self, bytes: &[u8]) -> String {
+        // Try different encodings
+        let encodings: Vec<&'static Encoding> = vec![
+            UTF_8,
+            WINDOWS_1252,
+        ];
+
+        for encoding in encodings {
+            if let Some(text) = self.try_decode_binary(bytes, encoding) {
+                if !text.is_empty() {
+                    return text;
+                }
+            }
+        }
+
+        // Last resort: extract ASCII-like sequences
+        self.extract_ascii_sequences(bytes)
+    }
+
+    // Try to decode binary data with a specific encoding
+    fn try_decode_binary(&self, bytes: &[u8], encoding: &'static Encoding) -> Option<String> {
+        let (decoded, _, had_errors) = encoding.decode(bytes);
+
+        if !had_errors {
+            let text: String = decoded
+                .chars()
+                .filter(|c| c.is_ascii_graphic() || c.is_whitespace())
+                .collect();
+
+            let words: Vec<&str> = text
+                .split_whitespace()
+                .filter(|word| word.len() >= 3)
+                .collect();
+
+            if words.len() > 10 {
+                return Some(words.join(" "));
+            }
+        }
+
+        None
+    }
+
+    // Extract ASCII-like character sequences from binary data
+    fn extract_ascii_sequences(&self, bytes: &[u8]) -> String {
+        let mut text = Vec::new();
+        let mut current_sequence = Vec::new();
+
+        for &byte in bytes {
+            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+                current_sequence.push(byte);
+            } else {
+                if current_sequence.len() >= 4 {
+                    if let Ok(s) = String::from_utf8(current_sequence.clone()) {
+                        let cleaned = s.trim();
+                        if !cleaned.is_empty() &&
+                           !cleaned.chars().all(|c| c.is_ascii_punctuation()) &&
+                           cleaned.chars().any(|c| c.is_alphabetic()) {
+                            text.push(cleaned.to_string());
+                        }
+                    }
+                }
+                current_sequence.clear();
+            }
+        }
+
+        // Process the last sequence
+        if current_sequence.len() >= 4 {
+            if let Ok(s) = String::from_utf8(current_sequence) {
+                let cleaned = s.trim();
+                if !cleaned.is_empty() &&
+                   !cleaned.chars().all(|c| c.is_ascii_punctuation()) &&
+                   cleaned.chars().any(|c| c.is_alphabetic()) {
+                    text.push(cleaned.to_string());
+                }
+            }
+        }
+
+        text.join(" ")
     }
 }

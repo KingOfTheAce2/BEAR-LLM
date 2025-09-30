@@ -1,22 +1,55 @@
+//! # DEPRECATED - DO NOT USE
+//!
+//! This module is deprecated and maintained only for backward compatibility.
+//! Use `pii_detector_production` instead for all new code.
+//!
+//! **Production module:** `pii_detector_production`
+//!
+//! This legacy implementation lacks:
+//! - Presidio integration
+//! - Advanced context enhancement
+//! - Credit card Luhn validation
+//! - Production-grade error handling
+//!
+//! **Migration path:** All code should use `pii_detector_production::PIIDetector`
+
+#![deprecated(
+    since = "1.0.5",
+    note = "Use pii_detector_production instead. This module will be removed in v2.0.0"
+)]
+
 use regex::Regex;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 use anyhow::Result;
 
 lazy_static! {
-    static ref SSN_REGEX: Regex = Regex::new(r"\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b").unwrap();
-    static ref EMAIL_REGEX: Regex = Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap();
-    static ref PHONE_REGEX: Regex = Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b").unwrap();
-    static ref CREDIT_CARD_REGEX: Regex = Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b").unwrap();
-    static ref IP_REGEX: Regex = Regex::new(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b").unwrap();
-    static ref DATE_OF_BIRTH_REGEX: Regex = Regex::new(r"\b(?:0[1-9]|1[0-2])[/\-](?:0[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2}\b").unwrap();
-    static ref PASSPORT_REGEX: Regex = Regex::new(r"\b[A-Z]{1,2}\d{6,9}\b").unwrap();
-    static ref DRIVER_LICENSE_REGEX: Regex = Regex::new(r"\b[A-Z]\d{7,12}\b").unwrap();
-    static ref BANK_ACCOUNT_REGEX: Regex = Regex::new(r"\b\d{8,17}\b").unwrap();
-    static ref ADDRESS_REGEX: Regex = Regex::new(r"\b\d+\s+[\w\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Circle|Cir|Plaza|Pl|Way|Parkway|Pkwy)\b").unwrap();
-    static ref CASE_NUMBER_REGEX: Regex = Regex::new(r"\b(?:Case|Docket|Matter)\s*(?:No\.?|Number|#)?\s*:?\s*[A-Z0-9\-]+\b").unwrap();
-    static ref EIN_REGEX: Regex = Regex::new(r"\b\d{2}-\d{7}\b").unwrap();
-    static ref MEDICAL_RECORD_REGEX: Regex = Regex::new(r"\b(?:MRN|Medical Record Number)\s*:?\s*[A-Z0-9]+\b").unwrap();
+    static ref SSN_REGEX: Regex = Regex::new(r"\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b")
+        .expect("CRITICAL: SSN regex pattern is invalid - this should never fail");
+    static ref EMAIL_REGEX: Regex = Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+        .expect("CRITICAL: Email regex pattern is invalid - this should never fail");
+    static ref PHONE_REGEX: Regex = Regex::new(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+        .expect("CRITICAL: Phone regex pattern is invalid - this should never fail");
+    static ref CREDIT_CARD_REGEX: Regex = Regex::new(r"\b(?:\d{4}[-\s]?){3}\d{4}\b")
+        .expect("CRITICAL: Credit card regex pattern is invalid - this should never fail");
+    static ref IP_REGEX: Regex = Regex::new(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+        .expect("CRITICAL: IP address regex pattern is invalid - this should never fail");
+    static ref DATE_OF_BIRTH_REGEX: Regex = Regex::new(r"\b(?:0[1-9]|1[0-2])[/\-](?:0[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2}\b")
+        .expect("CRITICAL: Date of birth regex pattern is invalid - this should never fail");
+    static ref PASSPORT_REGEX: Regex = Regex::new(r"\b[A-Z]{1,2}\d{6,9}\b")
+        .expect("CRITICAL: Passport regex pattern is invalid - this should never fail");
+    static ref DRIVER_LICENSE_REGEX: Regex = Regex::new(r"\b[A-Z]\d{7,12}\b")
+        .expect("CRITICAL: Driver license regex pattern is invalid - this should never fail");
+    static ref BANK_ACCOUNT_REGEX: Regex = Regex::new(r"\b\d{8,17}\b")
+        .expect("CRITICAL: Bank account regex pattern is invalid - this should never fail");
+    static ref ADDRESS_REGEX: Regex = Regex::new(r"\b\d+\s+[\w\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Circle|Cir|Plaza|Pl|Way|Parkway|Pkwy)\b")
+        .expect("CRITICAL: Address regex pattern is invalid - this should never fail");
+    static ref CASE_NUMBER_REGEX: Regex = Regex::new(r"\b(?:Case|Docket|Matter)\s*(?:No\.?|Number|#)?\s*:?\s*[A-Z0-9\-]+\b")
+        .expect("CRITICAL: Case number regex pattern is invalid - this should never fail");
+    static ref EIN_REGEX: Regex = Regex::new(r"\b\d{2}-\d{7}\b")
+        .expect("CRITICAL: EIN regex pattern is invalid - this should never fail");
+    static ref MEDICAL_RECORD_REGEX: Regex = Regex::new(r"\b(?:MRN|Medical Record Number)\s*:?\s*[A-Z0-9]+\b")
+        .expect("CRITICAL: Medical record regex pattern is invalid - this should never fail");
 }
 
 #[allow(dead_code)]
@@ -91,7 +124,8 @@ impl PIIDetector {
             }
         }
 
-        let name_pattern = Regex::new(r"\b[A-Z][a-z]+\s+(?:[A-Z]\.?\s+)?[A-Z][a-z]+\b").unwrap();
+        let name_pattern = Regex::new(r"\b[A-Z][a-z]+\s+(?:[A-Z]\.?\s+)?[A-Z][a-z]+\b")
+            .expect("CRITICAL: Name pattern regex is invalid - this should never fail");
         cleaned = name_pattern.replace_all(&cleaned, |caps: &regex::Captures| {
             let text = caps.get(0).unwrap().as_str();
             if !self.is_common_phrase(text) {

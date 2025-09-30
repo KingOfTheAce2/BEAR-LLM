@@ -13,6 +13,7 @@ import BearLogo from './components/BearLogo';
 import { UpdateNotification } from './components/UpdateNotification';
 import { checkForUpdatesOnStartup } from './utils/updater';
 import SetupWizard from './components/SetupWizard';
+import { logger } from './utils/logger';
 
 function App() {
   const [message, setMessage] = useState('');
@@ -57,7 +58,7 @@ function App() {
           setSetupComplete(true);
         }
       } catch (err) {
-        console.error('Error checking setup status:', err);
+        logger.error('Error checking setup status', err);
         setSetupComplete(true); // Continue anyway
       }
     };

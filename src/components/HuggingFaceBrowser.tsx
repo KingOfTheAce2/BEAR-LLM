@@ -7,6 +7,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, HuggingFaceModel } from '../stores/appStore';
 import FloppyDiskIcon from './FloppyDiskIcon';
+import { logger } from '../utils/logger';
 
 
 interface HuggingFaceBrowserProps {
@@ -150,7 +151,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
 
       setIsSearchingHF(false);
     } catch (error) {
-      console.error('HuggingFace search failed, using local data:', error);
+      logger.warn('HuggingFace search failed, using local data', { error, query });
       // Fallback to sample models on error
       const filtered = sampleHFModels.filter(model =>
         model.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -169,7 +170,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
       updateModelDownloadProgress(model.id, 0);
 
       // Call the actual backend command to download the model
-      console.log('Downloading model:', model.name);
+      logger.info('Downloading model', { modelId: model.id, modelName: model.name });
 
       // Create a models directory in the user's home folder
       const modelPath = `models/${model.id.replace('/', '_')}`;
@@ -179,7 +180,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
         save_path: modelPath  // Changed from modelName to save_path to match backend
       });
 
-      console.log('Model download result:', result);
+      logger.info('Model download result', { result, modelId: model.id });
 
       // Mark as local after successful download
       const updatedModel = { ...model, isLocal: true, isDownloading: false };
@@ -193,7 +194,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
         setLocalModels([...localModels, model.id]);
       }
     } catch (error) {
-      console.error('Failed to download model:', error);
+      logger.error('Failed to download model', error, { modelId: model.id, modelName: model.name });
       alert(`Failed to download model: ${error}`);
       updateModelDownloadProgress(model.id, 0);
     }

@@ -147,7 +147,8 @@ impl LLMManager {
             self.download_model(model_name).await?;
         }
 
-        let model_config = self.models.get(model_name).cloned().unwrap();
+        let model_config = self.models.get(model_name).cloned()
+            .ok_or_else(|| anyhow!("Model configuration not found for: {}", model_name))?;
         let model_file = model_dir.join(&model_config.model_file);
 
         if !model_file.exists() {

@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw, Bug, Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -65,12 +66,13 @@ class ErrorBoundary extends Component<Props, State> {
     };
 
     try {
-      // Log to console (safe for development and debugging)
-      console.group('🚨 React Error Boundary Caught Error');
-      console.error('Error:', error);
-      console.error('Error Info:', errorInfo);
-      console.error('Error Details:', errorDetails);
-      console.groupEnd();
+      // Log using the logger service
+      logger.error('React Error Boundary caught error', error, {
+        componentStack: errorInfo.componentStack,
+        errorId: this.state.errorId,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      });
 
       // Store in localStorage for potential debugging (with size limits)
       const errorLog = {
@@ -85,7 +87,7 @@ class ErrorBoundary extends Component<Props, State> {
         const logs = [errorLog, ...existingLogs].slice(0, 10); // Keep only last 10 errors
         localStorage.setItem('bear_error_logs', JSON.stringify(logs));
       } catch (storageError) {
-        console.warn('Failed to store error log in localStorage:', storageError);
+        logger.warn('Failed to store error log in localStorage', { error: storageError });
       }
 
       // In a real production app, you might want to send to an error reporting service
@@ -93,6 +95,7 @@ class ErrorBoundary extends Component<Props, State> {
       // Example: await fetch('/api/log-error', { method: 'POST', body: JSON.stringify(errorDetails) });
 
     } catch (loggingError) {
+      // Use basic console.error as last resort
       console.error('Failed to log error:', loggingError);
     }
   };
@@ -137,10 +140,9 @@ URL: ${window.location.href}
 
     try {
       await navigator.clipboard.writeText(errorText);
-      // You could show a toast notification here
-      console.log('Error details copied to clipboard');
+      logger.info('Error details copied to clipboard');
     } catch (err) {
-      console.error('Failed to copy error details:', err);
+      logger.warn('Failed to copy error details', { error: err });
       // Fallback: select text in a temporary textarea
       const textarea = document.createElement('textarea');
       textarea.value = errorText;
