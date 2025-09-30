@@ -551,7 +551,17 @@ async fn get_database_stats(
 #[tauri::command]
 async fn check_first_run(state: State<'_, AppState>) -> Result<bool, String> {
     let setup = state.setup_manager.read().await;
-    setup.check_first_run().await.map_err(|e| e.to_string())
+    let is_first = setup.check_first_run().await.map_err(|e| e.to_string())?;
+
+    // Always check Presidio status and warn user
+    let pii_detector = state.pii_detector.read().await;
+    let presidio_available = pii_detector.is_presidio_available().await;
+
+    if !presidio_available {
+        tracing::warn!("⚠️  User starting application without Presidio - privacy protection limited");
+    }
+
+    Ok(is_first)
 }
 
 #[tauri::command]
@@ -586,7 +596,22 @@ async fn run_initial_setup(
 #[tauri::command]
 async fn get_setup_status(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let setup = state.setup_manager.read().await;
-    setup.get_setup_status().await.map_err(|e| e.to_string())
+    let mut status = setup.get_setup_status().await.map_err(|e| e.to_string())?;
+
+    // Add Presidio status to setup info
+    let pii_detector = state.pii_detector.read().await;
+    let presidio_available = pii_detector.is_presidio_available().await;
+
+    if let Some(obj) = status.as_object_mut() {
+        obj.insert("presidio_installed".to_string(), serde_json::json!(presidio_available));
+        if !presidio_available {
+            obj.insert("warning".to_string(), serde_json::json!(
+                "⚠️ Presidio not installed - Using rudimentary PII detection. For enterprise-grade protection, install Microsoft Presidio."
+            ));
+        }
+    }
+
+    Ok(status)
 }
 
 // Presidio-powered PII detection commands
@@ -606,7 +631,7 @@ async fn detect_pii_presidio(
         return Ok(serde_json::json!({
             "entities": entities,
             "engine": "built-in",
-            "warning": "Presidio not installed, using built-in detector"
+            "warning": "⚠️ Presidio not installed - using rudimentary privacy shield with limited accuracy. Install Presidio for enterprise-grade protection."
         }));
     }
 
@@ -625,7 +650,7 @@ async fn detect_pii_presidio(
             Ok(serde_json::json!({
                 "entities": entities,
                 "engine": "built-in",
-                "warning": format!("Presidio error: {}, using built-in detector", e)
+                "warning": format!("⚠️ Presidio error: {}. Using rudimentary built-in detector with limited accuracy.", e)
             }))
         }
     }
@@ -827,8 +852,22 @@ fn main() {
 
         // Initialize PII detector
         let pii_detector = app_state.pii_detector.write().await;
-        if let Err(e) = pii_detector.initialize().await {
-            tracing::error!(error = %e, "Failed to initialize PII detector");
+        match pii_detector.initialize().await {
+            Ok(_) => {
+                // Check if Presidio is available
+                let presidio_available = pii_detector.is_presidio_available().await;
+                if !presidio_available {
+                    tracing::warn!("╔════════════════════════════════════════════════════════════╗");
+                    tracing::warn!("║  WARNING: Presidio Not Installed                          ║");
+                    tracing::warn!("║  Using basic PII detection - limited accuracy             ║");
+                    tracing::warn!("║  Install Presidio for enterprise-grade protection:        ║");
+                    tracing::warn!("║  pip install presidio-analyzer presidio-anonymizer        ║");
+                    tracing::warn!("╚════════════════════════════════════════════════════════════╝");
+                }
+            }
+            Err(e) => {
+                tracing::error!(error = %e, "Failed to initialize PII detector");
+            }
         }
         drop(pii_detector);
 

@@ -144,6 +144,7 @@ impl PIIDetector {
             if let Ok(output) = AsyncCommand::new(cmd)
                 .arg("-c")
                 .arg("import presidio_analyzer, presidio_anonymizer; print('OK')")
+                .no_window()
                 .output()
                 .await
             {
@@ -154,13 +155,19 @@ impl PIIDetector {
                     let mut available = self.presidio_available.write().await;
                     *available = true;
 
-                    println!("✅ Presidio is available for enhanced PII detection");
+                    tracing::info!("✅ Presidio is available for enhanced PII detection");
                     return;
                 }
             }
         }
 
-        println!("ℹ️ Presidio not available, using built-in PII detection");
+        tracing::warn!("⚠️  Presidio not installed - using rudimentary privacy shield");
+        tracing::warn!("⚠️  For enterprise-grade PII protection, install Microsoft Presidio");
+        tracing::warn!("⚠️  Built-in detection has limited accuracy and may miss sensitive data");
+    }
+
+    pub async fn is_presidio_available(&self) -> bool {
+        *self.presidio_available.read().await
     }
 
     pub async fn detect_pii(&self, text: &str) -> Result<Vec<PIIEntity>> {
