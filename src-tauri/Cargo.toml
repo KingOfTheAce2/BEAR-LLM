@@ -1,6 +1,6 @@
 [package]
 name = "bear-ai-llm"
-version = "1.0.6"
+version = "1.0.7"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Legal AI Team"]
 edition = "2021"
@@ -42,10 +42,10 @@ candle-transformers = "0.8"
 tokenizers = "0.21"
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
-# Better embeddings
-fastembed = "5.0"
-# ONNX runtime for NER models
-ort = { version = "2.0.0-rc.10", default-features = false, features = ["download-binaries", "half"] }
+# Better embeddings - Use fastembed with compatible features
+fastembed = { version = "5.0", default-features = false, features = ["online"] }
+# ONNX runtime for NER models - ensure compatible runtime library
+ort = { version = "2.0.0-rc.10", default-features = false, features = ["download-binaries", "half", "load-dynamic"] }
 pdf-extract = "0.7"
 rusqlite = { version = "0.31", features = ["bundled"] }
 calamine = { version = "0.26", features = ["dates"] }

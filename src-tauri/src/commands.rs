@@ -29,6 +29,7 @@ fn get_memory_usage() -> Result<u64, String> {
 }
 
 #[cfg(not(target_os = "linux"))]
+#[allow(dead_code)]
 fn get_memory_usage() -> Result<u64, String> {
     // Memory tracking not implemented for non-Linux platforms
     // Return 0 to indicate unavailable
