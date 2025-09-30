@@ -52,17 +52,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Uploading MSI installer..."
-          gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/msi/*.msi
+          gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/msi/*.msi --clobber || true
           echo "Uploading NSIS EXE installer..."
-          gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/nsis/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          # upload all files produced by tauri bundler
-          for f in src-tauri/target/release/bundle/**/*; do
-            if [ -f "$f" ]; then
-              echo "Uploading $f"
-              gh release upload "${{ github.ref_name }}" "$f" --clobber || true
-            fi
-          done
+          gh release upload ${{ github.ref_name }} src-tauri/target/release/bundle/nsis/*.exe --clobber || true

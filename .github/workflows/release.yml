@@ -42,11 +42,11 @@ jobs:
       - name: Verify dist folder
         run: |
           echo "=== Checking dist folder ==="
-          ls -la dist/
+          dir dist
           echo "=== dist/index.html contents ==="
-          cat dist/index.html
+          type dist\index.html
           echo "=== dist/assets ==="
-          ls -la dist/assets/
+          dir dist\assets
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
