@@ -82,8 +82,27 @@ impl RAGEngine {
     }
 
     pub async fn initialize(&self) -> Result<()> {
-        // Create index directory
+        // Create index directory only
         tokio::fs::create_dir_all(&self.index_path).await?;
+
+        // Load existing index (fast)
+        self.load_index().await?;
+
+        tracing::info!("✅ RAG Engine initialized with {} documents (embeddings will load on first use)",
+                 self.documents.read().await.len());
+
+        Ok(())
+    }
+
+    // Lazy-load embeddings model on first use
+    async fn ensure_embeddings_model(&self) -> Result<()> {
+        let model_lock = self.embeddings_model.read().await;
+        if model_lock.is_some() {
+            return Ok(());
+        }
+        drop(model_lock);
+
+        tracing::info!("📥 Downloading embeddings model (first use only, ~150MB)...");
 
         // Initialize embeddings model
         let model = TextEmbedding::try_new(
@@ -94,16 +113,14 @@ impl RAGEngine {
         let mut model_lock = self.embeddings_model.write().await;
         *model_lock = Some(model);
 
-        // Load existing index
-        self.load_index().await?;
-
-        tracing::info!("✅ RAG Engine initialized with {} documents",
-                 self.documents.read().await.len());
-
+        tracing::info!("✅ Embeddings model ready");
         Ok(())
     }
 
     pub async fn add_document(&self, content: &str, metadata: JsonValue) -> Result<String> {
+        // Ensure embeddings model is loaded (lazy load on first use)
+        self.ensure_embeddings_model().await?;
+
         let doc_id = Uuid::new_v4().to_string();
         let chunks = self.chunk_text(content).await;
         let total_chunks = chunks.len();
@@ -152,6 +169,9 @@ impl RAGEngine {
     }
 
     pub async fn search(&self, query: &str, limit: Option<usize>) -> Result<Vec<SearchResult>> {
+        // Ensure embeddings model is loaded (lazy load on first use)
+        self.ensure_embeddings_model().await?;
+
         let config = self.config.read().await;
         let limit = limit.unwrap_or(config.max_results);
 
