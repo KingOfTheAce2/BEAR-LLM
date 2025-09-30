@@ -73,6 +73,11 @@ jobs:
             See installation guide for details.
           releaseDraft: true
           prerelease: false
+          projectPath: .
+          includeDebug: false
+          includeRelease: true
+          includeUpdaterJson: true
+          updaterJsonKeepUniversal: false
           args: ${{ matrix.args }}
 
       - name: Upload Windows Installer
