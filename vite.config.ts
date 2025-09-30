@@ -27,17 +27,28 @@ export default defineConfig(async () => ({
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
     rollupOptions: {
-      // Tauri modules are provided by the runtime, not bundled
-      external: [
-        '@tauri-apps/api/tauri',
-        '@tauri-apps/api/event',
-        '@tauri-apps/plugin-dialog',
-        '@tauri-apps/plugin-fs',
-        '@tauri-apps/plugin-os',
-        '@tauri-apps/plugin-process',
-        '@tauri-apps/plugin-shell',
-        '@tauri-apps/plugin-updater',
-      ],
+      output: {
+        manualChunks: {
+          // Bundle Tauri core APIs together
+          'tauri-core': [
+            '@tauri-apps/api/core',
+            '@tauri-apps/api/event',
+          ],
+          // Bundle Tauri plugins together
+          'tauri-plugins': [
+            '@tauri-apps/plugin-dialog',
+            '@tauri-apps/plugin-fs',
+            '@tauri-apps/plugin-os',
+            '@tauri-apps/plugin-process',
+            '@tauri-apps/plugin-shell',
+            '@tauri-apps/plugin-updater',
+          ],
+        },
+      },
     },
+  },
+  // Ensure proper resolution of Tauri modules
+  resolve: {
+    dedupe: ['@tauri-apps/api'],
   },
 }));
