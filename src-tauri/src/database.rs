@@ -232,7 +232,7 @@ impl DatabaseManager {
                 "content_snippet": row.get::<_, String>(2)?.chars().take(200).collect::<String>(),
                 "file_type": row.get::<_, String>(3)?,
                 "upload_date": row.get::<_, String>(4)?,
-                "relevance": 0.75 // Mock relevance score
+                "relevance": 0.75 // Text search baseline score
             }))
         })?.collect();
 

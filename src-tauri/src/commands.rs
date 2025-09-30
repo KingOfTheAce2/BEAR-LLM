@@ -271,9 +271,11 @@ pub async fn load_model(
     #[cfg(not(target_os = "linux"))]
     let memory_before = 0;
 
-    // Here you would actually load the model using candle or llama.cpp
-    // For now, this is a placeholder that simulates some work
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    // Load model through LLM Manager
+    let llm_manager = state.llm_manager.write().await;
+    llm_manager.load_model_for_inference(&model_path)
+        .await
+        .map_err(|e| format!("Failed to load model: {}", e))?;
 
     // Calculate actual load time
     let load_time = start_time.elapsed().as_millis() as u64;
@@ -311,22 +313,37 @@ pub struct ModelLoadResult {
 }
 
 #[tauri::command]
-pub async fn unload_model(_model_name: String) -> Result<bool, String> {
-    // Unload model from memory
-    // Model unloaded, memory freed for optimal performance
+pub async fn unload_model(
+    state: State<'_, crate::AppState>,
+    _model_name: String
+) -> Result<bool, String> {
+    let llm_manager = state.llm_manager.write().await;
+    llm_manager.unload_model()
+        .await
+        .map_err(|e| format!("Failed to unload model: {}", e))?;
+    tracing::info!("Model unloaded, memory freed");
     Ok(true)
 }
 
 #[tauri::command]
-pub async fn emergency_stop() -> Result<bool, String> {
-    // Emergency stop - unload all models and free memory
-    // This is the panic button if system is overloading
+pub async fn emergency_stop(state: State<'_, crate::AppState>) -> Result<bool, String> {
+    tracing::warn!("EMERGENCY STOP: Unloading all models and freeing resources");
 
-    println!("EMERGENCY STOP: Unloading all models and freeing resources");
+    // Unload LLM model
+    let llm_manager = state.llm_manager.write().await;
+    if let Err(e) = llm_manager.unload_model().await {
+        tracing::error!("Failed to unload LLM model during emergency stop: {}", e);
+    }
+    drop(llm_manager);
 
-    // Force garbage collection, unload models, clear caches
-    // In production, this would actually stop inference and free memory
+    // Clear RAG engine cache
+    let rag_engine = state.rag_engine.write().await;
+    if let Err(e) = rag_engine.clear_cache().await {
+        tracing::error!("Failed to clear RAG cache during emergency stop: {}", e);
+    }
+    drop(rag_engine);
 
+    tracing::info!("Emergency stop completed - all models unloaded");
     Ok(true)
 }
 
@@ -351,7 +368,7 @@ pub async fn set_resource_limits(
 
 #[tauri::command]
 pub async fn get_available_rag_models() -> Result<String, String> {
-    use crate::rag_engine_production::RAGEngine;
+    use crate::rag_engine::RAGEngine;
 
     let models = RAGEngine::get_available_models();
     serde_json::to_string(&models).map_err(|e| e.to_string())
@@ -388,7 +405,7 @@ pub async fn update_rag_config(
     state: State<'_, crate::AppState>,
     config_json: String,
 ) -> Result<String, String> {
-    use crate::rag_engine_production::RAGConfig;
+    use crate::rag_engine::RAGConfig;
 
     let config: RAGConfig = serde_json::from_str(&config_json)
         .map_err(|e| format!("Invalid config JSON: {}", e))?;

@@ -8,7 +8,7 @@ use tokio::fs;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::rag_engine_production::RAGEngine;
+use crate::rag_engine::RAGEngine;
 use crate::file_processor::FileProcessor;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

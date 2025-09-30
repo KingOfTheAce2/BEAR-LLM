@@ -173,14 +173,37 @@ impl SetupManager {
 
         // Check available disk space
         let config = self.config.read().await;
-        let _required_space_mb = match config.model_size.as_str() {
+        let required_space_mb = match config.model_size.as_str() {
             "small" => 2000,  // 2GB
             "medium" => 5000, // 5GB
             "large" => 10000, // 10GB
             _ => 5000,
         };
 
-        // Note: In production, add actual disk space check here
+        // Check actual disk space
+        let data_dir = config.data_dir.clone();
+        drop(config);
+
+        use sysinfo::Disks;
+        let disks = Disks::new_with_refreshed_list();
+
+        if let Some(disk) = disks.iter().find(|d| {
+            data_dir.starts_with(d.mount_point())
+        }) {
+            let available_mb = disk.available_space() / (1024 * 1024);
+            if available_mb < required_space_mb {
+                return Err(anyhow!(
+                    "Insufficient disk space. Required: {}MB, Available: {}MB. Please free up disk space.",
+                    required_space_mb, available_mb
+                ));
+            }
+            tracing::info!(
+                "Disk space check passed: {}MB available, {}MB required",
+                available_mb, required_space_mb
+            );
+        } else {
+            tracing::warn!("Could not determine disk space for {:?}, proceeding anyway", data_dir);
+        }
 
         Ok(())
     }

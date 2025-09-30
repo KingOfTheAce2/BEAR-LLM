@@ -9,10 +9,10 @@ use std::path::PathBuf;
 use tauri::{State, Emitter};
 use tokio::sync::RwLock;
 
-// Production modules - single source of truth
-mod pii_detector_production;
-mod rag_engine_production;
-mod llm_manager_production;
+// Core AI modules
+mod pii_detector;
+mod rag_engine;
+mod llm_manager;
 
 // Core modules
 mod presidio_bridge;
@@ -46,10 +46,10 @@ use commands::{
     update_rag_config,
 };
 
-// Use production modules
-use pii_detector_production::PIIDetector;
-use rag_engine_production::RAGEngine;
-use llm_manager_production::LLMManager;
+// Use core AI modules
+use pii_detector::PIIDetector;
+use rag_engine::RAGEngine;
+use llm_manager::LLMManager;
 
 // Use other modules
 use presidio_bridge::PresidioBridge;
