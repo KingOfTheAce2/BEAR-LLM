@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Search, Upload, Brain, FileText, Database, Zap, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import RAGEngineSelector from './RAGEngineSelector';
 
 interface RAGResult {
   answer: string;
@@ -125,7 +126,9 @@ const RAGInterface: React.FC = () => {
           </h3>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <RAGEngineSelector />
+
           <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
             <input
               type="checkbox"
