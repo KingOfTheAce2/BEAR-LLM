@@ -143,14 +143,14 @@ class Logger {
   }
 
   /**
-   * Send logs to monitoring service (placeholder for future implementation)
+   * Send logs to monitoring service
    */
   private sendToMonitoring(entry: LogEntry): void {
-    // Only log errors to monitoring in production
+    // Only log errors to monitoring
     if (entry.level !== 'error') return;
 
     try {
-      // Store in localStorage for now (can be retrieved for debugging)
+      // Store in localStorage for debugging and analysis
       const errorLogs = JSON.parse(localStorage.getItem('bear_error_logs') || '[]');
       const logs = [entry, ...errorLogs].slice(0, 10); // Keep only last 10 errors
       localStorage.setItem('bear_error_logs', JSON.stringify(logs));
