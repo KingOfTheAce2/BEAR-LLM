@@ -196,41 +196,79 @@ impl SetupManager {
 
     async fn download_ai_models(&self, config: &SetupConfig) -> Result<()> {
         // Step 1: Download RAG embeddings model (CRITICAL - required for document processing)
-        self.send_progress("Downloading models", 50.0, "Downloading RAG embeddings model (~150MB, one-time download)...").await?;
+        self.send_progress("Downloading models", 50.0, "Downloading RAG embeddings model (~150MB)...").await?;
 
         if let Err(e) = self.download_rag_embeddings().await {
             tracing::warn!("Failed to download RAG embeddings during setup: {}. Will download on first use.", e);
+            // Continue with LLM download even if RAG fails
         }
 
-        // Step 2: Download LLM models based on size preference
-        let models_to_download = match config.model_size.as_str() {
-            "small" => vec![
-                ("TinyLlama-1.1B", "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF"),
-                ("PII-Redact-Small", "lakshyakh93/deberta_finetuned_pii"),
-            ],
-            "medium" => vec![
-                ("Mistral-7B", "TheBloke/Mistral-7B-Instruct-v0.2-GGUF"),
-                ("PII-Redact-Base", "lakshyakh93/deberta_finetuned_pii"),
-                ("Legal-BERT", "nlpaueb/legal-bert-base-uncased"),
-            ],
-            "large" => vec![
-                ("Llama2-13B", "TheBloke/Llama-2-13B-chat-GGUF"),
-                ("PII-Redact-Large", "lakshyakh93/deberta_finetuned_pii"),
-                ("Legal-BERT-Large", "nlpaueb/legal-bert-base-uncased"),
-            ],
-            _ => vec![],
+        // Step 2: Download LLM model based on corporate laptop compatibility
+        self.send_progress("Downloading models", 60.0, "Downloading LLM for text generation...").await?;
+
+        // Corporate laptop optimized models (determined by model_size selection)
+        let (model_name, repo_id, file_name) = match config.model_size.as_str() {
+            "small" => (
+                "TinyLlama-1.1B (Corporate Laptop - Fast)",
+                "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+                "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf", // ~700MB, runs on any laptop
+            ),
+            "medium" => (
+                "Phi-2 (Corporate Laptop - Balanced)",
+                "TheBloke/phi-2-GGUF",
+                "phi-2.Q4_K_M.gguf", // ~1.6GB, good for 8GB RAM laptops
+            ),
+            "large" => (
+                "Mistral-7B (Workstation - Best Quality)",
+                "TheBloke/Mistral-7B-Instruct-v0.2-GGUF",
+                "mistral-7b-instruct-v0.2.Q4_K_M.gguf", // ~4.4GB, needs 16GB+ RAM
+            ),
+            _ => (
+                "TinyLlama-1.1B (Default)",
+                "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+                "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+            ),
         };
 
-        let total_models = models_to_download.len();
-        for (i, (name, _repo)) in models_to_download.iter().enumerate() {
-            let progress = 60.0 + (20.0 * (i as f32) / total_models as f32);
-            let msg = format!("Downloading {} model...", name);
-            self.send_progress("Downloading models", progress, &msg).await?;
+        tracing::info!("📥 Downloading LLM: {} from {}", model_name, repo_id);
 
-            // Note: Actual model download implementation would go here
-            // For now, we'll simulate with a delay
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        // Actually download the LLM model
+        if let Err(e) = self.download_llm_model(repo_id, file_name).await {
+            tracing::error!("Failed to download LLM model: {}. Application may not work properly.", e);
+            return Err(anyhow!("Failed to download LLM model: {}", e));
         }
+
+        self.send_progress("Downloading models", 80.0, &format!("✅ {} downloaded successfully", model_name)).await?;
+
+        Ok(())
+    }
+
+    async fn download_llm_model(&self, repo_id: &str, file_name: &str) -> Result<()> {
+        use hf_hub::api::tokio::Api;
+
+        let config = self.config.read().await;
+        let models_dir = config.data_dir.join("models").join(repo_id.replace("/", "_"));
+        drop(config);
+
+        // Create models directory
+        tokio::fs::create_dir_all(&models_dir).await?;
+
+        tracing::info!("📥 Downloading {} from HuggingFace...", file_name);
+
+        // Initialize HuggingFace API
+        let api = Api::new()?;
+        let repo = api.model(repo_id.to_string());
+
+        // Download the model file
+        let downloaded_path = repo.get(file_name).await
+            .map_err(|e| anyhow!("Failed to download {}: {}", file_name, e))?;
+
+        // Copy to models directory
+        let dest_path = models_dir.join(file_name);
+        tokio::fs::copy(&downloaded_path, &dest_path).await
+            .map_err(|e| anyhow!("Failed to copy model file: {}", e))?;
+
+        tracing::info!("✅ LLM model downloaded to: {:?}", dest_path);
 
         Ok(())
     }

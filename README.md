@@ -97,13 +97,24 @@ On first launch, BEAR AI will guide you through an interactive setup wizard:
 
 1. **Welcome Screen** - Introduction to BEAR AI features
 2. **Privacy Protection (Optional)** - Choose whether to install Microsoft Presidio for enhanced PII detection
-3. **Model Selection** - Select AI model size based on your hardware (Compact/Balanced/Maximum)
-4. **Installation** - Automatic setup of selected components
+3. **Model Selection** - Select AI configuration based on your hardware:
+   - **Corporate Laptop - Fast**: TinyLlama 1.1B + BGE-Small (~850MB, runs on any laptop)
+   - **Corporate Laptop - Balanced**: Phi-2 + BGE-Small (~1.8GB, 8GB RAM recommended)
+   - **Workstation - Best Quality**: Mistral-7B + BGE-Small (~4.6GB, 16GB RAM required)
+4. **Installation** - Downloads BOTH LLM and RAG models automatically
 
-### What Gets Installed Automatically
-- **Required**: Core application files, WebView2 runtime
-- **Automatic**: Initial AI models, document database, vector embeddings
-- **Optional**: Microsoft Presidio (Python-based PII protection)
+### What Gets Downloaded During Setup
+- **LLM Model** (Text Generation): TinyLlama/Phi-2/Mistral-7B (700MB-4.4GB)
+- **RAG Model** (Document Search): BGE-Small embeddings (~150MB)
+- **Optional**: Microsoft Presidio for enhanced PII protection
+
+### ⚠️ IMPORTANT: Setup Downloads Required Models
+The setup wizard downloads both LLM and RAG models **before** the application is usable. This ensures:
+- ✅ Application works immediately after setup
+- ✅ No surprises or delays when first using features
+- ✅ All models tested and working out-of-the-box
+
+**Download times:** 2-10 minutes depending on model size and internet speed.
 
 **The app works out-of-the-box even without Presidio** - basic PII detection is built-in. Presidio provides enterprise-grade enhancement.
 
