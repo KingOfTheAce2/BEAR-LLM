@@ -5,7 +5,7 @@
   "identifier": "com.legalai.assistant",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "",
+    "beforeBuildCommand": "echo 'Frontend already built by workflow'",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
   },
