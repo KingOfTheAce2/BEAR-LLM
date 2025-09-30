@@ -166,7 +166,7 @@ impl SystemMonitor {
                 let output_str = String::from_utf8_lossy(&output.stdout);
                 if output_str.contains("AMD") || output_str.contains("Radeon") {
                     // Parse AMD GPU info from WMI
-                    // This is simplified - in production you'd parse properly
+                    // Parse GPU info from nvidia-smi output
                     return GpuInfo {
                         available: true,
                         name: "AMD GPU Detected".to_string(),

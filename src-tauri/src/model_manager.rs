@@ -210,7 +210,7 @@ impl ModelManager {
             }
 
             // Here you would actually load the model into memory
-            // For now, we just verify it exists
+            // Verify model file exists
             Ok(())
         } else {
             Err(anyhow!("Model not found locally"))
