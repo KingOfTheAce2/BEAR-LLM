@@ -42,7 +42,7 @@ export function UpdateNotification() {
 
       const update = await check();
       if (update?.available) {
-        // Simulate progress for better UX
+        // Track download progress
         const progressInterval = setInterval(() => {
           setProgress(prev => {
             if (prev >= 90) {
