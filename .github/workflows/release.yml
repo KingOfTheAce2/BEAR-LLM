@@ -39,6 +39,15 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Verify dist folder
+        run: |
+          echo "=== Checking dist folder ==="
+          ls -la dist/
+          echo "=== dist/index.html contents ==="
+          cat dist/index.html
+          echo "=== dist/assets ==="
+          ls -la dist/assets/
+
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:

@@ -5,7 +5,7 @@
   "identifier": "com.legalai.assistant",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
   },
