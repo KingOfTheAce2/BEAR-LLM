@@ -322,13 +322,17 @@ impl HardwareMonitor {
     }
 
     pub async fn emergency_throttle(&mut self) -> Result<()> {
-        println!("EMERGENCY: System resources critically high. Implementing throttling...");
+        tracing::warn!("EMERGENCY: System resources critically high. Implementing throttling...");
 
         #[cfg(target_os = "windows")]
         {
             use std::process::Command;
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+
             Command::new("powercfg")
                 .args(&["/setactive", "a1841308-3541-4fab-bc81-f71556f20b4a"])
+                .creation_flags(CREATE_NO_WINDOW)
                 .output()?;
         }
 

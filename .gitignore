@@ -133,6 +133,9 @@ claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 
+# FastEmbed cache directory (BGE embedding models)
+.fastembed_cache/
+
 # WebView2 Runtime - commented out to include required DLL
 # src-tauri/WebView2Loader.dll
 

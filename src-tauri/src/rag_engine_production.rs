@@ -97,7 +97,7 @@ impl RAGEngine {
         // Load existing index
         self.load_index().await?;
 
-        println!("✅ RAG Engine initialized with {} documents",
+        tracing::info!("✅ RAG Engine initialized with {} documents",
                  self.documents.read().await.len());
 
         Ok(())

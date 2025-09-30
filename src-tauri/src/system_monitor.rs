@@ -155,8 +155,12 @@ impl SystemMonitor {
         // Check for AMD GPU using rocm-smi or Windows WMI
         #[cfg(target_os = "windows")]
         {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+
             if let Ok(output) = Command::new("wmic")
                 .args(&["path", "win32_VideoController", "get", "name,AdapterRAM"])
+                .creation_flags(CREATE_NO_WINDOW)
                 .output()
             {
                 let output_str = String::from_utf8_lossy(&output.stdout);
