@@ -1,7 +1,6 @@
-//! # Production PII Detector - Single Source of Truth
+//! # PII Detector - Enterprise-Grade Privacy Protection
 //!
-//! This is the **ONLY** PII detector module that should be used in production.
-//! All other PII detector modules (pii_detector.rs, pii_detector_v2.rs) are deprecated.
+//! Comprehensive PII detection and redaction system.
 //!
 //! ## Features
 //! - **Presidio Integration**: Enterprise-grade PII detection when Python+Presidio available

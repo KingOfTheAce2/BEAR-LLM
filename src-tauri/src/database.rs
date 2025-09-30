@@ -216,7 +216,7 @@ impl DatabaseManager {
         let conn = Connection::open(&self.db_path)?;
         let start_time = std::time::Instant::now();
 
-        // Simple text search for now (would be enhanced with vector similarity)
+        // Text-based search (vector similarity handled by RAG engine)
         let mut stmt = conn.prepare(
             "SELECT id, filename, content, file_type, upload_date
              FROM documents

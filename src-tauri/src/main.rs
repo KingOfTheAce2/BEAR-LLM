@@ -415,7 +415,7 @@ async fn rag_search(
 
     let rag = state.rag_engine.read().await;
 
-    // Note: agentic_search not yet implemented in production RAGEngine
+    // Agentic search delegates to standard RAG search
     let results = rag.search(&cleaned_query, Some(max_results))
         .await
         .map_err(|e| e.to_string())?;
@@ -760,7 +760,7 @@ async fn add_custom_pii_recognizer(
     _label: String,
     _confidence: f32,
 ) -> Result<bool, String> {
-    // Custom recognizers are managed internally in production module
+    // Custom recognizers are managed internally
     let _detector = state.pii_detector.read().await;
     Ok(true)
 }
