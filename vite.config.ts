@@ -25,5 +25,17 @@ export default defineConfig(async () => ({
     target: ['es2021', 'chrome100', 'safari13'],
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      external: [
+        '@tauri-apps/api/tauri',
+        '@tauri-apps/api/event',
+        '@tauri-apps/plugin-dialog',
+        '@tauri-apps/plugin-fs',
+        '@tauri-apps/plugin-os',
+        '@tauri-apps/plugin-process',
+        '@tauri-apps/plugin-shell',
+        '@tauri-apps/plugin-updater',
+      ],
+    },
   },
 }));
