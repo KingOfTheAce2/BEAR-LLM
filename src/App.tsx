@@ -22,6 +22,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [showSetup, setShowSetup] = useState(false);
   const [setupComplete, setSetupComplete] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -46,11 +47,20 @@ function App() {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
     if (savedTheme) setTheme(savedTheme);
 
-    // Check for first run
+    // Check for first run with timeout
     const checkFirstRun = async () => {
       try {
-        const isFirstRun = await invoke<boolean>('check_first_run');
-        const setupStatus = await invoke<any>('get_setup_status');
+        // Add timeout to prevent hanging
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Setup check timeout')), 5000)
+        );
+
+        const checkPromise = Promise.all([
+          invoke<boolean>('check_first_run'),
+          invoke<any>('get_setup_status')
+        ]);
+
+        const [isFirstRun, setupStatus] = await Promise.race([checkPromise, timeout]) as [boolean, any];
 
         if (isFirstRun || !setupStatus.setup_complete) {
           setShowSetup(true);
@@ -59,7 +69,10 @@ function App() {
         }
       } catch (err) {
         logger.error('Error checking setup status', err);
-        setSetupComplete(true); // Continue anyway
+        // On error, assume setup is complete and continue
+        setSetupComplete(true);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
@@ -180,6 +193,21 @@ function App() {
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
+
+  // Show loading screen while initializing
+  if (isInitializing) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--bg-primary)]">
+        <div className="text-center">
+          <BearLogo size="large" theme={theme} className="mb-6 mx-auto" />
+          <div className="flex items-center gap-2 justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--accent)]" />
+            <span className="text-[var(--text-secondary)]">Initializing BEAR AI...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
