@@ -3,10 +3,10 @@
 **100% Private AI Assistant for Legal and Professional Use**
 
 ![Version](https://img.shields.io/badge/version-1.0.5-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![License](https://img.shields.io/badge/license-Proprietary-red)
+![Platform](https://img.shields.io/badge/platform-Windows-blue)
 
-BEAR AI LLM is a fully production-ready desktop application that runs large language models entirely on your local hardware. Complete privacy, enterprise-grade PII protection, and professional features comparable to Ollama, GPT4All, and jan.ai.
+BEAR AI LLM is a fully production-ready desktop application that runs large language models entirely on your local hardware. Complete privacy, enterprise-grade PII protection, and professional features.
 
 ## ✨ Key Features
 
@@ -23,18 +23,21 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 ## 🖥️ System Requirements
 
 ### Minimum
-- **OS**: Windows 10/11, macOS 11+, Ubuntu 20.04+
+- **OS**: Windows 10/11 (64-bit)
 - **RAM**: 8GB
 - **Storage**: 10GB free space
 - **CPU**: 4 cores
-- **Python**: 3.8+ (for Presidio)
+- **WebView2**: Automatically installed if missing
 
 ### Recommended
+- **OS**: Windows 11
 - **RAM**: 16GB+
 - **Storage**: 20GB+ free space
 - **CPU**: 8+ cores
 - **GPU**: NVIDIA with 4GB+ VRAM
-- **Python**: 3.10+
+
+### Optional (Enhanced Features)
+- **Python**: 3.8+ (for Microsoft Presidio PII protection - auto-installed via setup wizard)
 
 ### ⚠️ Important Disk Space Notice
 - Base installation: ~500MB
@@ -44,9 +47,18 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 
 ## 🚀 Installation
 
-### Prerequisites
+### For End Users (Pre-built Installer)
 
-#### Windows
+1. **Download** the latest release from [GitHub Releases](https://github.com/yourusername/BEAR-LLM/releases)
+2. **Run** the MSI or NSIS installer
+3. **Launch** BEAR AI - the setup wizard will guide you through first-time configuration
+4. **(Optional)** The setup wizard will offer to install Microsoft Presidio for enhanced PII protection
+
+**That's it!** All dependencies including WebView2 are automatically installed.
+
+### For Developers (Building from Source)
+
+#### Prerequisites - Windows 10/11 (64-bit)
 ```bash
 # Install Visual Studio Build Tools
 # Download from: https://visualstudio.microsoft.com/downloads/
@@ -55,31 +67,11 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 # Install Node.js 18+
 winget install OpenJS.NodeJS
 
-# Install Rust
+# Install Rust (MSVC toolchain)
 winget install Rustlang.Rust.MSVC
-
-# Install Python 3.8+
-winget install Python.Python.3.11
 ```
 
-#### macOS
-```bash
-# Install Homebrew if not installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install dependencies
-brew install node rust python@3.11
-```
-
-#### Linux
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install nodejs npm rustc cargo python3-pip python3-dev
-
-# Fedora
-sudo dnf install nodejs npm rust cargo python3-pip python3-devel
-```
+**Note**: Python and Presidio are optional and can be installed via the setup wizard. WebView2 is automatically bundled.
 
 ### Quick Start
 
@@ -100,19 +92,19 @@ npm run tauri build
 
 ## 🎯 First Run Setup
 
-On first launch, BEAR AI will:
+On first launch, BEAR AI will guide you through an interactive setup wizard:
 
-1. **Setup Wizard** - Guide you through initial configuration
-2. **Install Presidio** - Automatic installation of Microsoft Presidio for PII protection
-3. **Download Models** - Recommend and download AI models based on your hardware
-4. **Configure Storage** - Set up document database and embeddings
+1. **Welcome Screen** - Introduction to BEAR AI features
+2. **Privacy Protection (Optional)** - Choose whether to install Microsoft Presidio for enhanced PII detection
+3. **Model Selection** - Select AI model size based on your hardware (Compact/Balanced/Maximum)
+4. **Installation** - Automatic setup of selected components
 
-The setup wizard will:
-- Detect your hardware capabilities
-- Recommend appropriate model sizes
-- Install Python dependencies
-- Download NER models for PII detection
-- Create necessary directories
+### What Gets Installed Automatically
+- **Required**: Core application files, WebView2 runtime
+- **Automatic**: Initial AI models, document database, vector embeddings
+- **Optional**: Microsoft Presidio (Python-based PII protection)
+
+**The app works out-of-the-box even without Presidio** - basic PII detection is built-in. Presidio provides enterprise-grade enhancement.
 
 ## 📋 Features in Detail
 
@@ -131,11 +123,12 @@ The setup wizard will:
 - **Chunking**: Smart document splitting for context
 
 ### PII Protection
-- **Microsoft Presidio**: State-of-the-art NER models
-- **OpenPipe Integration**: PII-Redact transformer models
-- **Custom Patterns**: Regex-based detection fallback
-- **Entity Types**: Names, SSNs, credit cards, emails, phones
-- **Automatic Scrubbing**: Real-time PII removal
+- **Built-in Detection**: Regex-based pattern matching (always available)
+- **Microsoft Presidio (Optional)**: State-of-the-art NER models for enhanced accuracy
+- **OpenPipe Integration (Optional)**: PII-Redact transformer models
+- **Entity Types**: Names, SSNs, credit cards, emails, phone numbers, addresses
+- **Real-time Scrubbing**: Automatic PII removal during document processing
+- **Works Out-of-Box**: Basic protection without any additional installations
 
 ### Auto-Updates
 - **GitHub Releases**: Automatic update checking
@@ -146,23 +139,25 @@ The setup wizard will:
 
 ## 🔧 Configuration
 
-### Environment Variables
-Create `.env` in project root:
+### Environment Variables (Optional)
+Create `.env` in project root for advanced configuration:
 
 ```env
 # Optional: HuggingFace token for gated models
 HUGGINGFACE_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 
-# Optional: Custom model storage
+# Optional: Custom model storage location
 MODEL_PATH=D:/AI-Models
 
 # Optional: Debug logging
 RUST_LOG=debug
 RUST_BACKTRACE=1
 
-# Optional: Presidio configuration
+# Optional: Custom Presidio path (if installed)
 PRESIDIO_MODELS_PATH=D:/Presidio-Models
 ```
+
+**Most users don't need any environment variables** - the application works with sensible defaults.
 
 ### Model Recommendations by Hardware
 
@@ -221,8 +216,6 @@ cd src-tauri && cargo clean
 
 # Remove unused models
 # Windows: %LOCALAPPDATA%\BEAR AI LLM\models
-# macOS: ~/Library/Application Support/BEAR AI LLM/models
-# Linux: ~/.local/share/BEAR AI LLM/models
 ```
 
 #### Build Errors (Windows)
@@ -238,10 +231,11 @@ ren "C:\Program Files\Git\usr\bin\link.exe" "link.exe.bak"
 - Ensure sufficient disk space (2x model size)
 - Check firewall settings
 
-#### Presidio Installation Issues
-- Ensure Python 3.8+ installed
-- Run as administrator (Windows)
-- Check pip is updated: `pip install --upgrade pip`
+#### Optional: Presidio Installation Issues
+- Presidio is optional - app works without it
+- If installing: Ensure Python 3.8+ is available
+- Run setup wizard as administrator (Windows)
+- The app will skip Presidio if installation fails and use built-in PII detection
 
 ## 📁 Project Structure
 
@@ -293,15 +287,15 @@ npm run test:pii
 ### Production Builds
 
 ```bash
-# Windows
-npm run tauri build -- --target x86_64-pc-windows-msvc
+# Windows (currently supported)
+npm run tauri build
 
-# macOS (Universal)
-npm run tauri build -- --target universal-apple-darwin
-
-# Linux
-npm run tauri build -- --target x86_64-unknown-linux-gnu
+# Generates:
+# - MSI installer: src-tauri/target/release/bundle/msi/*.msi
+# - NSIS installer: src-tauri/target/release/bundle/nsis/*.exe
 ```
+
+**Note**: macOS and Linux builds are planned for future releases.
 
 ### Code Signing
 
@@ -324,22 +318,25 @@ npx @tauri-apps/cli signer sign --private-key ~/.tauri/myapp.key --file ./target
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
+**BEAR AI is proprietary software with open code for transparency.**
 
-### Development Guidelines
-- Follow Rust best practices
-- Use TypeScript strict mode
-- Write tests for new features
-- Update documentation
-- Follow conventional commits
+We do not accept external code contributions, but we welcome:
+- **Bug Reports**: Submit detailed issues with reproduction steps
+- **Feature Requests**: Suggest improvements for legal workflows
+- **Security Reports**: Responsible disclosure to security@bearai.com
+- **Documentation Feedback**: Request clarifications or improvements
+
+See [CONTRIBUTE.md](CONTRIBUTE.md) for complete details on:
+- Why the code is open but not open-source
+- Legal and compliance considerations
+- Professional support options
+- Licensing clarification
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file
+**Proprietary License** - Open code, closed source. See [CONTRIBUTE.md](CONTRIBUTE.md) for details.
+
+This software is proprietary and provided for transparency and security auditing by legal professionals. The source code is publicly viewable but not licensed for redistribution, modification, or commercial use without explicit permission.
 
 ## 🆘 Support
 

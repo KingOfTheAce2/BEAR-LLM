@@ -215,7 +215,7 @@ impl SetupManager {
         };
 
         let total_models = models_to_download.len();
-        for (i, (name, repo)) in models_to_download.iter().enumerate() {
+        for (i, (name, _repo)) in models_to_download.iter().enumerate() {
             let progress = 50.0 + (30.0 * (i as f32) / total_models as f32);
             let msg = format!("Downloading {} model...", name);
             self.send_progress("Downloading models", progress, &msg).await?;
@@ -268,11 +268,13 @@ impl SetupManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn is_setup_complete(&self) -> bool {
         let complete = self.setup_complete.read().await;
         *complete
     }
 
+    #[allow(dead_code)]
     pub async fn update_config(&self, config: SetupConfig) -> Result<()> {
         let mut current = self.config.write().await;
         *current = config;

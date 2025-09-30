@@ -498,6 +498,7 @@ impl RAGEngine {
         dot_product / (norm1 * norm2)
     }
 
+    #[allow(dead_code)]
     pub async fn delete_document(&self, doc_id: &str) -> Result<()> {
         let mut documents = self.documents.write().await;
         let mut inverted_index = self.inverted_index.write().await;
@@ -536,6 +537,7 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn clear_index(&self) -> Result<()> {
         let mut documents = self.documents.write().await;
         let mut inverted_index = self.inverted_index.write().await;
@@ -550,6 +552,7 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_statistics(&self) -> Result<JsonValue> {
         let documents = self.documents.read().await;
         let inverted_index = self.inverted_index.read().await;
@@ -578,6 +581,7 @@ impl RAGEngine {
         }))
     }
 
+    #[allow(dead_code)]
     fn estimate_index_size(
         &self,
         documents: &HashMap<String, Document>,
@@ -639,6 +643,7 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn update_config(&self, config: RAGConfig) -> Result<()> {
         let mut current = self.config.write().await;
         *current = config;

@@ -5,6 +5,7 @@ use serde::{Serialize, Deserialize};
 use anyhow::{Result, anyhow};
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalModel {
     pub id: String,
@@ -14,6 +15,7 @@ pub struct LocalModel {
     pub metadata: serde_json::Value,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadProgress {
     pub model_id: String,
@@ -25,12 +27,14 @@ pub struct DownloadProgress {
     pub status: String,
 }
 
+#[allow(dead_code)]
 pub struct ModelManager {
     models_dir: PathBuf,
     local_models: Arc<RwLock<HashMap<String, LocalModel>>>,
     downloads: Arc<RwLock<HashMap<String, DownloadProgress>>>,
 }
 
+#[allow(dead_code)]
 impl ModelManager {
     pub fn new() -> Result<Self> {
         let models_dir = dirs::data_local_dir()
@@ -197,7 +201,7 @@ impl ModelManager {
     pub async fn load_model(&self, model_id: &str) -> Result<()> {
         let models = self.local_models.read().await;
 
-        if let Some(model) = models.get(model_id) {
+        if let Some(_model) = models.get(model_id) {
             // Update last accessed time
             drop(models);
             let mut models = self.local_models.write().await;
@@ -233,6 +237,7 @@ impl ModelManager {
     }
 }
 
+#[allow(dead_code)]
 fn get_directory_size(path: &Path) -> Result<u64> {
     let mut size = 0;
 
@@ -254,6 +259,7 @@ lazy_static::lazy_static! {
     pub static ref MODEL_MANAGER: Arc<RwLock<Option<ModelManager>>> = Arc::new(RwLock::new(None));
 }
 
+#[allow(dead_code)]
 pub async fn init_model_manager() -> Result<()> {
     let manager = ModelManager::new()?;
     let mut global = MODEL_MANAGER.write().await;
@@ -261,6 +267,7 @@ pub async fn init_model_manager() -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn get_model_manager() -> Result<Arc<RwLock<Option<ModelManager>>>> {
     Ok(MODEL_MANAGER.clone())
 }

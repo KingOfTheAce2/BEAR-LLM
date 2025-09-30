@@ -64,6 +64,7 @@ impl TempFileGuard {
         Self { path }
     }
 
+    #[allow(dead_code)]
     fn path(&self) -> &PathBuf {
         &self.path
     }
@@ -126,7 +127,9 @@ struct AppState {
     hardware_detector: Arc<RwLock<HardwareDetector>>,
 
     // MCP and agent orchestration
+    #[allow(dead_code)]
     mcp_server: Arc<MCPServer>,
+    #[allow(dead_code)]
     agent_orchestrator: Arc<AgentOrchestrator>,
 }
 
@@ -218,7 +221,7 @@ async fn process_document(
         .map_err(|e| e.to_string())?;
 
     // Add to RAG engine
-    let mut rag = state.rag_engine.write().await;
+    let rag = state.rag_engine.write().await;
     let doc_id = rag.add_document(&cleaned_content, serde_json::json!({
         "filename": file_path.clone(),
         "file_type": file_type.clone()
@@ -352,7 +355,7 @@ async fn add_to_knowledge_base(
         .await
         .map_err(|e| e.to_string())?;
 
-    let mut rag = state.rag_engine.write().await;
+    let rag = state.rag_engine.write().await;
     rag.add_document(&cleaned_content, metadata)
         .await
         .map_err(|e| e.to_string())
@@ -558,7 +561,7 @@ async fn run_initial_setup(
     use tokio::sync::mpsc;
 
     let (tx, mut rx) = mpsc::channel(100);
-    let setup = state.setup_manager.read().await;
+    let _setup = state.setup_manager.read().await;
 
     // Spawn setup in background
     let setup_clone = state.setup_manager.clone();
@@ -821,21 +824,21 @@ fn main() {
         }
 
         // Initialize PII detector
-        let mut pii_detector = app_state.pii_detector.write().await;
+        let pii_detector = app_state.pii_detector.write().await;
         if let Err(e) = pii_detector.initialize().await {
             tracing::error!(error = %e, "Failed to initialize PII detector");
         }
         drop(pii_detector);
 
         // Initialize LLM manager
-        let mut llm = app_state.llm_manager.write().await;
+        let llm = app_state.llm_manager.write().await;
         if let Err(e) = llm.initialize().await {
             tracing::error!(error = %e, "Failed to initialize LLM manager");
         }
         drop(llm);
 
         // Initialize RAG engine
-        let mut rag = app_state.rag_engine.write().await;
+        let rag = app_state.rag_engine.write().await;
         if let Err(e) = rag.initialize().await {
             tracing::error!(error = %e, "Failed to initialize RAG engine");
         }

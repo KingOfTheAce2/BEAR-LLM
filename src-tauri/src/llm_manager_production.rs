@@ -73,10 +73,12 @@ pub struct LLMManager {
     models_registry: Arc<RwLock<HashMap<String, ModelConfig>>>,
     model_status: Arc<RwLock<HashMap<String, ModelStatus>>>,
     active_model: Arc<RwLock<Option<String>>>,
+    #[allow(dead_code)]
     loaded_model: Arc<RwLock<Option<Box<dyn Send + Sync>>>>, // Placeholder for actual model
     tokenizer: Arc<RwLock<Option<Tokenizer>>>,
     models_dir: PathBuf,
     generation_config: Arc<RwLock<GenerationConfig>>,
+    #[allow(dead_code)]
     device: Device,
 }
 
@@ -473,10 +475,12 @@ impl LLMManager {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub async fn get_active_model(&self) -> Option<String> {
         self.active_model.read().await.clone()
     }
 
+    #[allow(dead_code)]
     pub async fn unload_model(&self) -> Result<()> {
         let mut active = self.active_model.write().await;
 
@@ -497,22 +501,26 @@ impl LLMManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn update_generation_config(&self, config: GenerationConfig) -> Result<()> {
         let mut gen_config = self.generation_config.write().await;
         *gen_config = config;
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_model_status(&self, model_name: &str) -> Option<ModelStatus> {
         let status_map = self.model_status.read().await;
         status_map.get(model_name).cloned()
     }
 
+    #[allow(dead_code)]
     pub async fn get_model_info(&self, model_name: &str) -> Option<ModelConfig> {
         let registry = self.models_registry.read().await;
         registry.get(model_name).cloned()
     }
 
+    #[allow(dead_code)]
     pub async fn delete_model(&self, model_name: &str) -> Result<()> {
         // Check if model is currently loaded
         let active = self.active_model.read().await;

@@ -219,6 +219,7 @@ pub async fn search_huggingface_models(
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HuggingFaceModel {
     pub model_id: String,

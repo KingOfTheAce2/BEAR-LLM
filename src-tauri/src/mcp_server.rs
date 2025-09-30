@@ -73,6 +73,7 @@ impl MCPServer {
         server
     }
 
+    #[allow(dead_code)]
     pub fn new_with_rag(sandboxed: bool, rag_engine: Arc<RwLock<RAGEngine>>) -> Self {
         let mut server = Self {
             tools: HashMap::new(),

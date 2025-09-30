@@ -552,6 +552,7 @@ print(json.dumps(entities))
         Ok(result)
     }
 
+    #[allow(dead_code)]
     pub async fn anonymize_pii(&self, text: &str) -> Result<(String, HashMap<String, String>)> {
         let entities = self.detect_pii(text).await?;
         let mut result = text.to_string();
@@ -574,6 +575,7 @@ print(json.dumps(entities))
         Ok((result, mappings))
     }
 
+    #[allow(dead_code)]
     pub async fn add_custom_pattern(&self, name: String, pattern: String) -> Result<()> {
         let regex = Regex::new(&pattern)?;
         let mut patterns = self.custom_patterns.write().await;
@@ -581,12 +583,14 @@ print(json.dumps(entities))
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn update_config(&self, config: PIIDetectionConfig) -> Result<()> {
         let mut current = self.config.write().await;
         *current = config;
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_statistics(&self, text: &str) -> Result<HashMap<String, usize>> {
         let entities = self.detect_pii(text).await?;
         let mut stats = HashMap::new();

@@ -26,9 +26,11 @@ struct HFApiModel {
     likes: Option<u32>,
     downloads: Option<u32>,
     tags: Option<Vec<String>>,
-    lastModified: Option<String>,
+    #[serde(rename = "lastModified")]
+    last_modified: Option<String>,
     private: Option<bool>,
     pipeline_tag: Option<String>,
+    #[allow(dead_code)]
     library_name: Option<String>,
 }
 
@@ -96,7 +98,7 @@ async fn search_hf_api(params: &ModelSearchParams) -> Result<Vec<HuggingFaceMode
                 downloads: m.downloads.unwrap_or(0) as u64,
                 tags: m.tags.unwrap_or_default(),
                 size: estimate_model_size(&m.id),
-                last_modified: m.lastModified.unwrap_or_else(|| "Unknown".to_string()),
+                last_modified: m.last_modified.unwrap_or_else(|| "Unknown".to_string()),
                 description: Some(format!("Model: {}", m.id)),
                 license: None,
                 pipeline_tag: m.pipeline_tag,
@@ -203,6 +205,7 @@ fn get_curated_models(query: &str) -> Vec<HuggingFaceModel> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub async fn get_model_info(model_id: &str) -> Result<serde_json::Value> {
     let client = reqwest::Client::new();
     let url = format!("https://huggingface.co/api/models/{}", model_id);
@@ -221,6 +224,7 @@ pub async fn get_model_info(model_id: &str) -> Result<serde_json::Value> {
     Ok(model_info)
 }
 
+#[allow(dead_code)]
 pub async fn download_model_with_progress<F>(
     model_id: &str,
     save_path: &str,
