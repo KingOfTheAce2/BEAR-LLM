@@ -81,6 +81,10 @@ custom-protocol = ["tauri/custom-protocol"]
 # Enable with: cargo build --features cuda
 cuda = ["llama-cpp-2/cuda"]
 
+[lib]
+name = "bear_ai_llm"
+path = "src/lib.rs"
+
 [[bin]]
 name = "bear-ai-llm"
 path = "src/main.rs"
