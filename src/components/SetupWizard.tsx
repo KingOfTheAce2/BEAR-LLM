@@ -13,7 +13,9 @@ import {
   Zap,
   Lock,
   Brain,
-  FileSearch
+  FileSearch,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface SetupProgress {
@@ -26,17 +28,19 @@ interface SetupProgress {
 
 interface SetupWizardProps {
   onComplete: () => void;
+  theme: 'light' | 'dark';
+  onThemeToggle: () => void;
 }
 
-const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
+const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, theme, onThemeToggle }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isInstalling, setIsInstalling] = useState(false);
   const [progress, setProgress] = useState<SetupProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [setupConfig, setSetupConfig] = useState({
-    install_presidio: true,
-    install_models: true,
-    model_size: 'medium',
+    install_presidio: false,
+    install_models: false,
+    model_size: 'small',
     enable_gpu: false,
   });
 
@@ -77,14 +81,34 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
   }, [onComplete]);
 
   const startSetup = async () => {
+    // If nothing is selected, just skip to completion
+    if (!setupConfig.install_presidio && !setupConfig.install_models) {
+      await markSetupComplete();
+      return;
+    }
+
     setIsInstalling(true);
     setError(null);
 
     try {
-      await invoke('run_initial_setup');
+      await invoke('run_initial_setup', { config: setupConfig });
     } catch (err) {
       setError(`Setup failed: ${err}`);
       setIsInstalling(false);
+    }
+  };
+
+  const skipSetup = async () => {
+    await markSetupComplete();
+  };
+
+  const markSetupComplete = async () => {
+    try {
+      await invoke('mark_setup_complete');
+      onComplete();
+    } catch (err) {
+      console.error('Error marking setup complete:', err);
+      onComplete(); // Complete anyway
     }
   };
 
@@ -156,46 +180,60 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             </div>
 
             <div>
-              <h2 className="text-3xl font-bold text-white mb-2">Welcome to BEAR AI</h2>
-              <p className="text-gray-400">Your secure, private legal AI assistant</p>
+              <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Welcome to BEAR AI</h2>
+              <p className="text-[var(--text-secondary)]">Your secure, private legal AI assistant</p>
             </div>
 
-            <div className="bg-gray-800/50 rounded-xl p-6 text-left space-y-4">
-              <h3 className="text-xl font-semibold text-white">What we'll set up:</h3>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-6 text-left space-y-4">
+              <h3 className="text-xl font-semibold text-[var(--text-primary)]">Optional Components:</h3>
 
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
                   <Lock className="w-5 h-5 text-blue-400 mt-0.5" />
                   <div>
-                    <p className="text-white font-medium">Microsoft Presidio</p>
-                    <p className="text-sm text-gray-400">State-of-the-art PII detection and redaction</p>
+                    <p className="text-[var(--text-primary)] font-medium">Microsoft Presidio</p>
+                    <p className="text-sm text-[var(--text-secondary)]">State-of-the-art PII detection and redaction</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
                   <Brain className="w-5 h-5 text-purple-400 mt-0.5" />
                   <div>
-                    <p className="text-white font-medium">OpenPipe PII-Redact</p>
-                    <p className="text-sm text-gray-400">Advanced transformer models for entity recognition</p>
+                    <p className="text-[var(--text-primary)] font-medium">AI Models</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Local LLMs for text generation</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
                   <FileSearch className="w-5 h-5 text-green-400 mt-0.5" />
                   <div>
-                    <p className="text-white font-medium">Legal NER Models</p>
-                    <p className="text-sm text-gray-400">Specialized models for legal document analysis</p>
+                    <p className="text-[var(--text-primary)] font-medium">RAG Engine</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Document embeddings for semantic search</p>
                   </div>
                 </div>
               </div>
+
+              <div className="pt-4 border-t border-[var(--border-primary)]">
+                <p className="text-sm text-[var(--text-tertiary)] italic">
+                  All components are optional. You can install them later from the settings.
+                </p>
+              </div>
             </div>
 
-            <button
-              onClick={() => setCurrentStep(1)}
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
-            >
-              Get Started
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={skipSetup}
+                className="px-8 py-3 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-lg font-medium hover:bg-[var(--hover-bg)] transition-all"
+              >
+                Skip Setup
+              </button>
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Configure
+              </button>
+            </div>
           </motion.div>
         );
 
@@ -207,17 +245,17 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             className="space-y-6"
           >
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">Privacy Protection Setup</h2>
-              <p className="text-gray-400">Configure PII detection capabilities</p>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Component Selection</h2>
+              <p className="text-[var(--text-secondary)]">Choose which components to install (all optional)</p>
             </div>
 
             <div className="space-y-4">
-              <label className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-800/70 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg cursor-pointer hover:bg-[var(--hover-bg)] transition-colors">
                 <div className="flex items-center space-x-3">
                   <Shield className="w-5 h-5 text-blue-400" />
                   <div>
-                    <p className="text-white font-medium">Install Microsoft Presidio</p>
-                    <p className="text-sm text-gray-400">Enterprise-grade PII detection</p>
+                    <p className="text-[var(--text-primary)] font-medium">Install Microsoft Presidio</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Enterprise-grade PII detection</p>
                   </div>
                 </div>
                 <input
@@ -228,12 +266,12 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-800/70 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg cursor-pointer hover:bg-[var(--hover-bg)] transition-colors">
                 <div className="flex items-center space-x-3">
                   <Brain className="w-5 h-5 text-purple-400" />
                   <div>
-                    <p className="text-white font-medium">Download AI Models</p>
-                    <p className="text-sm text-gray-400">Transformer models for enhanced accuracy</p>
+                    <p className="text-[var(--text-primary)] font-medium">Download AI Models & RAG Engine</p>
+                    <p className="text-sm text-[var(--text-secondary)]">LLMs and embeddings for document processing</p>
                   </div>
                 </div>
                 <input
@@ -244,12 +282,12 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-800/70 transition-colors">
+              <label className="flex items-center justify-between p-4 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg cursor-pointer hover:bg-[var(--hover-bg)] transition-colors">
                 <div className="flex items-center space-x-3">
                   <Zap className="w-5 h-5 text-yellow-400" />
                   <div>
-                    <p className="text-white font-medium">Enable GPU Acceleration</p>
-                    <p className="text-sm text-gray-400">Faster processing with NVIDIA GPU</p>
+                    <p className="text-[var(--text-primary)] font-medium">Enable GPU Acceleration</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Faster processing with NVIDIA GPU (optional)</p>
                   </div>
                 </div>
                 <input
@@ -261,19 +299,34 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
               </label>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <button
                 onClick={() => setCurrentStep(0)}
-                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                className="px-6 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Back
               </button>
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
-              >
-                Continue
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={skipSetup}
+                  className="px-6 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--hover-bg)] transition-all"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => {
+                    if (setupConfig.install_models) {
+                      setCurrentStep(2);
+                    } else {
+                      setCurrentStep(3);
+                      startSetup();
+                    }
+                  }}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
+                >
+                  {setupConfig.install_models ? 'Continue' : 'Install'}
+                </button>
+              </div>
             </div>
           </motion.div>
         );
@@ -286,8 +339,8 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             className="space-y-6"
           >
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">Select Model Size</h2>
-              <p className="text-gray-400">Choose based on your system resources</p>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Select Model Size</h2>
+              <p className="text-[var(--text-secondary)]">Choose based on your system resources</p>
             </div>
 
             <div className="grid gap-4">
@@ -298,51 +351,59 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                   className={`p-4 rounded-lg border-2 transition-all ${
                     setupConfig.model_size === model.size
                       ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-gray-700 hover:border-gray-600 bg-gray-800/30'
+                      : 'border-[var(--border-primary)] hover:border-[var(--accent)] bg-[var(--bg-secondary)]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <model.icon className={`w-6 h-6 ${
-                        setupConfig.model_size === model.size ? 'text-blue-400' : 'text-gray-400'
+                        setupConfig.model_size === model.size ? 'text-blue-400' : 'text-[var(--text-secondary)]'
                       }`} />
                       <div className="text-left">
                         <div className="flex items-center space-x-2">
-                          <p className="text-white font-medium">{model.name}</p>
+                          <p className="text-[var(--text-primary)] font-medium">{model.name}</p>
                           {model.recommended && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
                               Recommended
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-400">{model.description}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">{model.description}</p>
                       </div>
                     </div>
                     <div className="text-right text-sm">
-                      <p className="text-gray-400">Storage: {model.storage}</p>
-                      <p className="text-gray-400">RAM: {model.ram}</p>
+                      <p className="text-[var(--text-secondary)]">Storage: {model.storage}</p>
+                      <p className="text-[var(--text-secondary)]">RAM: {model.ram}</p>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <button
                 onClick={() => setCurrentStep(1)}
-                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                className="px-6 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Back
               </button>
-              <button
-                onClick={() => {
-                  setCurrentStep(3);
-                  startSetup();
-                }}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
-              >
-                Start Installation
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={skipSetup}
+                  className="px-6 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--hover-bg)] transition-all"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentStep(3);
+                    startSetup();
+                  }}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
+                >
+                  Start Installation
+                </button>
+              </div>
             </div>
           </motion.div>
         );
@@ -355,12 +416,12 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
             className="space-y-6"
           >
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
                 {progress?.is_complete ? 'Setup Complete!' : 'Installing Components'}
               </h2>
-              <p className="text-gray-400">
+              <p className="text-[var(--text-secondary)]">
                 {progress?.is_complete
-                  ? 'BEAR AI is ready to use with state-of-the-art PII protection'
+                  ? 'BEAR AI is ready to use'
                   : 'This may take several minutes on first run'
                 }
               </p>
@@ -368,13 +429,13 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
             {isInstalling && !progress?.is_complete && (
               <div className="space-y-4">
-                <div className="bg-gray-800/50 rounded-lg p-6">
+                <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-white font-medium">{progress?.step || 'Initializing...'}</p>
-                    <span className="text-sm text-gray-400">{Math.round(progress?.progress || 0)}%</span>
+                    <p className="text-[var(--text-primary)] font-medium">{progress?.step || 'Initializing...'}</p>
+                    <span className="text-sm text-[var(--text-secondary)]">{Math.round(progress?.progress || 0)}%</span>
                   </div>
 
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                  <div className="w-full bg-[var(--hover-bg)] rounded-full h-2 mb-4">
                     <motion.div
                       className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
                       initial={{ width: 0 }}
@@ -383,7 +444,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                     />
                   </div>
 
-                  <p className="text-sm text-gray-400">{progress?.message}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{progress?.message}</p>
                 </div>
 
                 <div className="flex items-center justify-center">
@@ -415,7 +476,13 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                   <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
                   <div>
                     <p className="text-red-400 font-medium">Setup Error</p>
-                    <p className="text-sm text-gray-400 mt-1">{error}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{error}</p>
+                    <button
+                      onClick={skipSetup}
+                      className="mt-3 px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--hover-bg)] transition-all text-sm"
+                    >
+                      Continue Without Installation
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -429,8 +496,23 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-[var(--bg-primary)] flex items-center justify-center z-50">
       <div className="w-full max-w-2xl p-8">
+        {/* Theme Toggle */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={onThemeToggle}
+            className="p-2 hover:bg-[var(--hover-bg)] rounded-lg transition-all border border-[var(--border-primary)]"
+            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          >
+            {theme === 'light' ? (
+              <Moon className="w-5 h-5" />
+            ) : (
+              <Sun className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+
         <AnimatePresence mode="wait">
           {renderStep()}
         </AnimatePresence>

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use reqwest;
 use anyhow::{Result, anyhow};
+use crate::utils::{estimate_model_size_mb, parse_model_params_from_id};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HuggingFaceModel {
@@ -111,19 +112,43 @@ async fn search_hf_api(params: &ModelSearchParams) -> Result<Vec<HuggingFaceMode
     Ok(models)
 }
 
+/// Estimate model size based on model ID
+///
+/// Uses improved heuristics to determine model size based on:
+/// 1. Parameter count extracted from model ID
+/// 2. Assumed quantization (Q4_K_M for GGUF models)
+///
+/// This is more accurate than hardcoded sizes and handles various model sizes.
 fn estimate_model_size(model_id: &str) -> String {
-    // Estimate based on common model sizes
-    if model_id.contains("3b") || model_id.contains("3B") {
-        "6GB".to_string()
-    } else if model_id.contains("7b") || model_id.contains("7B") {
-        "13GB".to_string()
-    } else if model_id.contains("13b") || model_id.contains("13B") {
-        "26GB".to_string()
-    } else if model_id.contains("30b") || model_id.contains("30B") {
-        "60GB".to_string()
-    } else if model_id.contains("70b") || model_id.contains("70B") {
-        "140GB".to_string()
+    // Try to parse parameter count from model ID
+    if let Some(params_billions) = parse_model_params_from_id(model_id) {
+        // Check if this is a GGUF model (commonly Q4_K_M quantization)
+        let quantization = if model_id.to_lowercase().contains("gguf") {
+            // Check for quantization in model ID
+            if model_id.contains("Q2") {
+                "Q2_K"
+            } else if model_id.contains("Q8") {
+                "Q8_0"
+            } else if model_id.contains("Q6") {
+                "Q6_K"
+            } else if model_id.contains("Q5") {
+                "Q5_K_M"
+            } else {
+                "Q4_K_M" // Most common
+            }
+        } else {
+            // Assume FP16 for non-GGUF models
+            "FP16"
+        };
+
+        // Calculate size
+        let size_mb = estimate_model_size_mb(params_billions, quantization);
+        let size_gb = (size_mb as f32 / 1024.0).round() as u32;
+
+        format!("{}GB", size_gb)
     } else {
+        // Fallback for unknown models
+        tracing::warn!("Could not estimate size for model: {}", model_id);
         "Unknown".to_string()
     }
 }

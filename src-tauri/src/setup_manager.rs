@@ -1,8 +1,12 @@
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{RwLock, mpsc, Mutex};
 use std::sync::Arc;
+use once_cell::sync::Lazy;
+
+// Global setup lock to prevent concurrent setup runs
+static SETUP_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetupProgress {
@@ -69,12 +73,43 @@ impl SetupManager {
     }
 
     pub async fn run_setup(&self, progress_sender: mpsc::Sender<SetupProgress>) -> Result<()> {
+        // Acquire global setup lock to prevent concurrent setup runs
+        // This prevents race conditions when multiple windows/processes try to run setup
+        let _lock = SETUP_LOCK.lock().await;
+
+        tracing::info!("Setup lock acquired, beginning setup process");
+
+        // Check if setup is already complete (another instance may have completed it)
+        if *self.setup_complete.read().await {
+            tracing::debug!("Setup already completed by another instance, skipping");
+            self.send_progress("Complete", 100.0, "Setup already completed").await?;
+            return Ok(());
+        }
+
+        // Double-check marker file after acquiring lock
+        let config = self.config.read().await.clone();
+        let marker_file = config.data_dir.join(".setup_complete");
+        if marker_file.exists() {
+            tracing::info!("Setup marker file found after lock, marking as complete");
+            let mut complete = self.setup_complete.write().await;
+            *complete = true;
+            self.send_progress("Complete", 100.0, "Setup already completed").await?;
+            return Ok(());
+        }
+
         // Store progress sender
         let mut sender_lock = self.progress_sender.write().await;
         *sender_lock = Some(progress_sender.clone());
         drop(sender_lock);
 
-        let config = self.config.read().await.clone();
+        // If nothing is selected, just mark as complete
+        if !config.install_presidio && !config.install_models {
+            self.send_progress("Skipping", 100.0, "No components selected, setup skipped.").await?;
+            self.mark_setup_complete(&config).await?;
+            let mut complete = self.setup_complete.write().await;
+            *complete = true;
+            return Ok(());
+        }
 
         // Send initial progress
         self.send_progress("Initializing", 0.0, "Starting BEAR AI setup...").await?;
@@ -113,6 +148,19 @@ impl SetupManager {
         let mut complete = self.setup_complete.write().await;
         *complete = true;
 
+        Ok(())
+    }
+
+    pub async fn mark_setup_complete_only(&self) -> Result<()> {
+        // Acquire lock for consistency, even though this is just marking complete
+        let _lock = SETUP_LOCK.lock().await;
+
+        tracing::info!("Manually marking setup as complete");
+
+        let config = self.config.read().await.clone();
+        self.mark_setup_complete(&config).await?;
+        let mut complete = self.setup_complete.write().await;
+        *complete = true;
         Ok(())
     }
 
@@ -357,7 +405,6 @@ impl SetupManager {
         *complete
     }
 
-    #[allow(dead_code)]
     pub async fn update_config(&self, config: SetupConfig) -> Result<()> {
         let mut current = self.config.write().await;
         *current = config;

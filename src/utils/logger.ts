@@ -32,12 +32,24 @@ class Logger {
   private enableConsole: boolean;
   private logHistory: LogEntry[] = [];
   private maxHistorySize = 100;
+  private debugToken: string | null = null;
+  private readonly DEBUG_TOKEN_KEY = 'bear_debug_token';
+  private readonly DEBUG_ENABLED_KEY = 'bear_debug_enabled';
 
   constructor() {
-    // Detect environment
+    // Detect environment - use build-time environment variable
     this.isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-    // In production, we can still enable console for debugging via localStorage
-    this.enableConsole = this.isDevelopment || localStorage.getItem('bear_debug') === 'true';
+
+    // Production debug mode with security token
+    // Only enable console logging in production if:
+    // 1. It's development mode, OR
+    // 2. Valid debug token exists and debug is explicitly enabled
+    this.enableConsole = this.isDevelopment || this.validateDebugMode();
+
+    // Generate debug token on first run in production
+    if (!this.isDevelopment && !this.getDebugToken()) {
+      this.generateDebugToken();
+    }
   }
 
   /**
@@ -213,12 +225,86 @@ class Logger {
   }
 
   /**
-   * Enable debug mode (useful for production debugging)
+   * Generate a secure debug token for production debugging
    */
-  enableDebug(): void {
+  private generateDebugToken(): string {
+    // Generate a cryptographically secure random token
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+
+    try {
+      localStorage.setItem(this.DEBUG_TOKEN_KEY, token);
+      this.debugToken = token;
+      return token;
+    } catch (err) {
+      console.error('Failed to generate debug token:', err);
+      return '';
+    }
+  }
+
+  /**
+   * Get the current debug token
+   */
+  private getDebugToken(): string | null {
+    if (this.debugToken) return this.debugToken;
+
+    try {
+      this.debugToken = localStorage.getItem(this.DEBUG_TOKEN_KEY);
+      return this.debugToken;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Validate debug mode is properly enabled
+   */
+  private validateDebugMode(): boolean {
+    try {
+      const isEnabled = localStorage.getItem(this.DEBUG_ENABLED_KEY) === 'true';
+      const hasToken = !!this.getDebugToken();
+      return isEnabled && hasToken;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Enable debug mode (useful for production debugging)
+   * Requires the debug token for security
+   */
+  enableDebug(token?: string): boolean {
+    if (this.isDevelopment) {
+      this.enableConsole = true;
+      this.info('Debug mode enabled (development)');
+      return true;
+    }
+
+    // In production, verify token
+    const storedToken = this.getDebugToken();
+    if (!storedToken) {
+      console.error('No debug token found. Cannot enable debug mode.');
+      return false;
+    }
+
+    // If token provided, validate it
+    if (token && token !== storedToken) {
+      console.error('Invalid debug token. Debug mode not enabled.');
+      return false;
+    }
+
+    // If no token provided but debug was previously enabled with valid token, allow it
+    if (!token && !this.validateDebugMode()) {
+      console.error('Debug mode requires token. Call enableDebug(token) with your debug token.');
+      console.info('Debug token can be retrieved with: window.bearLogger.getDebugToken()');
+      return false;
+    }
+
     this.enableConsole = true;
-    localStorage.setItem('bear_debug', 'true');
-    this.info('Debug mode enabled');
+    localStorage.setItem(this.DEBUG_ENABLED_KEY, 'true');
+    this.info('Debug mode enabled (production)');
+    return true;
   }
 
   /**
@@ -226,7 +312,36 @@ class Logger {
    */
   disableDebug(): void {
     this.enableConsole = this.isDevelopment;
-    localStorage.removeItem('bear_debug');
+    localStorage.removeItem(this.DEBUG_ENABLED_KEY);
+    this.info('Debug mode disabled');
+  }
+
+  /**
+   * Get debug token (only works if debug is already enabled or in development)
+   */
+  getPublicDebugToken(): string | null {
+    if (this.isDevelopment || this.validateDebugMode()) {
+      const token = this.getDebugToken();
+      if (token) {
+        console.info('🔑 Debug Token:', token);
+        console.info('To enable debug mode: window.bearLogger.enableDebug("' + token + '")');
+      }
+      return token;
+    }
+    console.error('Debug mode must be enabled first to retrieve token.');
+    return null;
+  }
+
+  /**
+   * Rotate debug token (generates new token and disables debug mode)
+   */
+  rotateDebugToken(): string {
+    this.disableDebug();
+    localStorage.removeItem(this.DEBUG_TOKEN_KEY);
+    this.debugToken = null;
+    const newToken = this.generateDebugToken();
+    this.info('Debug token rotated. Use new token to enable debug mode.');
+    return newToken;
   }
 
   /**
@@ -243,7 +358,31 @@ export const logger = new Logger();
 // Export for type checking
 export type { LogLevel, LogContext, LogEntry };
 
-// Development helper: expose logger to window for debugging
+// Expose logger to window for debugging (limited access in production)
+declare global {
+  interface Window {
+    bearLogger: {
+      enableDebug: (token?: string) => boolean;
+      disableDebug: () => void;
+      getDebugToken: () => string | null;
+      rotateDebugToken: () => string;
+      exportLogs: () => string;
+      getHistory: (level?: LogLevel) => LogEntry[];
+    };
+  }
+}
+
+// Development: expose full logger
 if (import.meta.env.DEV) {
   (window as any).bearLogger = logger;
+} else {
+  // Production: expose only safe debugging methods
+  (window as any).bearLogger = {
+    enableDebug: (token?: string) => logger.enableDebug(token),
+    disableDebug: () => logger.disableDebug(),
+    getDebugToken: () => logger.getPublicDebugToken(),
+    rotateDebugToken: () => logger.rotateDebugToken(),
+    exportLogs: () => logger.exportLogs(),
+    getHistory: (level?: LogLevel) => logger.getHistory(level),
+  };
 }

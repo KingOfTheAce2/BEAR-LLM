@@ -560,73 +560,126 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_execute_sql(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let query = params["query"].as_str()
+        let _query = params["query"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing query parameter"))?;
 
-        // Security: Only allow SELECT in sandbox mode
-        if self.sandboxed && !query.trim().to_uppercase().starts_with("SELECT") {
-            return Ok(ToolResult {
-                success: false,
-                result: serde_json::Value::Null,
-                error: Some("Only SELECT queries allowed in sandbox mode".to_string()),
-            });
-        }
+        // 🚨 SECURITY: SQL execution is DISABLED for safety
+        //
+        // The previous implementation only checked if query starts with "SELECT",
+        // but this is easily bypassed with:
+        // - Subqueries: SELECT * FROM (DROP TABLE users; SELECT 1)
+        // - Comments: SELECT/**/1;/**/DROP/**/TABLE/**/users
+        // - ATTACH DATABASE: Can attach external databases and modify them
+        // - SQLite pragmas: PRAGMA writable_schema=ON allows schema tampering
+        // - Time-based attacks: SELECT CASE WHEN ... THEN randomblob(100000000) END
+        //
+        // REQUIRED FOR SAFE RE-ENABLE:
+        // 1. Use prepared statements with parameter binding (no string interpolation)
+        // 2. Run queries in read-only database connection mode
+        // 3. Set query timeout limits (prevent DoS)
+        // 4. Use whitelist of allowed tables/columns
+        // 5. Implement row/result size limits
+        // 6. Run in separate process with resource limits
+        //
+        // See docs/SECURITY_IMPROVEMENTS.md for implementation guide
 
-        // Execute query against local SQLite database with safety checks
+        tracing::error!(
+            "SQL execution attempt blocked - feature disabled for security. \
+            See docs/SECURITY_IMPROVEMENTS.md"
+        );
+
         Ok(ToolResult {
-            success: true,
-            result: serde_json::json!({
-                "rows": [],
-                "columns": [],
-            }),
-            error: None,
+            success: false,
+            result: serde_json::Value::Null,
+            error: Some(
+                "SQL execution is disabled for security. \
+                This feature requires read-only database connections and query validation. \
+                Contact system administrator to enable.".to_string()
+            ),
         })
     }
 
     #[allow(dead_code)]
     async fn handle_run_python(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let code = params["code"].as_str()
+        let _code = params["code"].as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing code parameter"))?;
 
-        // Security: This should run in a sandboxed Python environment
-        // Using something like RustPython or PyO3 with restrictions
+        // 🚨 SECURITY: Python execution is DISABLED for safety
+        //
+        // The previous implementation used regex string matching to filter dangerous
+        // operations (os, subprocess, eval, etc.), but this is easily bypassed with:
+        // - Base64 encoding: exec(__import__('base64').b64decode('...'))
+        // - String concatenation: __import__('o' + 's').system('...')
+        // - getattr: getattr(__builtins__, 'eval')('...')
+        // - Unicode tricks: \u006f\u0073 (spells 'os')
+        //
+        // REQUIRED FOR SAFE RE-ENABLE:
+        // 1. Use PyO3 with restricted __builtins__ and no dangerous modules
+        // 2. Run in subprocess with resource limits (CPU, memory, time)
+        // 3. Use seccomp/AppArmor for syscall filtering (Linux) or Job Objects (Windows)
+        // 4. Whitelist-only approach for allowed modules
+        //
+        // See docs/SECURITY_IMPROVEMENTS.md for implementation guide
 
-        if self.sandboxed {
-            // Check for dangerous imports/functions
-            let dangerous = ["os", "subprocess", "eval", "exec", "__import__"];
-            for d in dangerous {
-                if code.contains(d) {
-                    return Ok(ToolResult {
-                        success: false,
-                        result: serde_json::Value::Null,
-                        error: Some(format!("Forbidden operation: {}", d)),
-                    });
-                }
-            }
-        }
+        tracing::error!(
+            "Python execution attempt blocked - feature disabled for security. \
+            See docs/SECURITY_IMPROVEMENTS.md"
+        );
 
-        // Execute Python code in secure sandboxed environment
         Ok(ToolResult {
-            success: true,
-            result: serde_json::json!({
-                "output": "Python execution result",
-                "return_value": null,
-            }),
-            error: None,
+            success: false,
+            result: serde_json::Value::Null,
+            error: Some(
+                "Python execution is disabled for security. \
+                This feature requires containerized sandboxing. \
+                Contact system administrator to enable.".to_string()
+            ),
         })
     }
 
     #[allow(dead_code)]
     fn is_path_allowed(&self, path: &str) -> bool {
-        let path = PathBuf::from(path);
+        use std::path::Path;
 
-        // Check if path is within allowed directories
+        let path = Path::new(path);
+
+        // Canonicalize the target path to prevent symbolic link and .. tricks
+        let canonical_target = match path.canonicalize() {
+            Ok(p) => p,
+            Err(_) => {
+                tracing::warn!("Path canonicalization failed for: {:?}", path);
+                return false; // Non-existent or inaccessible paths are denied
+            }
+        };
+
+        // Check if canonical path is within any allowed directory
         for allowed in &self.allowed_paths {
-            if path.starts_with(allowed) {
+            // Canonicalize the allowed path as well
+            let canonical_allowed = match allowed.canonicalize() {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!(
+                        "Allowed path canonicalization failed for {:?}: {}",
+                        allowed, e
+                    );
+                    continue; // Skip invalid allowed paths
+                }
+            };
+
+            if canonical_target.starts_with(&canonical_allowed) {
+                tracing::debug!(
+                    "Path access granted: {:?} within {:?}",
+                    canonical_target,
+                    canonical_allowed
+                );
                 return true;
             }
         }
 
+        tracing::warn!(
+            "Path access denied: {:?} not in allowed directories",
+            canonical_target
+        );
         false
     }
 

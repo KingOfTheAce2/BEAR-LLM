@@ -2,6 +2,7 @@ use anyhow::{Result, anyhow};
 use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use crate::utils::cosine_similarity;
 
 pub struct EmbeddingsEngine {
     model: Arc<RwLock<Option<TextEmbedding>>>,
@@ -96,19 +97,15 @@ impl EmbeddingsEngine {
         Ok(())
     }
 
-    pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> f32 {
-        let dot_product: f32 = vec1.iter()
-            .zip(vec2.iter())
-            .map(|(a, b)| a * b)
-            .sum();
+}
 
-        let norm1: f32 = vec1.iter().map(|x| x * x).sum::<f32>().sqrt();
-        let norm2: f32 = vec2.iter().map(|x| x * x).sum::<f32>().sqrt();
-
-        if norm1 == 0.0 || norm2 == 0.0 {
-            return 0.0;
-        }
-
-        dot_product / (norm1 * norm2)
-    }
+/// Calculate cosine similarity between two embedding vectors
+///
+/// This function now delegates to the shared utility function
+/// to avoid code duplication. Kept as a public function for backward compatibility.
+///
+/// # Deprecated
+/// Use `crate::utils::cosine_similarity` directly instead.
+pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> f32 {
+    crate::utils::cosine_similarity(vec1, vec2)
 }

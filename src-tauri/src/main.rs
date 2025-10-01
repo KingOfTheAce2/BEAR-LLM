@@ -13,10 +13,14 @@ use tokio::sync::RwLock;
 mod pii_detector;
 mod rag_engine;
 mod llm_manager;
+mod gguf_inference;
 
 // Core modules
 mod presidio_bridge;
+mod presidio_service;
 mod setup_manager;
+mod utils;
+mod constants;
 mod hardware_monitor;
 mod file_processor;
 mod system_monitor;
@@ -63,24 +67,70 @@ use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 // RAII guard for automatic temporary file cleanup
 struct TempFileGuard {
     path: PathBuf,
+    cleanup_enabled: bool,
 }
 
 impl TempFileGuard {
+    /// Create a new temp file guard for an existing file
+    ///
+    /// This assumes the file already exists and will clean it up on drop.
+    /// For better safety, use `create_with_content` instead.
     fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self {
+            path,
+            cleanup_enabled: true,
+        }
+    }
+
+    /// Atomically create temp file with content and guard it
+    ///
+    /// This is the preferred way to create temporary files as it ensures
+    /// the guard is created before any file operations, preventing leaks.
+    fn create_with_content(path: PathBuf, content: &[u8]) -> Result<Self, String> {
+        // Create guard first (before file exists)
+        let mut guard = Self {
+            path: path.clone(),
+            cleanup_enabled: false, // Don't cleanup yet - file doesn't exist
+        };
+
+        // Now write the file
+        std::fs::write(&path, content)
+            .map_err(|e| format!("Failed to write temporary file: {}", e))?;
+
+        // Enable cleanup now that file exists
+        guard.cleanup_enabled = true;
+
+        tracing::debug!(path = ?path, size = content.len(), "Created temporary file with guard");
+
+        Ok(guard)
     }
 
     #[allow(dead_code)]
     fn path(&self) -> &PathBuf {
         &self.path
     }
+
+    /// Disable automatic cleanup (useful if file ownership is transferred)
+    #[allow(dead_code)]
+    fn persist(mut self) -> PathBuf {
+        self.cleanup_enabled = false;
+        self.path.clone()
+    }
 }
 
 impl Drop for TempFileGuard {
     fn drop(&mut self) {
+        if !self.cleanup_enabled {
+            return;
+        }
+
         if self.path.exists() {
             if let Err(e) = std::fs::remove_file(&self.path) {
-                tracing::warn!(path = ?self.path, error = %e, "Failed to cleanup temporary file");
+                tracing::warn!(
+                    path = ?self.path,
+                    error = %e,
+                    "Failed to cleanup temporary file"
+                );
             } else {
                 tracing::debug!(path = ?self.path, "Cleaned up temporary file");
             }
@@ -103,12 +153,39 @@ fn create_secure_temp_path(filename: &str) -> Result<PathBuf, String> {
         return Err("Invalid filename: resulted in empty name after sanitization".to_string());
     }
 
-    // Use system temporary directory
+    // Use system temporary directory and canonicalize it
     let temp_dir = env::temp_dir();
+    let canonical_temp_dir = temp_dir.canonicalize()
+        .map_err(|e| format!("Failed to canonicalize temp directory: {}", e))?;
 
     // Add unique prefix to avoid collisions
     let unique_filename = format!("bear_ai_{}_{}", uuid::Uuid::new_v4(), safe_filename);
-    let temp_path = temp_dir.join(unique_filename);
+    let temp_path = canonical_temp_dir.join(&unique_filename);
+
+    // SECURITY: Verify the constructed path is still within temp directory
+    // This prevents any clever path manipulation attacks
+    let parent = temp_path.parent()
+        .ok_or_else(|| "Invalid path: no parent directory".to_string())?;
+
+    if parent != canonical_temp_dir {
+        return Err(format!(
+            "Security violation: Path traversal attempt detected. \
+            Expected parent: {:?}, Got: {:?}",
+            canonical_temp_dir, parent
+        ));
+    }
+
+    // Additional validation: ensure no symbolic links in the path
+    // The file doesn't exist yet, so we check the parent
+    if parent.read_link().is_ok() {
+        return Err("Security violation: Symbolic link detected in temp path".to_string());
+    }
+
+    tracing::debug!(
+        "Created secure temp path: {:?} for filename: {}",
+        temp_path,
+        filename
+    );
 
     Ok(temp_path)
 }
@@ -484,21 +561,18 @@ async fn analyze_document_pii(
         // Create secure temporary file path
         let temp_path = create_secure_temp_path(&filename)?;
 
-        // Write content to temporary file
-        std::fs::write(&temp_path, &content).map_err(|e| {
-            format!("Failed to write temporary file: {}", e)
-        })?;
-
-        // Create RAII guard for automatic cleanup
-        let _temp_guard = TempFileGuard::new(temp_path.clone());
+        // Atomically create temporary file with content and guard
+        // This prevents leaks even if there's a panic during file operations
+        let temp_guard = TempFileGuard::create_with_content(temp_path.clone(), &content)?;
 
         // Process the file
-        state.file_processor
-            .process_file(temp_path.to_str().ok_or("Invalid temp path")?, file_type)
+        let result = state.file_processor
+            .process_file(temp_guard.path().to_str().ok_or("Invalid temp path")?, file_type)
             .await
-            .unwrap_or_else(|_| String::from_utf8_lossy(&content).to_string())
+            .unwrap_or_else(|_| String::from_utf8_lossy(&content).to_string());
 
         // temp_guard is automatically dropped here, cleaning up the file
+        result
     } else {
         return Ok(serde_json::json!({
             "filename": filename,
@@ -573,8 +647,17 @@ async fn check_first_run(state: State<'_, AppState>) -> Result<bool, String> {
 async fn run_initial_setup(
     state: State<'_, AppState>,
     window: tauri::Window,
+    config: Option<serde_json::Value>,
 ) -> Result<bool, String> {
     use tokio::sync::mpsc;
+
+    // Update config if provided
+    if let Some(config_val) = config {
+        if let Ok(setup_config) = serde_json::from_value::<crate::setup_manager::SetupConfig>(config_val) {
+            let setup = state.setup_manager.read().await;
+            setup.update_config(setup_config).await.map_err(|e| e.to_string())?;
+        }
+    }
 
     let (tx, mut rx) = mpsc::channel(100);
     let _setup = state.setup_manager.read().await;
@@ -595,6 +678,13 @@ async fn run_initial_setup(
         }
     });
 
+    Ok(true)
+}
+
+#[tauri::command]
+async fn mark_setup_complete(state: State<'_, AppState>) -> Result<bool, String> {
+    let setup = state.setup_manager.read().await;
+    setup.mark_setup_complete_only().await.map_err(|e| e.to_string())?;
     Ok(true)
 }
 
@@ -821,12 +911,21 @@ fn main() {
         }
     };
 
+    // Initialize LLM Manager with GGUF support
+    let llm_manager = match LLMManager::new() {
+        Ok(manager) => Arc::new(RwLock::new(manager)),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to initialize GGUF inference engine");
+            panic!("Critical: GGUF inference engine initialization failed. Cannot proceed without LLM support.");
+        }
+    };
+
     // Create unified app state
     let app_state = AppState {
         // Production services
         pii_detector: Arc::new(RwLock::new(PIIDetector::new())),
         rag_engine: Arc::new(RwLock::new(RAGEngine::new())),
-        llm_manager: Arc::new(RwLock::new(LLMManager::new())),
+        llm_manager,
 
         // Core services
         presidio_bridge: Arc::new(RwLock::new(PresidioBridge::new())),
@@ -979,6 +1078,7 @@ fn main() {
             // Setup management
             check_first_run,
             run_initial_setup,
+            mark_setup_complete,
             get_setup_status,
 
             // RAG Model Management

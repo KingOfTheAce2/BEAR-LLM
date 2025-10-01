@@ -7,6 +7,8 @@ use tokio::sync::RwLock;
 use hf_hub::api::tokio::Api;
 use candle_core::Device;
 use tokenizers::Tokenizer;
+use crate::gguf_inference::{GGUFInferenceEngine, GGUFInferenceConfig, GenerationResult};
+use crate::constants::*;
 
 // Production LLM Manager with real model downloading and inference
 // This is the single source of truth for LLM management in BEAR AI
@@ -24,6 +26,8 @@ pub struct ModelConfig {
     pub size_mb: u64,
     pub quantization: String,
     pub requires_gpu: bool,
+    pub recommended_gpu_layers: Option<u32>, // Recommended GPU layers for this model
+    pub recommended_vram_mb: Option<u64>,   // Recommended VRAM for full offload
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,17 +77,15 @@ pub struct LLMManager {
     models_registry: Arc<RwLock<HashMap<String, ModelConfig>>>,
     model_status: Arc<RwLock<HashMap<String, ModelStatus>>>,
     active_model: Arc<RwLock<Option<String>>>,
-    #[allow(dead_code)]
-    loaded_model: Arc<RwLock<Option<Box<dyn Send + Sync>>>>, // Model inference handle
+    gguf_engine: Arc<GGUFInferenceEngine>,
     tokenizer: Arc<RwLock<Option<Tokenizer>>>,
     models_dir: PathBuf,
     generation_config: Arc<RwLock<GenerationConfig>>,
-    #[allow(dead_code)]
     device: Device,
 }
 
 impl LLMManager {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         let models_dir = dirs::data_local_dir()
             .unwrap_or_else(|| PathBuf::from("./"))
             .join("bear-ai-llm")
@@ -97,16 +99,31 @@ impl LLMManager {
 
         tracing::info!(device = ?device, "Initialized compute device");
 
-        Self {
+        // Initialize GGUF inference engine
+        let gguf_engine = GGUFInferenceEngine::new()
+            .map_err(|e| anyhow!("Failed to initialize GGUF engine: {}", e))?;
+
+        Ok(Self {
             models_registry: Arc::new(RwLock::new(HashMap::new())),
             model_status: Arc::new(RwLock::new(HashMap::new())),
             active_model: Arc::new(RwLock::new(None)),
-            loaded_model: Arc::new(RwLock::new(None)),
+            gguf_engine: Arc::new(gguf_engine),
             tokenizer: Arc::new(RwLock::new(None)),
             models_dir,
             generation_config: Arc::new(RwLock::new(GenerationConfig::default())),
             device,
-        }
+        })
+    }
+
+    /// Get standardized model directory for a given model config
+    ///
+    /// This ensures consistency between download, load, and scan operations.
+    /// Uses sanitized repo_id as the directory name for uniqueness and clarity.
+    fn get_model_dir(&self, model_config: &ModelConfig) -> PathBuf {
+        // Sanitize repo_id by replacing "/" with "_"
+        // Example: "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" -> "TheBloke_TinyLlama-1.1B-Chat-v1.0-GGUF"
+        let sanitized_repo_id = model_config.repo_id.replace("/", "_");
+        self.models_dir.join(sanitized_repo_id)
     }
 
     pub async fn initialize(&self) -> Result<()> {
@@ -134,11 +151,13 @@ impl LLMManager {
                 model_file: "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("TinyLlama/TinyLlama-1.1B-Chat-v1.0".to_string()),
                 max_tokens: 1024,
-                temperature: 0.8,
+                temperature: DEFAULT_TEMPERATURE,
                 context_length: 2048,
                 size_mb: 638,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: false,
+                recommended_gpu_layers: Some(TINYLLAMA_GPU_LAYERS),
+                recommended_vram_mb: Some(TINYLLAMA_VRAM_MB),
             },
             ModelConfig {
                 name: "phi-2".to_string(),
@@ -147,11 +166,13 @@ impl LLMManager {
                 model_file: "phi-2.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("microsoft/phi-2".to_string()),
                 max_tokens: 1024,
-                temperature: 0.8,
+                temperature: DEFAULT_TEMPERATURE,
                 context_length: 2048,
                 size_mb: 1600,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: false,
+                recommended_gpu_layers: Some(PHI2_GPU_LAYERS),
+                recommended_vram_mb: Some(PHI2_VRAM_MB),
             },
             ModelConfig {
                 name: "mistral-7b-instruct".to_string(),
@@ -159,12 +180,14 @@ impl LLMManager {
                 repo_id: "TheBloke/Mistral-7B-Instruct-v0.2-GGUF".to_string(),
                 model_file: "mistral-7b-instruct-v0.2.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("mistralai/Mistral-7B-Instruct-v0.2".to_string()),
-                max_tokens: 2048,
-                temperature: 0.8,
-                context_length: 4096,
+                max_tokens: DEFAULT_MAX_TOKENS as u32,
+                temperature: DEFAULT_TEMPERATURE,
+                context_length: DEFAULT_N_CTX,
                 size_mb: 4370,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: true,
+                recommended_gpu_layers: Some(MISTRAL_7B_GPU_LAYERS),
+                recommended_vram_mb: Some(MISTRAL_7B_VRAM_MB),
             },
             ModelConfig {
                 name: "llama2-7b-chat".to_string(),
@@ -172,12 +195,14 @@ impl LLMManager {
                 repo_id: "TheBloke/Llama-2-7B-Chat-GGUF".to_string(),
                 model_file: "llama-2-7b-chat.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("meta-llama/Llama-2-7b-chat-hf".to_string()),
-                max_tokens: 2048,
-                temperature: 0.7,
-                context_length: 4096,
+                max_tokens: DEFAULT_MAX_TOKENS as u32,
+                temperature: DEFAULT_TEMPERATURE,
+                context_length: DEFAULT_N_CTX,
                 size_mb: 3830,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: true,
+                recommended_gpu_layers: Some(LLAMA2_7B_GPU_LAYERS),
+                recommended_vram_mb: Some(LLAMA2_7B_VRAM_MB),
             },
         ];
 
@@ -193,8 +218,9 @@ impl LLMManager {
     async fn scan_local_models(&self) -> Result<()> {
         let mut status = self.model_status.write().await;
 
-        for (name, _config) in self.models_registry.read().await.iter() {
-            let model_dir = self.models_dir.join(name);
+        for (name, config) in self.models_registry.read().await.iter() {
+            // Use standardized model directory
+            let model_dir = self.get_model_dir(config);
 
             if model_dir.exists() {
                 // Check if model file exists
@@ -240,9 +266,16 @@ impl LLMManager {
 
         tracing::info!(model = %model_name, "Starting model download");
 
-        // Create model directory
-        let model_dir = self.models_dir.join(model_name);
+        // Create model directory using standardized path
+        let model_dir = self.get_model_dir(&model_config);
         tokio::fs::create_dir_all(&model_dir).await?;
+
+        tracing::debug!(
+            model_dir = ?model_dir,
+            repo_id = %model_config.repo_id,
+            "Model directory: {:?}",
+            model_dir
+        );
 
         // Download using HuggingFace Hub
         let api = Api::new()?;
@@ -327,12 +360,45 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Loading);
         }
 
-        tracing::info!(model = %model_name, "Loading model");
+        tracing::info!(model = %model_name, "Loading GGUF model");
 
-        // Load tokenizer
-        let model_dir = self.models_dir.join(model_name);
+        // Get model config
+        let model_config = {
+            let registry = self.models_registry.read().await;
+            registry.get(model_name)
+                .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_name))?
+                .clone()
+        };
+
+        // Find GGUF model file using standardized path
+        let model_dir = self.get_model_dir(&model_config);
+        let model_file = model_dir.join(&model_config.model_file);
+
+        tracing::debug!(
+            model_file = ?model_file,
+            repo_id = %model_config.repo_id,
+            "Looking for model file: {:?}",
+            model_file
+        );
+
+        if !model_file.exists() {
+            let mut status = self.model_status.write().await;
+            status.insert(model_name.to_string(), ModelStatus::Failed("Model file not found".to_string()));
+            return Err(anyhow!("Model file not found: {:?}", model_file));
+        }
+
+        // Calculate optimal GPU layers based on available VRAM
+        let n_gpu_layers = self.calculate_optimal_gpu_layers(&model_config).await;
+
+        // Load model into GGUF engine
+        self.gguf_engine.load_model(model_file, n_gpu_layers).await
+            .map_err(|e| {
+                tracing::error!("Failed to load GGUF model: {}", e);
+                e
+            })?;
+
+        // Load tokenizer if available
         let tokenizer_path = model_dir.join("tokenizer.json");
-
         if tokenizer_path.exists() {
             match Tokenizer::from_file(tokenizer_path) {
                 Ok(tokenizer) => {
@@ -346,9 +412,6 @@ impl LLMManager {
             }
         }
 
-        // Note: Actual model loading would be implemented here
-        // Mark model as loaded and ready for inference
-
         // Update active model
         {
             let mut active = self.active_model.write().await;
@@ -361,7 +424,7 @@ impl LLMManager {
             status.insert(model_name.to_string(), ModelStatus::Loaded);
         }
 
-        tracing::info!(model = %model_name, "Model loaded successfully");
+        tracing::info!(model = %model_name, "✅ GGUF model loaded and ready for inference");
 
         Ok(())
     }
@@ -391,10 +454,10 @@ impl LLMManager {
 
     pub async fn generate(&self, prompt: &str, config: Option<GenerationConfig>) -> Result<InferenceResult> {
         let active_model = self.active_model.read().await;
-        let model_name = active_model.as_ref()
+        let _model_name = active_model.as_ref()
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
-        let config = config.unwrap_or_else(|| {
+        let gen_config = config.unwrap_or_else(|| {
             tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(async {
                     self.generation_config.read().await.clone()
@@ -402,63 +465,85 @@ impl LLMManager {
             })
         });
 
-        let start_time = std::time::Instant::now();
+        // Check if GGUF model is loaded
+        if !self.gguf_engine.is_model_loaded().await {
+            return Err(anyhow!("GGUF model not loaded. Call load_model() first."));
+        }
 
-        // Generate contextual response based on model and prompt
-        let response = self.generate_response_for_model(model_name, prompt, &config);
+        tracing::debug!("Generating text for prompt: {}", &prompt[..prompt.len().min(50)]);
 
-        let elapsed = start_time.elapsed();
-        let tokens_generated = response.split_whitespace().count();
-        let tokens_per_second = tokens_generated as f32 / elapsed.as_secs_f32();
+        // Generate using GGUF engine
+        let result = self.gguf_engine.generate(
+            prompt,
+            gen_config.max_tokens,
+            gen_config.stop_sequences.clone(),
+        ).await?;
+
+        tracing::info!(
+            "Generated {} tokens in {:.2}s ({:.2} tok/s)",
+            result.tokens_generated,
+            result.time_ms as f32 / 1000.0,
+            result.tokens_per_second
+        );
 
         Ok(InferenceResult {
-            text: response,
-            tokens_generated,
-            time_ms: elapsed.as_millis(),
-            tokens_per_second,
+            text: result.text,
+            tokens_generated: result.tokens_generated,
+            time_ms: result.time_ms,
+            tokens_per_second: result.tokens_per_second,
         })
     }
 
-    fn generate_response_for_model(&self, model_name: &str, prompt: &str, config: &GenerationConfig) -> String {
-        // Production-ready response generation
-        // This would integrate with actual model inference
+    /// Generate text with streaming support
+    pub async fn generate_stream<F>(
+        &self,
+        prompt: &str,
+        config: Option<GenerationConfig>,
+        on_token: F,
+    ) -> Result<InferenceResult>
+    where
+        F: FnMut(&str) -> bool + Send + 'static,
+    {
+        let active_model = self.active_model.read().await;
+        let _model_name = active_model.as_ref()
+            .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
-        let prompt_lower = prompt.to_lowercase();
+        let gen_config = config.unwrap_or_else(|| {
+            tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    self.generation_config.read().await.clone()
+                })
+            })
+        });
 
-        // Legal domain responses
-        if prompt_lower.contains("contract") {
-            format!("Based on the contract analysis, key considerations include:\n\n\
-                    1. **Terms and Conditions**: All parties must clearly understand their obligations.\n\
-                    2. **Performance Standards**: Specific deliverables and timelines should be defined.\n\
-                    3. **Liability Clauses**: Limitation of liability and indemnification provisions are critical.\n\
-                    4. **Termination Rights**: Clear termination clauses protect both parties.\n\
-                    5. **Dispute Resolution**: Consider arbitration vs. litigation clauses.\n\n\
-                    Model: {} | Temperature: {}", model_name, config.temperature)
-        } else if prompt_lower.contains("legal") || prompt_lower.contains("law") {
-            format!("From a legal perspective:\n\n\
-                    The matter you've described involves several legal considerations. \
-                    Key factors include applicable statutes, regulatory requirements, \
-                    and relevant case law precedents. I recommend reviewing the specific \
-                    jurisdictional requirements and consulting relevant legal authorities.\n\n\
-                    Model: {} | Temperature: {}", model_name, config.temperature)
-        } else if prompt_lower.contains("compliance") {
-            format!("Regarding compliance requirements:\n\n\
-                    1. **Regulatory Framework**: Identify all applicable regulations.\n\
-                    2. **Risk Assessment**: Evaluate current compliance gaps.\n\
-                    3. **Implementation Plan**: Develop systematic compliance procedures.\n\
-                    4. **Monitoring**: Establish ongoing compliance monitoring.\n\
-                    5. **Documentation**: Maintain comprehensive compliance records.\n\n\
-                    Model: {} | Temperature: {}", model_name, config.temperature)
-        } else {
-            // General response
-            format!("Based on your query about '{}', here's my analysis:\n\n\
-                    The topic requires careful consideration of multiple factors. \
-                    I've processed your request using the {} model with temperature {} \
-                    to provide a balanced and thoughtful response.\n\n\
-                    Please note that this is generated content and should be reviewed \
-                    for accuracy and applicability to your specific situation.",
-                    prompt, model_name, config.temperature)
+        // Check if GGUF model is loaded
+        if !self.gguf_engine.is_model_loaded().await {
+            return Err(anyhow!("GGUF model not loaded. Call load_model() first."));
         }
+
+        tracing::debug!("Streaming generation for prompt: {}", &prompt[..prompt.len().min(50)]);
+
+        // Generate with streaming using GGUF engine
+        let result = self.gguf_engine.generate_stream(
+            prompt,
+            gen_config.max_tokens,
+            gen_config.stop_sequences.clone(),
+            on_token,
+        ).await?;
+
+        tracing::info!(
+            "Streamed {} tokens in {:.2}s ({:.2} tok/s)",
+            result.tokens_generated,
+            result.time_ms as f32 / 1000.0,
+            result.tokens_per_second
+        );
+
+        Ok(InferenceResult {
+            text: result.text,
+            tokens_generated: result.tokens_generated,
+            time_ms: result.time_ms,
+            tokens_per_second: result.tokens_per_second,
+        })
     }
 
     pub async fn list_models(&self) -> Vec<(String, ModelConfig, ModelStatus)> {
@@ -480,7 +565,6 @@ impl LLMManager {
         self.active_model.read().await.clone()
     }
 
-    #[allow(dead_code)]
     pub async fn unload_model(&self) -> Result<()> {
         let mut active = self.active_model.write().await;
 
@@ -492,8 +576,8 @@ impl LLMManager {
 
         *active = None;
 
-        let mut loaded_model = self.loaded_model.write().await;
-        *loaded_model = None;
+        // Unload GGUF model
+        self.gguf_engine.unload_model().await?;
 
         let mut tokenizer = self.tokenizer.write().await;
         *tokenizer = None;
@@ -501,10 +585,28 @@ impl LLMManager {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub async fn update_generation_config(&self, config: GenerationConfig) -> Result<()> {
         let mut gen_config = self.generation_config.write().await;
-        *gen_config = config;
+        *gen_config = config.clone();
+
+        // Update GGUF engine config as well
+        let gguf_config = GGUFInferenceConfig {
+            model_path: PathBuf::new(), // Will be set on load
+            n_ctx: 2048,
+            n_batch: 512,
+            n_threads: std::thread::available_parallelism()
+                .map(|n| n.get() as u32)
+                .unwrap_or(4),
+            n_gpu_layers: 0,
+            temperature: config.temperature,
+            top_k: config.top_k as i32,
+            top_p: config.top_p,
+            repeat_penalty: config.repetition_penalty,
+            seed: config.seed.unwrap_or(42) as u32,
+        };
+
+        self.gguf_engine.update_config(gguf_config).await?;
+
         Ok(())
     }
 
@@ -541,6 +643,97 @@ impl LLMManager {
         tracing::info!(model = %model_name, "Model deleted");
 
         Ok(())
+    }
+
+    /// Calculate optimal number of GPU layers to offload based on available VRAM
+    async fn calculate_optimal_gpu_layers(&self, model_config: &ModelConfig) -> u32 {
+        // If no GPU available, return 0
+        if self.device == Device::Cpu {
+            tracing::info!("CPU mode: No GPU layers will be offloaded");
+            return 0;
+        }
+
+        // Try to get GPU VRAM info using nvml-wrapper
+        let available_vram_mb = match self.get_available_vram_mb() {
+            Some(vram) => vram,
+            None => {
+                // Fallback: assume conservative 4GB if detection fails
+                tracing::warn!("Could not detect GPU VRAM, assuming 4GB");
+                4096
+            }
+        };
+
+        tracing::info!(
+            "GPU detected with ~{}MB VRAM available",
+            available_vram_mb
+        );
+
+        // Get recommended layers and VRAM for this model
+        let recommended_layers = model_config.recommended_gpu_layers.unwrap_or(0);
+        let recommended_vram = model_config.recommended_vram_mb.unwrap_or(model_config.size_mb);
+
+        // Calculate what percentage of the model we can offload
+        // Keep some VRAM free for context and computation (based on VRAM_USAGE_RATIO)
+        let usable_vram = (available_vram_mb as f32 * VRAM_USAGE_RATIO) as u64;
+
+        if usable_vram < recommended_vram {
+            // Partial offload: scale layers proportionally
+            let ratio = usable_vram as f32 / recommended_vram as f32;
+            let scaled_layers = (recommended_layers as f32 * ratio) as u32;
+
+            tracing::info!(
+                "Partial GPU offload: {} of {} layers ({}% of model) due to VRAM constraints",
+                scaled_layers,
+                recommended_layers,
+                (ratio * 100.0) as u32
+            );
+
+            scaled_layers
+        } else {
+            // Full offload possible
+            tracing::info!(
+                "Full GPU offload: {} layers (sufficient VRAM: {}MB >= {}MB)",
+                recommended_layers,
+                usable_vram,
+                recommended_vram
+            );
+
+            recommended_layers
+        }
+    }
+
+    /// Get available VRAM in MB using NVML
+    fn get_available_vram_mb(&self) -> Option<u64> {
+        use nvml_wrapper::Nvml;
+
+        match Nvml::init() {
+            Ok(nvml) => {
+                // Get first GPU device
+                match nvml.device_by_index(0) {
+                    Ok(device) => {
+                        // Get memory info
+                        match device.memory_info() {
+                            Ok(mem_info) => {
+                                let available_mb = mem_info.free / (1024 * 1024);
+                                Some(available_mb)
+                            }
+                            Err(e) => {
+                                tracing::warn!("Failed to get GPU memory info: {}", e);
+                                None
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to get GPU device: {}", e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::debug!("NVML not available: {}", e);
+                None
+            }
+        }
     }
 
     pub async fn load_model_for_inference(&self, model_path: &str) -> Result<()> {

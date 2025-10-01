@@ -42,6 +42,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::process::Command as AsyncCommand;
 use std::path::PathBuf;
+use std::fs;
 
 lazy_static! {
     // Compiled regex patterns for performance
@@ -114,8 +115,69 @@ impl Default for PIIDetectionConfig {
     }
 }
 
+/// PII exclusions configuration loaded from TOML file
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PIIExclusionsConfig {
+    pub exclusions: PIIExclusions,
+    pub settings: PIIExclusionSettings,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PIIExclusions {
+    #[serde(default)]
+    pub locations: Vec<String>,
+    #[serde(default)]
+    pub legal_terms: Vec<String>,
+    #[serde(default)]
+    pub organizations: Vec<String>,
+    #[serde(default)]
+    pub time_terms: Vec<String>,
+    #[serde(default)]
+    pub custom: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PIIExclusionSettings {
+    #[serde(default)]
+    pub case_sensitive: bool,
+    #[serde(default = "default_min_confidence")]
+    pub min_confidence: f32,
+    #[serde(default)]
+    pub fuzzy_matching: bool,
+}
+
+fn default_min_confidence() -> f32 {
+    0.5
+}
+
+impl Default for PIIExclusionsConfig {
+    fn default() -> Self {
+        Self {
+            exclusions: PIIExclusions {
+                locations: vec![
+                    "United States".to_string(),
+                    "New York".to_string(),
+                ],
+                legal_terms: vec![
+                    "First Amendment".to_string(),
+                    "Supreme Court".to_string(),
+                ],
+                organizations: vec![],
+                time_terms: vec![],
+                custom: vec![],
+            },
+            settings: PIIExclusionSettings {
+                case_sensitive: false,
+                min_confidence: 0.5,
+                fuzzy_matching: false,
+            },
+        }
+    }
+}
+
 pub struct PIIDetector {
     config: Arc<RwLock<PIIDetectionConfig>>,
+    exclusions_config: Arc<RwLock<PIIExclusionsConfig>>,
     python_path: Arc<RwLock<Option<PathBuf>>>,
     presidio_available: Arc<RwLock<bool>>,
     custom_patterns: Arc<RwLock<HashMap<String, Regex>>>,
@@ -123,12 +185,51 @@ pub struct PIIDetector {
 
 impl PIIDetector {
     pub fn new() -> Self {
+        // Load exclusions config from file, fallback to defaults if not found
+        let exclusions_config = Self::load_exclusions_config()
+            .unwrap_or_else(|e| {
+                tracing::warn!("Failed to load PII exclusions config: {}. Using defaults.", e);
+                PIIExclusionsConfig::default()
+            });
+
         Self {
             config: Arc::new(RwLock::new(PIIDetectionConfig::default())),
+            exclusions_config: Arc::new(RwLock::new(exclusions_config)),
             python_path: Arc::new(RwLock::new(None)),
             presidio_available: Arc::new(RwLock::new(false)),
             custom_patterns: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    /// Load PII exclusions configuration from TOML file
+    fn load_exclusions_config() -> Result<PIIExclusionsConfig> {
+        // Try multiple possible locations for the config file
+        let possible_paths = vec![
+            PathBuf::from("pii_exclusions.toml"),
+            PathBuf::from("src-tauri/pii_exclusions.toml"),
+            dirs::config_dir()
+                .map(|p| p.join("bear-ai-llm").join("pii_exclusions.toml"))
+                .unwrap_or_else(|| PathBuf::from("pii_exclusions.toml")),
+        ];
+
+        for path in possible_paths {
+            if path.exists() {
+                tracing::info!("Loading PII exclusions config from: {:?}", path);
+                let content = fs::read_to_string(&path)?;
+                let config: PIIExclusionsConfig = toml::from_str(&content)?;
+                tracing::info!(
+                    "Loaded {} exclusion patterns from config",
+                    config.exclusions.locations.len()
+                        + config.exclusions.legal_terms.len()
+                        + config.exclusions.organizations.len()
+                        + config.exclusions.time_terms.len()
+                        + config.exclusions.custom.len()
+                );
+                return Ok(config);
+            }
+        }
+
+        Err(anyhow!("PII exclusions config file not found in any expected location"))
     }
 
     pub async fn initialize(&self) -> Result<()> {
@@ -534,14 +635,41 @@ print(json.dumps(entities))
     }
 
     fn is_false_positive_name(&self, text: &str) -> bool {
-        const FALSE_POSITIVES: &[&str] = &[
-            "United States", "New York", "Los Angeles", "San Francisco",
-            "First Amendment", "Second Circuit", "Third Party", "Fourth Quarter",
-            "Fifth Avenue", "Sixth Street", "Federal Court", "Supreme Court",
-            "District Court", "Circuit Court"
-        ];
+        // Use async-safe blocking read since we're in a sync function
+        let exclusions_config = self.exclusions_config.try_read();
 
-        FALSE_POSITIVES.contains(&text)
+        if let Ok(config) = exclusions_config {
+            let case_sensitive = config.settings.case_sensitive;
+
+            // Check all exclusion categories
+            let all_exclusions: Vec<&String> = config.exclusions.locations.iter()
+                .chain(config.exclusions.legal_terms.iter())
+                .chain(config.exclusions.organizations.iter())
+                .chain(config.exclusions.time_terms.iter())
+                .chain(config.exclusions.custom.iter())
+                .collect();
+
+            for exclusion in all_exclusions {
+                let matches = if case_sensitive {
+                    text == exclusion
+                } else {
+                    text.eq_ignore_ascii_case(exclusion)
+                };
+
+                if matches {
+                    tracing::debug!("PII exclusion matched: '{}' against '{}'", text, exclusion);
+                    return true;
+                }
+            }
+
+            false
+        } else {
+            // Fallback to basic exclusions if config is locked
+            const FALLBACK_EXCLUSIONS: &[&str] = &[
+                "United States", "New York", "Supreme Court", "Federal Court"
+            ];
+            FALLBACK_EXCLUSIONS.contains(&text)
+        }
     }
 
     pub async fn redact_pii(&self, text: &str) -> Result<String> {

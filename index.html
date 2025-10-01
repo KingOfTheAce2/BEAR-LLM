@@ -4,8 +4,67 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Legal AI Assistant - Private & Secure</title>
+    <title>BEAR AI - Legal Assistant</title>
     <style>
+      /* CSS Variables for Theme Support */
+      :root {
+        /* Light theme (default) */
+        --bg-primary: #ffffff;
+        --bg-secondary: #f5f5f5;
+        --bg-tertiary: #e8e8e8;
+        --text-primary: #000000;
+        --text-secondary: #666666;
+        --text-tertiary: #999999;
+        --border-color: #d0d0d0;
+        --error-bg: #fafafa;
+        --error-border: #e0e0e0;
+        --error-accent: #dc2626;
+        --button-bg: #000000;
+        --button-text: #ffffff;
+        --button-hover: #333333;
+        --code-bg: #f0f0f0;
+        --code-text: #dc2626;
+        --scrollbar-track: #f5f5f5;
+        --scrollbar-thumb: #c0c0c0;
+      }
+
+      [data-theme="dark"],
+      body.dark-theme {
+        /* Dark theme */
+        --bg-primary: #000000;
+        --bg-secondary: #0a0a0a;
+        --bg-tertiary: #1a1a1a;
+        --text-primary: #ffffff;
+        --text-secondary: #b3b3b3;
+        --text-tertiary: #808080;
+        --border-color: #333333;
+        --error-bg: #0d0d0d;
+        --error-border: #2a2a2a;
+        --error-accent: #ff4444;
+        --button-bg: #ffffff;
+        --button-text: #000000;
+        --button-hover: #e6e6e6;
+        --code-bg: #0a0a0a;
+        --code-text: #ffaaaa;
+        --scrollbar-track: #0a0a0a;
+        --scrollbar-thumb: #404040;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica', 'Arial', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        height: 100vh;
+        overflow: hidden;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
       /* Failsafe error message styling */
       .failsafe-error {
         display: none;
@@ -14,69 +73,93 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        color: #e8e8e8;
+        background: var(--bg-primary);
+        color: var(--text-primary);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         padding: 40px;
         z-index: 999999;
         overflow-y: auto;
       }
+
       .failsafe-error.show {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
       }
+
       .error-container {
-        max-width: 600px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 68, 68, 0.3);
+        max-width: 700px;
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
         border-radius: 12px;
-        padding: 32px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       }
+
       .error-icon {
-        font-size: 48px;
-        margin-bottom: 20px;
+        font-size: 56px;
+        margin-bottom: 24px;
         text-align: center;
       }
+
       .error-title {
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 600;
-        margin-bottom: 16px;
-        color: #ff4444;
+        margin-bottom: 20px;
+        color: var(--error-accent);
         text-align: center;
       }
+
       .error-message {
         font-size: 16px;
         line-height: 1.6;
         margin-bottom: 24px;
-        color: #cccccc;
+        color: var(--text-secondary);
       }
+
       .error-details {
-        background: rgba(0, 0, 0, 0.3);
-        border-left: 3px solid #ff4444;
-        padding: 16px;
-        margin: 20px 0;
-        font-family: 'Courier New', monospace;
+        background: var(--code-bg);
+        border-left: 3px solid var(--error-accent);
+        padding: 20px;
+        margin: 24px 0;
+        font-family: 'SF Mono', Monaco, 'Courier New', monospace;
         font-size: 13px;
-        color: #ffaaaa;
-        border-radius: 4px;
+        color: var(--code-text);
+        border-radius: 8px;
         overflow-x: auto;
+        max-height: 300px;
+        overflow-y: auto;
       }
+
       .error-steps {
-        margin: 20px 0;
+        margin: 24px 0;
+        background: var(--bg-tertiary);
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
       }
+
+      .error-steps strong {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 16px;
+        color: var(--text-primary);
+      }
+
       .error-steps ol {
         margin-left: 20px;
       }
+
       .error-steps li {
         margin: 12px 0;
         line-height: 1.6;
+        color: var(--text-secondary);
       }
+
       .error-button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: var(--button-bg);
+        color: var(--button-text);
         border: none;
         padding: 12px 24px;
         border-radius: 6px;
@@ -84,28 +167,77 @@
         font-weight: 600;
         cursor: pointer;
         margin: 8px;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: all 0.2s;
       }
+
       .error-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        background: var(--button-hover);
+        transform: translateY(-1px);
       }
+
+      .error-button:active {
+        transform: scale(0.98);
+      }
+
       .error-actions {
         text-align: center;
-        margin-top: 24px;
+        margin-top: 32px;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
       }
+
+      .error-footer {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        font-size: 14px;
+        color: var(--text-tertiary);
+        text-align: center;
+      }
+
+      .error-footer a {
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+
+      .error-footer a:hover {
+        text-decoration: underline;
+      }
+
       /* Loading indicator */
       .loading-indicator {
         display: inline-block;
         width: 20px;
         height: 20px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
+        border: 3px solid var(--border-color);
         border-radius: 50%;
-        border-top-color: #667eea;
+        border-top-color: var(--text-primary);
         animation: spin 1s ease-in-out infinite;
       }
+
       @keyframes spin {
         to { transform: rotate(360deg); }
+      }
+
+      /* Scrollbar styling */
+      .error-details::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      .error-details::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+      }
+
+      .error-details::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 4px;
+      }
+
+      .error-details::-webkit-scrollbar-thumb:hover {
+        background: var(--text-tertiary);
       }
     </style>
   </head>
@@ -142,9 +274,9 @@
           <button class="error-button" id="close-btn">❌ Close Application</button>
         </div>
 
-        <div class="error-message" style="margin-top: 24px; font-size: 14px; opacity: 0.7;">
+        <div class="error-footer">
           If this problem persists, please report it on GitHub:<br>
-          <a href="https://github.com/KingOfTheAce2/BEAR-LLM/issues" target="_blank" style="color: #667eea;">github.com/KingOfTheAce2/BEAR-LLM/issues</a>
+          <a href="https://github.com/KingOfTheAce2/BEAR-LLM/issues" target="_blank">github.com/KingOfTheAce2/BEAR-LLM/issues</a>
         </div>
       </div>
     </div>

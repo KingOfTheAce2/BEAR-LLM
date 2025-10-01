@@ -40,6 +40,8 @@ candle-core = "0.8"
 candle-nn = "0.8"
 candle-transformers = "0.8"
 tokenizers = "0.21"
+# GGUF model support using llama.cpp bindings
+llama-cpp-2 = { version = "0.1", features = ["cuda"] }
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Better embeddings - Use fastembed with compatible features
@@ -53,8 +55,17 @@ docx-rs = "0.4"
 # Legacy format support
 encoding_rs = "0.8"
 cfb = "0.9"  # Compound File Binary format for DOC/PPT
-# For now, we'll implement a mock inference engine
-# Future: Add proper GGUF runtime like llama-cpp-rs when it's more stable
+toml = "0.8"  # For PII exclusions config
+
+# Windows-specific dependencies for GPU detection
+[target.'cfg(target_os = "windows")'.dependencies]
+wmi = "0.13"
+windows = { version = "0.58", features = [
+    "Win32_System_Com",
+    "Win32_System_Ole",
+    "Win32_System_Variant",
+    "Win32_Foundation",
+]}
 
 [features]
 default = ["custom-protocol"]

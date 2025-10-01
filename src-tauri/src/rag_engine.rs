@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
 use uuid::Uuid;
+use crate::utils::cosine_similarity;
 
 // Production RAG Engine with real embeddings and vector search
 // This is the single source of truth for RAG functionality in BEAR AI
@@ -326,7 +327,7 @@ impl RAGEngine {
 
         // Calculate similarity for all documents
         for (id, doc) in documents.iter() {
-            let similarity = self.cosine_similarity(query_embedding, &doc.embeddings);
+            let similarity = cosine_similarity(query_embedding, &doc.embeddings);
 
             if similarity >= config.similarity_threshold {
                 scores.push((id.clone(), similarity, doc.clone()));
@@ -615,25 +616,7 @@ impl RAGEngine {
         }
     }
 
-    fn cosine_similarity(&self, vec1: &[f32], vec2: &[f32]) -> f32 {
-        if vec1.len() != vec2.len() {
-            return 0.0;
-        }
-
-        let dot_product: f32 = vec1.iter()
-            .zip(vec2.iter())
-            .map(|(a, b)| a * b)
-            .sum();
-
-        let norm1: f32 = vec1.iter().map(|x| x * x).sum::<f32>().sqrt();
-        let norm2: f32 = vec2.iter().map(|x| x * x).sum::<f32>().sqrt();
-
-        if norm1 == 0.0 || norm2 == 0.0 {
-            return 0.0;
-        }
-
-        dot_product / (norm1 * norm2)
-    }
+    // Cosine similarity now uses shared utility function from crate::utils
 
     #[allow(dead_code)]
     pub async fn delete_document(&self, doc_id: &str) -> Result<()> {
@@ -787,6 +770,122 @@ impl RAGEngine {
 
         tracing::info!("RAG engine cache cleared");
         Ok(())
+    }
+
+    /// Generate augmented prompt for LLM with retrieved context
+    ///
+    /// This is the critical RAG function that combines retrieved documents
+    /// with the user's query to create a context-aware prompt for the LLM.
+    ///
+    /// # Arguments
+    /// * `query` - The user's original question
+    /// * `limit` - Optional limit on number of documents to retrieve
+    ///
+    /// # Returns
+    /// A fully formatted prompt string ready for LLM inference, containing:
+    /// - System instruction to use only provided context
+    /// - Retrieved document context with source markers
+    /// - User's original query
+    ///
+    /// # Example
+    /// ```rust
+    /// let prompt = rag_engine.generate_augmented_prompt(
+    ///     "What are the main clauses in the contract?",
+    ///     Some(5)
+    /// ).await?;
+    /// // Use prompt with LLM: llm_manager.generate(&prompt, None).await?
+    /// ```
+    pub async fn generate_augmented_prompt(&self, query: &str, limit: Option<usize>) -> Result<String> {
+        // Execute search to retrieve relevant document chunks
+        let search_results = self.search(query, limit).await?;
+
+        if search_results.is_empty() {
+            // No relevant documents found - return prompt without context
+            tracing::warn!("No relevant documents found for query: {}", &query[..query.len().min(50)]);
+
+            return Ok(format!(
+                "INSTRUCTION: Answer the following question to the best of your ability.\n\
+                \n\
+                QUESTION: {}\n\
+                \n\
+                ANSWER:",
+                query
+            ));
+        }
+
+        // Format context from retrieved documents
+        let mut context_parts = Vec::new();
+
+        for (idx, result) in search_results.iter().enumerate() {
+            // Add source marker and content
+            let source_marker = format!("--- SOURCE {} (Relevance: {:.2}) ---", idx + 1, result.score);
+
+            // Include metadata if available
+            let metadata_str = if let Some(obj) = result.metadata.as_object() {
+                let meta_items: Vec<String> = obj.iter()
+                    .filter_map(|(k, v)| {
+                        if let Some(s) = v.as_str() {
+                            Some(format!("{}: {}", k, s))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if !meta_items.is_empty() {
+                    format!("\nMetadata: {}", meta_items.join(", "))
+                } else {
+                    String::new()
+                }
+            } else {
+                String::new()
+            };
+
+            // Use highlight if available, otherwise use full content
+            let content = if let Some(highlight) = &result.highlight {
+                highlight.clone()
+            } else {
+                result.content.clone()
+            };
+
+            context_parts.push(format!(
+                "{}{}\n\n{}",
+                source_marker,
+                metadata_str,
+                content
+            ));
+        }
+
+        let formatted_context = context_parts.join("\n\n");
+
+        // Construct the final augmented prompt with clear instructions
+        let augmented_prompt = format!(
+            "SYSTEM INSTRUCTION: You are a legal AI assistant. Answer the user's question \
+            using ONLY the information provided in the context below. If the context does \
+            not contain sufficient information to answer the question, clearly state that \
+            the available documents do not provide enough information.\n\
+            \n\
+            Do not make assumptions or use knowledge beyond the provided context. Be precise, \
+            cite specific sources when possible, and maintain a professional tone.\n\
+            \n\
+            CONTEXT:\n\
+            {}\n\
+            \n\
+            QUESTION: {}\n\
+            \n\
+            ANSWER (based solely on the context above):",
+            formatted_context,
+            query
+        );
+
+        tracing::info!(
+            "Generated augmented prompt with {} sources ({} chars) for query: {}",
+            search_results.len(),
+            augmented_prompt.len(),
+            &query[..query.len().min(50)]
+        );
+
+        Ok(augmented_prompt)
     }
 
 }

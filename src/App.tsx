@@ -217,6 +217,8 @@ function App() {
             setShowSetup(false);
             setSetupComplete(true);
           }}
+          theme={theme}
+          onThemeToggle={toggleTheme}
         />
       )}
       <UpdateNotification />

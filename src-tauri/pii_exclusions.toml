@@ -1,0 +1,81 @@
+# PII Detection Exclusions Configuration
+#
+# This file defines false positive patterns that should be excluded from PII detection.
+# These are common legal and jurisdictional terms that may be flagged as person names.
+#
+# Format: Add patterns as strings in the appropriate category array.
+
+[exclusions]
+
+# Geographic locations and jurisdictions
+locations = [
+    "United States",
+    "New York",
+    "Los Angeles",
+    "San Francisco",
+    "Washington",
+    "California",
+    "Texas",
+    "Florida",
+]
+
+# Legal and court terms
+legal_terms = [
+    "First Amendment",
+    "Second Circuit",
+    "Third Party",
+    "Fourth Quarter",
+    "Fifth Avenue",
+    "Sixth Street",
+    "Federal Court",
+    "Supreme Court",
+    "District Court",
+    "Circuit Court",
+    "Court of Appeals",
+    "Appellate Court",
+]
+
+# Common business and organizational terms
+organizations = [
+    "Plaintiff",
+    "Defendant",
+    "Respondent",
+    "Petitioner",
+    "Claimant",
+]
+
+# Time periods and dates
+time_terms = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+# Custom exclusions (user-defined)
+custom = []
+
+[settings]
+# Enable case-sensitive matching (default: false)
+case_sensitive = false
+
+# Minimum confidence threshold for PII detection (0.0 to 1.0)
+min_confidence = 0.5
+
+# Enable fuzzy matching for exclusions (allows minor variations)
+fuzzy_matching = false

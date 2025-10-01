@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-#[cfg(target_os = "windows")]
-use std::process::Command;
 use sysinfo::{System, Components};
 use nvml_wrapper::Nvml;
 
@@ -152,34 +150,89 @@ impl SystemMonitor {
             }
         }
 
-        // Check for AMD GPU using rocm-smi or Windows WMI
+        // Check for AMD GPU using Windows WMI API (modern replacement for deprecated wmic)
         #[cfg(target_os = "windows")]
         {
-            use std::os::windows::process::CommandExt;
-            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            use wmi::{COMLibrary, WMIConnection};
 
-            if let Ok(output) = Command::new("wmic")
-                .args(&["path", "win32_VideoController", "get", "name,AdapterRAM"])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output()
-            {
-                let output_str = String::from_utf8_lossy(&output.stdout);
-                if output_str.contains("AMD") || output_str.contains("Radeon") {
-                    // Parse AMD GPU info from WMI
-                    // Parse GPU info from nvidia-smi output
-                    return GpuInfo {
-                        available: true,
-                        name: "AMD GPU Detected".to_string(),
-                        vram_total_mb: 8192, // Would parse from WMI
-                        vram_used_mb: 0,
-                        vram_free_mb: 8192,
-                        temperature: 0.0,
-                        utilization: 0,
-                        cuda_available: false,
-                        compute_capability: "ROCm".to_string(),
-                        driver_version: "Unknown".to_string(),
-                    };
+            // Define WMI query structure for Win32_VideoController
+            #[derive(Deserialize, Debug)]
+            #[serde(rename_all = "PascalCase")]
+            #[allow(dead_code)]
+            struct Win32VideoController {
+                name: Option<String>,
+                adapter_ram: Option<u64>,
+                driver_version: Option<String>,
+            }
+
+            // Initialize COM library and WMI connection
+            if let Ok(com_con) = COMLibrary::new() {
+                if let Ok(wmi_con) = WMIConnection::new(com_con) {
+                    // Query all video controllers
+                    if let Ok(results) = wmi_con.query::<Win32VideoController>() {
+                        for controller in results {
+                            if let Some(name) = &controller.name {
+                                // Check for AMD/Radeon GPUs (non-NVIDIA)
+                                if name.contains("AMD") || name.contains("Radeon") {
+                                    let vram_total_mb = controller.adapter_ram
+                                        .map(|ram| ram / 1_048_576) // Convert bytes to MB
+                                        .unwrap_or(8192); // Fallback if AdapterRAM unavailable
+
+                                    let driver_version = controller.driver_version
+                                        .unwrap_or_else(|| "Unknown".to_string());
+
+                                    tracing::info!(
+                                        "Detected AMD GPU via WMI: {} with {}MB VRAM",
+                                        name, vram_total_mb
+                                    );
+
+                                    return GpuInfo {
+                                        available: true,
+                                        name: name.clone(),
+                                        vram_total_mb,
+                                        vram_used_mb: 0, // WMI doesn't provide real-time usage
+                                        vram_free_mb: vram_total_mb,
+                                        temperature: 0.0, // Would need AMD ADL for temperature
+                                        utilization: 0,   // Would need AMD ADL for utilization
+                                        cuda_available: false,
+                                        compute_capability: "ROCm".to_string(),
+                                        driver_version,
+                                    };
+                                } else if name.contains("Intel") {
+                                    // Also detect Intel integrated GPUs for completeness
+                                    let vram_total_mb = controller.adapter_ram
+                                        .map(|ram| ram / 1_048_576)
+                                        .unwrap_or(2048);
+
+                                    tracing::debug!(
+                                        "Detected Intel GPU via WMI: {} with {}MB VRAM",
+                                        name, vram_total_mb
+                                    );
+
+                                    return GpuInfo {
+                                        available: true,
+                                        name: name.clone(),
+                                        vram_total_mb,
+                                        vram_used_mb: 0,
+                                        vram_free_mb: vram_total_mb,
+                                        temperature: 0.0,
+                                        utilization: 0,
+                                        cuda_available: false,
+                                        compute_capability: "Intel".to_string(),
+                                        driver_version: controller.driver_version
+                                            .unwrap_or_else(|| "Unknown".to_string()),
+                                    };
+                                }
+                            }
+                        }
+                    } else {
+                        tracing::warn!("Failed to query Win32_VideoController via WMI");
+                    }
+                } else {
+                    tracing::warn!("Failed to establish WMI connection");
                 }
+            } else {
+                tracing::warn!("Failed to initialize COM library for WMI");
             }
         }
 
