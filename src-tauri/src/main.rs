@@ -32,6 +32,9 @@ mod huggingface_api;
 mod model_manager;
 mod process_helper;
 
+// GDPR Compliance module
+mod compliance;
+
 // Import commands that are defined in commands.rs
 use commands::{
     get_system_specs,
@@ -63,6 +66,7 @@ use file_processor::FileProcessor;
 use database::DatabaseManager;
 use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
+use compliance::ComplianceManager;
 
 // RAII guard for automatic temporary file cleanup
 struct TempFileGuard {
@@ -214,6 +218,9 @@ struct AppState {
     mcp_server: Arc<MCPServer>,
     #[allow(dead_code)]
     agent_orchestrator: Arc<AgentOrchestrator>,
+
+    // GDPR Compliance
+    compliance_manager: Arc<ComplianceManager>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -920,6 +927,12 @@ fn main() {
         }
     };
 
+    // Initialize Compliance Manager
+    let db_path = dirs::data_local_dir()
+        .map(|mut p| { p.push("bear-ai"); p.push("bear_ai.db"); p })
+        .unwrap_or_else(|| PathBuf::from("bear_ai.db"));
+    let compliance_manager = Arc::new(ComplianceManager::new(db_path));
+
     // Create unified app state
     let app_state = AppState {
         // Production services
@@ -941,6 +954,9 @@ fn main() {
         // MCP and agent orchestration
         mcp_server: Arc::new(MCPServer::new(true)),
         agent_orchestrator: Arc::new(AgentOrchestrator::new(true)),
+
+        // GDPR Compliance
+        compliance_manager,
     };
 
     // Initialize modules
@@ -988,6 +1004,13 @@ fn main() {
             tracing::error!(error = %e, "Failed to initialize RAG engine");
         }
         drop(rag);
+
+        // Initialize Compliance Manager
+        if let Err(e) = app_state.compliance_manager.initialize().await {
+            tracing::error!(error = %e, "Failed to initialize compliance manager");
+        } else {
+            tracing::info!("✅ GDPR Compliance Manager initialized successfully");
+        }
     });
 
     tauri::Builder::default()
@@ -997,6 +1020,7 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
+        .manage(app_state.compliance_manager.clone())
         .setup(move |_app| {
             let state = app_state.clone();
 
@@ -1087,6 +1111,24 @@ fn main() {
             switch_rag_model,
             get_rag_config,
             update_rag_config,
+
+            // GDPR Compliance
+            compliance::commands::check_user_consent,
+            compliance::commands::grant_user_consent,
+            compliance::commands::revoke_user_consent,
+            compliance::commands::get_user_consents,
+            compliance::commands::get_consent_audit_trail,
+            compliance::commands::get_consent_versions,
+            compliance::commands::set_data_retention,
+            compliance::commands::get_retention_stats,
+            compliance::commands::apply_default_retention_policies,
+            compliance::commands::delete_expired_data,
+            compliance::commands::get_audit_logs,
+            compliance::commands::get_audit_stats,
+            compliance::commands::export_user_data,
+            compliance::commands::delete_user_data,
+            compliance::commands::generate_compliance_report,
+            compliance::commands::run_compliance_maintenance,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,6 +3,7 @@ use rusqlite::Connection;
 use serde_json::{Value as JsonValue, json};
 use std::path::PathBuf;
 use dirs;
+use tracing;
 
 pub struct DatabaseManager {
     db_path: PathBuf,
@@ -256,7 +257,22 @@ impl DatabaseManager {
             [filename, content, file_type],
         )?;
 
-        Ok(conn.last_insert_rowid())
+        let doc_id = conn.last_insert_rowid();
+
+        // Set default retention period for documents (2 years)
+        let retention_until = chrono::Utc::now() + chrono::Duration::days(365 * 2);
+        let _ = conn.execute(
+            "UPDATE documents SET retention_until = ?1 WHERE id = ?2",
+            [retention_until.to_rfc3339(), doc_id.to_string()],
+        );
+
+        tracing::debug!(
+            "Stored document id={} with retention_until={}",
+            doc_id,
+            retention_until.to_rfc3339()
+        );
+
+        Ok(doc_id)
     }
 
     #[allow(dead_code)]

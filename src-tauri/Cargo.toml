@@ -41,7 +41,8 @@ candle-nn = "0.8"
 candle-transformers = "0.8"
 tokenizers = "0.21"
 # GGUF model support using llama.cpp bindings
-llama-cpp-2 = { version = "0.1", features = ["cuda"] }
+# CUDA is optional - enable with --features cuda
+llama-cpp-2 = { version = "0.1", default-features = false }
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Better embeddings - Use fastembed with compatible features
@@ -76,6 +77,9 @@ windows = { version = "0.58", features = [
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+# Optional CUDA support - requires CUDA Toolkit installed
+# Enable with: cargo build --features cuda
+cuda = ["llama-cpp-2/cuda"]
 
 [[bin]]
 name = "bear-ai-llm"
