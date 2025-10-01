@@ -236,12 +236,33 @@ impl RAGEngine {
     }
 
     pub async fn add_document(&self, content: &str, metadata: JsonValue) -> Result<String> {
+        // SECURITY: Prevent memory exhaustion from huge documents
+        const MAX_DOCUMENT_SIZE: usize = 100_000_000; // 100MB
+        const MAX_CHUNKS_PER_DOCUMENT: usize = 10_000;
+
+        if content.len() > MAX_DOCUMENT_SIZE {
+            return Err(anyhow!(
+                "Document exceeds maximum size of {}MB (got {}MB)",
+                MAX_DOCUMENT_SIZE / 1_000_000,
+                content.len() / 1_000_000
+            ));
+        }
+
         // Ensure embeddings model is loaded (lazy load on first use)
         self.ensure_embeddings_model().await?;
 
         let doc_id = Uuid::new_v4().to_string();
         let chunks = self.chunk_text(content).await;
         let total_chunks = chunks.len();
+
+        if total_chunks > MAX_CHUNKS_PER_DOCUMENT {
+            return Err(anyhow!(
+                "Document produces too many chunks: {} (max: {}). \
+                Consider splitting the document or increasing chunk_size.",
+                total_chunks,
+                MAX_CHUNKS_PER_DOCUMENT
+            ));
+        }
 
         let mut model_lock = self.embeddings_model.write().await;
         let model = model_lock.as_mut()

@@ -59,14 +59,16 @@ impl DatabaseManager {
         )?;
 
         // Create pii_detections table for PII tracking
+        // SECURITY: We do NOT store original_text to prevent PII exposure
         conn.execute(
             "CREATE TABLE IF NOT EXISTS pii_detections (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 document_id INTEGER NOT NULL,
                 pii_type TEXT NOT NULL,
-                original_text TEXT NOT NULL,
                 replacement_text TEXT NOT NULL,
                 confidence REAL NOT NULL,
+                position_start INTEGER NOT NULL,
+                position_end INTEGER NOT NULL,
                 detection_date DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (document_id) REFERENCES documents (id)
             )",
@@ -116,26 +118,91 @@ impl DatabaseManager {
             [],
         )?;
 
+        // Create chat_sessions table for chat history export
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS chat_sessions (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                model_used TEXT NOT NULL,
+                tags TEXT DEFAULT '[]'
+            )",
+            [],
+        )?;
+
+        // Create chat_messages table for message storage
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                metadata TEXT,
+                FOREIGN KEY (chat_id) REFERENCES chat_sessions (id)
+            )",
+            [],
+        )?;
+
+        // Create user_settings table for compliance preferences
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS user_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                setting_key TEXT UNIQUE NOT NULL,
+                setting_value TEXT NOT NULL,
+                last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+            [],
+        )?;
+
         Ok(())
     }
 
     pub fn validate_query_security(query: &str) -> Result<()> {
-        let query_upper = query.trim().to_uppercase();
+        let query_normalized = query.trim().to_uppercase()
+            .replace("/*", "")     // Remove block comment start
+            .replace("*/", "")     // Remove block comment end
+            .replace("--", "")     // Remove line comments
+            .replace(";", " ")     // Replace statement terminators
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
 
-        // 1. Only allow SELECT statements
-        if !query_upper.starts_with("SELECT") {
+        // 1. Only allow SELECT statements (check normalized query)
+        if !query_normalized.starts_with("SELECT") {
             return Err(anyhow!(
                 "Only SELECT queries are allowed. Found: {}",
-                query_upper.split_whitespace().next().unwrap_or("UNKNOWN")
+                query_normalized.split_whitespace().next().unwrap_or("UNKNOWN")
             ));
         }
 
-        // 2. Block dangerous keywords
-        let dangerous = ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "EXEC", "EXECUTE", "CREATE"];
-        for keyword in dangerous {
-            if query_upper.contains(keyword) {
-                return Err(anyhow!("Query contains forbidden keyword: {}", keyword));
+        // 2. Block dangerous keywords - check as separate tokens, not just contains
+        let dangerous = [
+            "DROP", "DELETE", "INSERT", "UPDATE", "ALTER",
+            "EXEC", "EXECUTE", "CREATE", "PRAGMA", "ATTACH",
+            "DETACH", "REPLACE", "TRUNCATE", "MERGE"
+        ];
+
+        let tokens: Vec<&str> = query_normalized.split_whitespace().collect();
+        for token in &tokens {
+            if dangerous.contains(token) {
+                return Err(anyhow!("Query contains forbidden keyword: {}", token));
             }
+        }
+
+        // 3. Additional security checks
+        if query_normalized.contains("UNION") {
+            return Err(anyhow!("UNION queries are not allowed"));
+        }
+
+        if query_normalized.contains("INTO OUTFILE") || query_normalized.contains("INTO DUMPFILE") {
+            return Err(anyhow!("File write operations are not allowed"));
+        }
+
+        // 4. Limit query length to prevent resource exhaustion
+        if query.len() > 10000 {
+            return Err(anyhow!("Query exceeds maximum length of 10000 characters"));
         }
 
         Ok(())
@@ -193,18 +260,29 @@ impl DatabaseManager {
     }
 
     #[allow(dead_code)]
-    pub fn store_pii_detection(&self, document_id: i64, pii_type: &str, original: &str, replacement: &str, confidence: f64) -> Result<()> {
+    pub fn store_pii_detection(
+        &self,
+        document_id: i64,
+        pii_type: &str,
+        replacement: &str,
+        confidence: f64,
+        position_start: usize,
+        position_end: usize
+    ) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
+        // SECURITY: We do NOT store the original PII text
+        // Only store: type, replacement, confidence, and position info
         conn.execute(
-            "INSERT INTO pii_detections (document_id, pii_type, original_text, replacement_text, confidence)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO pii_detections (document_id, pii_type, replacement_text, confidence, position_start, position_end)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             [
                 &document_id.to_string(),
                 pii_type,
-                original,
                 replacement,
-                &confidence.to_string()
+                &confidence.to_string(),
+                &position_start.to_string(),
+                &position_end.to_string()
             ],
         )?;
 

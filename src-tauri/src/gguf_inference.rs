@@ -158,10 +158,34 @@ impl GGUFInferenceEngine {
 
         tracing::debug!("Prompt tokenized: {} tokens", tokens.len());
 
+        // SECURITY: Validate max_tokens doesn't exceed context size
+        let min_required_context = max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN;
+        if min_required_context >= config.n_ctx as usize {
+            return Err(anyhow!(
+                "max_tokens ({}) + safety margin ({}) exceeds context size ({}). \
+                Either reduce max_tokens or increase n_ctx.",
+                max_tokens,
+                TOKEN_OVERFLOW_SAFETY_MARGIN,
+                config.n_ctx
+            ));
+        }
+
         // Check for token overflow and truncate if necessary
         let max_prompt_tokens = (config.n_ctx as usize)
             .saturating_sub(max_tokens)
             .saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN);
+
+        // Ensure we have at least some space for the prompt
+        if max_prompt_tokens < 10 {
+            return Err(anyhow!(
+                "Insufficient context space for prompt. Context: {}, Max tokens: {}, Safety: {}, \
+                Remaining: {}. Increase n_ctx or reduce max_tokens.",
+                config.n_ctx,
+                max_tokens,
+                TOKEN_OVERFLOW_SAFETY_MARGIN,
+                max_prompt_tokens
+            ));
+        }
 
         if tokens.len() > max_prompt_tokens {
             tracing::warn!(
@@ -294,10 +318,34 @@ impl GGUFInferenceEngine {
         let mut tokens = model.str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
             .map_err(|e| anyhow!("Failed to tokenize prompt: {}", e))?;
 
+        // SECURITY: Validate max_tokens doesn't exceed context size
+        let min_required_context = max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN;
+        if min_required_context >= config.n_ctx as usize {
+            return Err(anyhow!(
+                "max_tokens ({}) + safety margin ({}) exceeds context size ({}). \
+                Either reduce max_tokens or increase n_ctx.",
+                max_tokens,
+                TOKEN_OVERFLOW_SAFETY_MARGIN,
+                config.n_ctx
+            ));
+        }
+
         // Check for token overflow and truncate if necessary
         let max_prompt_tokens = (config.n_ctx as usize)
             .saturating_sub(max_tokens)
             .saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN);
+
+        // Ensure we have at least some space for the prompt
+        if max_prompt_tokens < 10 {
+            return Err(anyhow!(
+                "Insufficient context space for prompt. Context: {}, Max tokens: {}, Safety: {}, \
+                Remaining: {}. Increase n_ctx or reduce max_tokens.",
+                config.n_ctx,
+                max_tokens,
+                TOKEN_OVERFLOW_SAFETY_MARGIN,
+                max_prompt_tokens
+            ));
+        }
 
         if tokens.len() > max_prompt_tokens {
             tracing::warn!(

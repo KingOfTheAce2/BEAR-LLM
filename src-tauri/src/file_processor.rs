@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::fs;
 use serde_json::Value as JsonValue;
 use calamine::{Reader, Xlsx, Xls, open_workbook, Data};
@@ -10,11 +10,16 @@ use std::io::Read;
 pub struct FileProcessor {
     max_file_size: usize,
     supported_formats: Vec<String>,
+    allowed_base_dir: Option<PathBuf>,
 }
 
 #[allow(dead_code)]
 impl FileProcessor {
     pub fn new() -> Self {
+        Self::with_base_dir(None)
+    }
+
+    pub fn with_base_dir(allowed_base_dir: Option<PathBuf>) -> Self {
         Self {
             max_file_size: 50 * 1024 * 1024, // 50MB
             supported_formats: vec![
@@ -33,22 +38,56 @@ impl FileProcessor {
                 "xml".to_string(),
                 "html".to_string(),
             ],
+            allowed_base_dir,
         }
     }
 
-    pub async fn process_file(&self, file_path: &str, _file_type: &str) -> Result<String> {
-        let path = Path::new(file_path);
+    /// SECURITY: Validate path to prevent traversal attacks
+    fn validate_path(&self, file_path: &str) -> Result<PathBuf> {
+        let path = PathBuf::from(file_path);
 
-        if !path.exists() {
+        // Canonicalize to resolve .. and . and symlinks
+        let canonical = path.canonicalize()
+            .map_err(|e| anyhow!("Invalid or inaccessible file path: {}", e))?;
+
+        // Check if path is a symlink (additional safety check)
+        if std::fs::symlink_metadata(&path)?.file_type().is_symlink() {
+            tracing::warn!("Symlink detected at: {:?}", path);
+            // Still allow if it resolves within allowed directory
+        }
+
+        // If base directory is set, ensure path is within it
+        if let Some(ref base_dir) = self.allowed_base_dir {
+            let canonical_base = base_dir.canonicalize()
+                .map_err(|e| anyhow!("Invalid base directory: {}", e))?;
+
+            if !canonical.starts_with(&canonical_base) {
+                return Err(anyhow!(
+                    "Security violation: Path traversal attempt detected. \
+                    File must be within allowed directory: {:?}",
+                    canonical_base
+                ));
+            }
+        }
+
+        tracing::debug!("Path validated: {:?}", canonical);
+        Ok(canonical)
+    }
+
+    pub async fn process_file(&self, file_path: &str, _file_type: &str) -> Result<String> {
+        // SECURITY: Validate path first to prevent traversal attacks
+        let validated_path = self.validate_path(file_path)?;
+
+        if !validated_path.exists() {
             return Err(anyhow!("File does not exist: {}", file_path));
         }
 
-        let metadata = fs::metadata(path).await?;
+        let metadata = fs::metadata(&validated_path).await?;
         if metadata.len() as usize > self.max_file_size {
             return Err(anyhow!("File size exceeds maximum limit of 50MB"));
         }
 
-        let extension = path.extension()
+        let extension = validated_path.extension()
             .and_then(|ext| ext.to_str())
             .ok_or_else(|| anyhow!("Could not determine file extension"))?;
 
@@ -56,15 +95,19 @@ impl FileProcessor {
             return Err(anyhow!("Unsupported file format: {}", extension));
         }
 
+        // Use validated_path string for further processing
+        let validated_path_str = validated_path.to_str()
+            .ok_or_else(|| anyhow!("Invalid UTF-8 in file path"))?;
+
         match extension.to_lowercase().as_str() {
-            "txt" | "md" => self.process_text_file(file_path).await,
-            "pdf" => self.process_pdf_file(file_path).await,
-            "docx" | "doc" => self.process_word_file(file_path).await,
-            "xlsx" | "xls" => self.process_excel_file(file_path).await,
-            "csv" => self.process_csv_file(file_path).await,
-            "pptx" | "ppt" => self.process_powerpoint_file(file_path).await,
-            "json" => self.process_json_file(file_path).await,
-            "xml" | "html" => self.process_markup_file(file_path).await,
+            "txt" | "md" => self.process_text_file(validated_path_str).await,
+            "pdf" => self.process_pdf_file(validated_path_str).await,
+            "docx" | "doc" => self.process_word_file(validated_path_str).await,
+            "xlsx" | "xls" => self.process_excel_file(validated_path_str).await,
+            "csv" => self.process_csv_file(validated_path_str).await,
+            "pptx" | "ppt" => self.process_powerpoint_file(validated_path_str).await,
+            "json" => self.process_json_file(validated_path_str).await,
+            "xml" | "html" => self.process_markup_file(validated_path_str).await,
             _ => Err(anyhow!("Unsupported file type: {}", extension)),
         }
     }

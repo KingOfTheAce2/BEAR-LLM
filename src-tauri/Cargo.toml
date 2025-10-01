@@ -1,6 +1,6 @@
 [package]
 name = "bear-ai-llm"
-version = "1.0.22"
+version = "1.0.23"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Ernst van Gassen <ernst@example.com>"]
 edition = "2021"
@@ -52,6 +52,12 @@ pdf-extract = "0.7"
 rusqlite = { version = "0.31", features = ["bundled"] }
 calamine = { version = "0.26", features = ["dates"] }
 docx-rs = "0.4"
+# Export and compliance dependencies
+printpdf = "0.7"  # PDF export
+age = "0.10"  # Encryption for data portability
+zeroize = "1.7"  # Memory scrubbing for security
+sha2 = "0.10"  # Hash functions for integrity checks
+hex = "0.4"  # Hex encoding for hashes
 # Legacy format support
 encoding_rs = "0.8"
 cfb = "0.9"  # Compound File Binary format for DOC/PPT
