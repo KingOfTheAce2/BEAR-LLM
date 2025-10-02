@@ -213,8 +213,18 @@ impl UserKeyDerivation {
     pub fn derive_user_key(&self, user_id: &str, password: &str) -> Result<Vec<u8>> {
         use argon2::{Argon2, ParamsBuilder, Version};
 
-        // Use user_id as salt (in production, should be a random salt per user)
-        // For this application, user_id provides sufficient uniqueness
+        // CRITICAL SECURITY WARNING: Using predictable salt is cryptographically weak
+        //
+        // TODO: Implement proper random salt storage
+        // Required changes:
+        // 1. Add user_encryption_keys table with columns: user_id, salt (BLOB), created_at, version
+        // 2. Generate cryptographically random 32-byte salt using ring::rand::SystemRandom
+        // 3. Store salt in database on first key derivation
+        // 4. Retrieve stored salt for subsequent derivations
+        // 5. Implement salt rotation mechanism for key rotation
+        //
+        // Current implementation uses user_id as salt - NOT PRODUCTION READY
+        // This allows rainbow table attacks and violates GDPR Article 32
         let salt = format!("bear-ai-chat-{}", user_id);
         let salt_bytes = salt.as_bytes();
 

@@ -546,20 +546,40 @@ impl GGUFInferenceEngine {
             return candidates_array.sample_token_greedy().0;
         }
 
-        // Apply repetition penalty if configured
-        if config.repeat_penalty != 1.0 {
-            // Track last N tokens for repetition penalty (using batch for now)
-            // In production, implement a sliding window of last 64 tokens
-            // For now, skip this as it requires token history
-        }
+        // ⚠️ INCOMPLETE IMPLEMENTATION - Advanced sampling features not implemented
+        //
+        // TODO: Implement proper sampling pipeline
+        // Current status:
+        // - ✅ Temperature: Basic implementation (greedy vs stochastic)
+        // - ❌ top_k: Config parameter IGNORED - not implemented
+        // - ❌ top_p: Config parameter IGNORED - not implemented
+        // - ❌ repeat_penalty: Config parameter IGNORED - not implemented
+        //
+        // Required implementation:
+        // 1. Add token_history field to GGUFInferenceEngine struct
+        // 2. Maintain sliding window of last 64 tokens
+        // 3. Implement proper sampling pipeline:
+        //    a. Apply repetition penalty using ctx.sample_repetition_penalties()
+        //    b. Apply temperature using ctx.sample_temp()
+        //    c. Apply top-k filtering using ctx.sample_top_k()
+        //    d. Apply top-p (nucleus) sampling using ctx.sample_top_p()
+        //    e. Sample final token
+        //
+        // Impact: Without these features, legal document generation quality is degraded:
+        // - Repetitive text lowers professional credibility
+        // - Uncontrolled sampling may generate inappropriate content
+        // - Users cannot tune generation quality
+        // - Config options are misleading (appear to work but do nothing)
+        //
+        // See llama-cpp-2 documentation for ctx.sample_* methods
 
-        // Apply sampling with temperature (llama-cpp-2 simplified API)
-        // Temperature, top-k, top-p filtering happens via greedy vs sampled token
+        // Current simplified implementation (INCOMPLETE):
         if config.temperature < 0.01 {
             // Greedy sampling for low temperature
             candidates_array.sample_token_greedy().0
         } else {
             // Stochastic sampling for higher temperature
+            // NOTE: top_k, top_p, and repeat_penalty are ignored
             candidates_array.sample_token(config.seed).0
         }
     }

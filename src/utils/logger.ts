@@ -155,26 +155,18 @@ class Logger {
   }
 
   /**
-   * Send logs to monitoring service
+   * Store error logs locally for debugging (no remote monitoring)
    */
   private sendToMonitoring(entry: LogEntry): void {
-    // Only log errors to monitoring
+    // Only store errors locally
     if (entry.level !== 'error') return;
 
     try {
-      // Store in localStorage for debugging and analysis
+      // Store in localStorage for local debugging only
       const errorLogs = JSON.parse(localStorage.getItem('bear_error_logs') || '[]');
-      const logs = [entry, ...errorLogs].slice(0, 10); // Keep only last 10 errors
+      const logs = [entry, ...errorLogs].slice(0, 10);
       localStorage.setItem('bear_error_logs', JSON.stringify(logs));
-
-      // Future: Send to external monitoring service
-      // await fetch('/api/log', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(entry)
-      // });
     } catch (err) {
-      // Silently fail to prevent logging errors from breaking the app
       console.error('Failed to store error log:', err);
     }
   }
@@ -350,6 +342,19 @@ class Logger {
   exportLogs(): string {
     return JSON.stringify(this.logHistory, null, 2);
   }
+
+  /**
+   * Export error report for support ticket attachment
+   * Includes all error logs with app version and timestamp
+   */
+  exportErrorReport(): string {
+    const errorLogs = this.getHistory('error');
+    return JSON.stringify({
+      timestamp: new Date().toISOString(),
+      appVersion: import.meta.env.VITE_APP_VERSION || 'unknown',
+      errors: errorLogs,
+    }, null, 2);
+  }
 }
 
 // Export singleton instance
@@ -367,6 +372,7 @@ declare global {
       getDebugToken: () => string | null;
       rotateDebugToken: () => string;
       exportLogs: () => string;
+      exportErrorReport: () => string;
       getHistory: (level?: LogLevel) => LogEntry[];
     };
   }
@@ -383,6 +389,7 @@ if (import.meta.env.DEV) {
     getDebugToken: () => logger.getPublicDebugToken(),
     rotateDebugToken: () => logger.rotateDebugToken(),
     exportLogs: () => logger.exportLogs(),
+    exportErrorReport: () => logger.exportErrorReport(),
     getHistory: (level?: LogLevel) => logger.getHistory(level),
   };
 }

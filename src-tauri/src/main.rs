@@ -1408,39 +1408,10 @@ async fn get_pii_statistics(
 // unload_model, emergency_stop, and set_resource_limits are defined in commands.rs
 
 fn main() {
-    // Initialize Sentry for crash reporting (production only)
-    // Set SENTRY_DSN environment variable for crash reporting in production
-    let _sentry_guard = if !cfg!(debug_assertions) {
-        if let Ok(dsn) = env::var("SENTRY_DSN") {
-            Some(sentry::init((
-                dsn,
-                sentry::ClientOptions {
-                    release: sentry::release_name!(),
-                    environment: Some(if cfg!(debug_assertions) {
-                        "development".into()
-                    } else {
-                        "production".into()
-                    }),
-                    before_send: Some(Arc::new(|mut event| {
-                        // Filter out PII from crash reports
-                        if let Some(ref mut request) = event.request {
-                            request.cookies = None;
-                            request.headers = std::collections::BTreeMap::new();
-                        }
-                        // Remove environment variables that might contain secrets
-                        event.contexts.remove("os");
-                        Some(event)
-                    })),
-                    ..Default::default()
-                },
-            )))
-        } else {
-            tracing::info!("Sentry crash reporting disabled - SENTRY_DSN not set");
-            None
-        }
-    } else {
-        None
-    };
+    // Remote crash reporting disabled - logs stored locally only
+    // All error logging happens through tracing framework to local files
+    let _sentry_guard: Option<sentry::ClientInitGuard> = None;
+    tracing::info!("Crash reporting disabled - logs stored locally only");
 
     // Initialize tracing subsystem
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};

@@ -1,5 +1,42 @@
 // Database Export Integration for GDPR Article 20 Data Portability
 // Maps database records to UserDataExport structure for export engine
+//
+// ⚠️ CRITICAL SECURITY WARNING - NOT PRODUCTION READY ⚠️
+//
+// This module has SEVERE privacy violations that MUST be fixed before production use:
+//
+// 1. **NO USER FILTERING**: All queries fetch data for ALL users, not just the requested user
+//    - fetch_chat_history() ignores user_id parameter (marked with _ prefix)
+//    - fetch_documents() ignores user_id parameter (marked with _ prefix)
+//    - This violates GDPR Article 15 (Right of Access)
+//    - Exposes all users' data to any user requesting an export
+//
+// 2. **MISSING USER_ID COLUMNS**: Database tables lack user_id foreign keys
+//    - Need to add user_id column to: chat_sessions, chat_messages, documents, pii_detections
+//    - Need to add indexes: idx_chat_sessions_user_id, idx_documents_user_id
+//    - Need to add foreign key constraints with ON DELETE CASCADE
+//
+// 3. **LEGAL LIABILITY**: For attorney-client data, this creates:
+//    - Attorney-client privilege breaches
+//    - Bar association violations
+//    - Malpractice exposure
+//    - GDPR fines up to €20M or 4% revenue
+//
+// Required fixes before production:
+// 1. Add user_id columns to all tables (see schema migration below)
+// 2. Update all queries to filter WHERE user_id = ?1
+// 3. Implement user authentication/session management
+// 4. Add integration tests verifying data isolation
+//
+// Example migration:
+// ```sql
+// ALTER TABLE chat_sessions ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default_user';
+// ALTER TABLE chat_messages ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default_user';
+// ALTER TABLE documents ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default_user';
+// ALTER TABLE pii_detections ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default_user';
+// CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
+// CREATE INDEX idx_documents_user_id ON documents(user_id);
+// ```
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
@@ -13,6 +50,9 @@ use crate::export_engine::{
 };
 
 /// Database Export Manager - fetches all user data for GDPR export
+///
+/// ⚠️ WARNING: Currently fetches ALL users' data regardless of user_id parameter
+/// DO NOT use in production with multiple users until user filtering is implemented
 pub struct ExportIntegration {
     db_path: PathBuf,
 }
