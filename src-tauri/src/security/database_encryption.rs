@@ -133,8 +133,9 @@ impl EncryptedDatabase {
 
     /// Configure SQLCipher encryption parameters
     fn configure_encryption(&self, conn: &Connection, key: &str) -> Result<()> {
-        // Set encryption key
-        conn.execute(&format!("PRAGMA key = {}", key), [])
+        // Set encryption key - must be done before any other operations
+        // SQLCipher PRAGMA key expects a hex string in format "x'...'" wrapped in double quotes
+        conn.execute_batch(&format!("PRAGMA key = \"{}\";", key))
             .context("Failed to set encryption key")?;
 
         // Configure cipher compatibility version
