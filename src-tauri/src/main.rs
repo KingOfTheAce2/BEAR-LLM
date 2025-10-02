@@ -19,7 +19,7 @@ mod rag_engine;
 // Core modules
 mod commands;
 mod constants;
-mod database;
+// database is in lib.rs, use bear_ai_llm::database
 mod file_processor;
 mod hardware_detector;
 mod hardware_monitor;
