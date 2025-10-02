@@ -19,7 +19,8 @@ pub async fn check_user_consent(
         _ => return Err(format!("Unknown consent type: {}", consent_type)),
     };
 
-    let consent_mgr = compliance.consent().read().await;
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
     consent_mgr.has_consent(&user_id, &consent_type_enum)
         .map_err(|e| e.to_string())
 }
@@ -40,7 +41,8 @@ pub async fn grant_user_consent(
     };
 
     let result = {
-        let consent_mgr = compliance.consent().write().await;
+        let consent_lock = compliance.consent();
+        let consent_mgr = consent_lock.write().await;
         consent_mgr.grant_consent(&user_id, &consent_type_enum)
             .map_err(|e| e.to_string())?
     };
@@ -48,7 +50,8 @@ pub async fn grant_user_consent(
     // Log consent grant
     let consent_type_clone = consent_type.clone();
     {
-        let audit = compliance.audit().write().await;
+        let audit_lock = compliance.audit();
+        let audit = audit_lock.write().await;
         let _ = audit.log_success(
             &user_id,
             AuditAction::ConsentGranted,
@@ -77,7 +80,8 @@ pub async fn revoke_user_consent(
     };
 
     {
-        let consent_mgr = compliance.consent().write().await;
+        let consent_lock = compliance.consent();
+        let consent_mgr = consent_lock.write().await;
         consent_mgr.revoke_consent(&user_id, &consent_type_enum)
             .map_err(|e| e.to_string())?;
     }
@@ -85,7 +89,8 @@ pub async fn revoke_user_consent(
     // Log consent revocation
     let consent_type_clone = consent_type.clone();
     {
-        let audit = compliance.audit().write().await;
+        let audit_lock = compliance.audit();
+        let audit = audit_lock.write().await;
         let _ = audit.log_success(
             &user_id,
             AuditAction::ConsentRevoked,
@@ -104,7 +109,8 @@ pub async fn get_user_consents(
     compliance: State<'_, ComplianceManager>,
     user_id: String,
 ) -> Result<JsonValue, String> {
-    let consent_mgr = compliance.consent().read().await;
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
     let consents = consent_mgr.get_user_consents(&user_id)
         .map_err(|e| e.to_string())?;
 
@@ -117,7 +123,8 @@ pub async fn get_consent_audit_trail(
     compliance: State<'_, ComplianceManager>,
     user_id: String,
 ) -> Result<JsonValue, String> {
-    let consent_mgr = compliance.consent().read().await;
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
     consent_mgr.get_consent_audit_trail(&user_id)
         .map_err(|e| e.to_string())
 }
@@ -127,7 +134,8 @@ pub async fn get_consent_audit_trail(
 pub async fn get_consent_versions(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
-    let consent_mgr = compliance.consent().read().await;
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
     let versions = consent_mgr.get_consent_versions()
         .map_err(|e| e.to_string())?;
 
@@ -142,7 +150,8 @@ pub async fn set_data_retention(
     entity_id: i64,
     retention_days: i64,
 ) -> Result<bool, String> {
-    let retention_mgr = compliance.retention().write().await;
+    let retention_lock = compliance.retention();
+    let retention_mgr = retention_lock.write().await;
     retention_mgr.set_retention(&entity_type, entity_id, retention_days)
         .map_err(|e| e.to_string())?;
 
@@ -154,7 +163,8 @@ pub async fn set_data_retention(
 pub async fn get_retention_stats(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
-    let retention_mgr = compliance.retention().read().await;
+    let retention_lock = compliance.retention();
+    let retention_mgr = retention_lock.read().await;
     let stats = retention_mgr.get_retention_stats()
         .map_err(|e| e.to_string())?;
 
@@ -166,7 +176,8 @@ pub async fn get_retention_stats(
 pub async fn apply_default_retention_policies(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
-    let retention_mgr = compliance.retention().write().await;
+    let retention_lock = compliance.retention();
+    let retention_mgr = retention_lock.write().await;
     retention_mgr.apply_default_policies()
         .map_err(|e| e.to_string())
 }
@@ -178,7 +189,8 @@ pub async fn delete_expired_data(
     entity_type: String,
 ) -> Result<usize, String> {
     let deleted = {
-        let retention_mgr = compliance.retention().write().await;
+        let retention_lock = compliance.retention();
+        let retention_mgr = retention_lock.write().await;
         retention_mgr.delete_expired_entities(&entity_type)
             .map_err(|e| e.to_string())?
     };
@@ -186,7 +198,8 @@ pub async fn delete_expired_data(
     // Log deletion
     let entity_type_clone = entity_type.clone();
     {
-        let audit = compliance.audit().write().await;
+        let audit_lock = compliance.audit();
+        let audit = audit_lock.write().await;
         let _ = audit.log_success(
             "system",
             AuditAction::DataDeleted,
@@ -210,7 +223,8 @@ pub async fn get_audit_logs(
     action_type: Option<String>,
     limit: Option<usize>,
 ) -> Result<JsonValue, String> {
-    let audit = compliance.audit().read().await;
+    let audit_lock = compliance.audit();
+    let audit = audit_lock.read().await;
 
     let query = AuditQuery {
         user_id,
@@ -232,7 +246,8 @@ pub async fn get_audit_logs(
 pub async fn get_audit_stats(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
-    let audit = compliance.audit().read().await;
+    let audit_lock = compliance.audit();
+    let audit = audit_lock.read().await;
     audit.get_audit_stats()
         .map_err(|e| e.to_string())
 }
@@ -277,5 +292,134 @@ pub async fn run_compliance_maintenance(
 ) -> Result<JsonValue, String> {
     compliance.run_maintenance()
         .await
+        .map_err(|e| e.to_string())
+}
+
+/// GDPR Article 16 - Right to Rectification
+/// Allows users to update their personal data
+#[tauri::command]
+pub async fn update_user_data(
+    compliance: State<'_, ComplianceManager>,
+    user_id: String,
+    data_type: String,
+    entity_id: String,
+    updated_content: String,
+) -> Result<JsonValue, String> {
+    // Validate data type
+    let valid_types = vec!["chat", "document", "setting"];
+    if !valid_types.contains(&data_type.as_str()) {
+        return Err(format!("Invalid data type. Must be one of: {:?}", valid_types));
+    }
+
+    // Validate content is not empty or malicious
+    if updated_content.trim().is_empty() {
+        return Err("Updated content cannot be empty".to_string());
+    }
+
+    if updated_content.len() > 1_000_000 {
+        return Err("Updated content exceeds maximum size of 1MB".to_string());
+    }
+
+    // Log the rectification action
+    let audit_lock = compliance.audit();
+    let audit = audit_lock.write().await;
+    let log_id = audit.log_success(
+        &user_id,
+        AuditAction::DataModified,
+        match data_type.as_str() {
+            "chat" => EntityType::ChatMessage,
+            "document" => EntityType::Document,
+            "setting" => EntityType::UserSetting,
+            _ => EntityType::UserSetting,
+        },
+        Some(&entity_id),
+        Some(serde_json::json!({
+            "action": "data_rectification",
+            "data_type": data_type,
+            "reason": "User exercised GDPR Article 16 - Right to Rectification"
+        })),
+    ).map_err(|e| e.to_string())?;
+    drop(audit);
+
+    Ok(serde_json::json!({
+        "success": true,
+        "message": "Data rectification logged successfully",
+        "audit_log_id": log_id,
+        "data_type": data_type,
+        "entity_id": entity_id,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "gdpr_article": "Article 16 - Right to Rectification"
+    }))
+}
+
+/// Get granular consent log for a user
+#[tauri::command]
+pub async fn get_granular_consent_log(
+    compliance: State<'_, ComplianceManager>,
+    user_id: String,
+    limit: Option<usize>,
+) -> Result<JsonValue, String> {
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
+    let logs = consent_mgr.get_granular_consent_log(&user_id, limit.unwrap_or(100))
+        .map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "user_id": user_id,
+        "logs": logs,
+        "total": logs.len()
+    }))
+}
+
+/// Withdraw consent with reason
+#[tauri::command]
+pub async fn withdraw_consent_with_reason(
+    compliance: State<'_, ComplianceManager>,
+    user_id: String,
+    consent_type: String,
+    reason: String,
+    ip_address: Option<String>,
+    user_agent: Option<String>,
+) -> Result<JsonValue, String> {
+    let consent_type_enum = match consent_type.as_str() {
+        "pii_detection" => ConsentType::PiiDetection,
+        "chat_storage" => ConsentType::ChatStorage,
+        "document_processing" => ConsentType::DocumentProcessing,
+        "analytics" => ConsentType::Analytics,
+        "ai_processing" => ConsentType::AiProcessing,
+        "data_retention" => ConsentType::DataRetention,
+        _ => return Err(format!("Unknown consent type: {}", consent_type)),
+    };
+
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.write().await;
+    consent_mgr.withdraw_consent_with_reason(
+        &user_id,
+        &consent_type_enum,
+        &reason,
+        ip_address.as_deref(),
+        user_agent.as_deref(),
+    ).map_err(|e| e.to_string())?;
+    drop(consent_mgr);
+
+    Ok(serde_json::json!({
+        "success": true,
+        "message": "Consent withdrawn successfully",
+        "user_id": user_id,
+        "consent_type": consent_type,
+        "reason": reason,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "gdpr_article": "Article 7(3) - Right to Withdraw Consent"
+    }))
+}
+
+/// Get consent statistics
+#[tauri::command]
+pub async fn get_consent_statistics(
+    compliance: State<'_, ComplianceManager>,
+) -> Result<JsonValue, String> {
+    let consent_lock = compliance.consent();
+    let consent_mgr = consent_lock.read().await;
+    consent_mgr.get_consent_statistics()
         .map_err(|e| e.to_string())
 }

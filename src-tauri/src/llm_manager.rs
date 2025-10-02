@@ -457,13 +457,10 @@ impl LLMManager {
         let _model_name = active_model.as_ref()
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
-        let gen_config = config.unwrap_or_else(|| {
-            tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async {
-                    self.generation_config.read().await.clone()
-                })
-            })
-        });
+        let gen_config = match config {
+            Some(cfg) => cfg,
+            None => self.generation_config.read().await.clone(),
+        };
 
         // Check if GGUF model is loaded
         if !self.gguf_engine.is_model_loaded().await {
@@ -508,13 +505,10 @@ impl LLMManager {
         let _model_name = active_model.as_ref()
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
-        let gen_config = config.unwrap_or_else(|| {
-            tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async {
-                    self.generation_config.read().await.clone()
-                })
-            })
-        });
+        let gen_config = match config {
+            Some(cfg) => cfg,
+            None => self.generation_config.read().await.clone(),
+        };
 
         // Check if GGUF model is loaded
         if !self.gguf_engine.is_model_loaded().await {
@@ -558,6 +552,12 @@ impl LLMManager {
                 (name.clone(), config.clone(), status)
             })
             .collect()
+    }
+
+    /// Check if a model is currently loaded
+    pub async fn is_model_loaded(&self) -> Result<bool> {
+        let active = self.active_model.read().await;
+        Ok(active.is_some() && self.gguf_engine.is_loaded())
     }
 
     #[allow(dead_code)]

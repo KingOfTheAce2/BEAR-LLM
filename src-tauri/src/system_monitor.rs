@@ -166,73 +166,94 @@ impl SystemMonitor {
             }
 
             // Initialize COM library and WMI connection
-            if let Ok(com_con) = COMLibrary::new() {
-                if let Ok(wmi_con) = WMIConnection::new(com_con) {
-                    // Query all video controllers
-                    if let Ok(results) = wmi_con.query::<Win32VideoController>() {
-                        for controller in results {
-                            if let Some(name) = &controller.name {
-                                // Check for AMD/Radeon GPUs (non-NVIDIA)
-                                if name.contains("AMD") || name.contains("Radeon") {
-                                    let vram_total_mb = controller.adapter_ram
-                                        .map(|ram| ram / 1_048_576) // Convert bytes to MB
-                                        .unwrap_or(8192); // Fallback if AdapterRAM unavailable
+            match COMLibrary::new() {
+                Ok(com_con) => {
+                    match WMIConnection::new(com_con) {
+                        Ok(wmi_con) => {
+                            // Query all video controllers
+                            match wmi_con.query::<Win32VideoController>() {
+                                Ok(results) => {
+                                    for controller in results {
+                                        if let Some(name) = &controller.name {
+                                            // Check for AMD/Radeon GPUs (non-NVIDIA)
+                                            if name.contains("AMD") || name.contains("Radeon") {
+                                                let vram_total_mb = controller.adapter_ram
+                                                    .map(|ram| ram / 1_048_576) // Convert bytes to MB
+                                                    .unwrap_or(8192); // Fallback if AdapterRAM unavailable
 
-                                    let driver_version = controller.driver_version
-                                        .unwrap_or_else(|| "Unknown".to_string());
+                                                let driver_version = controller.driver_version
+                                                    .unwrap_or_else(|| "Unknown".to_string());
 
-                                    tracing::info!(
-                                        "Detected AMD GPU via WMI: {} with {}MB VRAM",
-                                        name, vram_total_mb
+                                                tracing::info!(
+                                                    "Detected AMD GPU via WMI: {} with {}MB VRAM",
+                                                    name, vram_total_mb
+                                                );
+
+                                                return GpuInfo {
+                                                    available: true,
+                                                    name: name.clone(),
+                                                    vram_total_mb,
+                                                    vram_used_mb: 0, // WMI doesn't provide real-time usage
+                                                    vram_free_mb: vram_total_mb,
+                                                    temperature: 0.0, // Would need AMD ADL for temperature
+                                                    utilization: 0,   // Would need AMD ADL for utilization
+                                                    cuda_available: false,
+                                                    compute_capability: "ROCm".to_string(),
+                                                    driver_version,
+                                                };
+                                            } else if name.contains("Intel") {
+                                                // Also detect Intel integrated GPUs for completeness
+                                                let vram_total_mb = controller.adapter_ram
+                                                    .map(|ram| ram / 1_048_576)
+                                                    .unwrap_or(2048);
+
+                                                tracing::debug!(
+                                                    "Detected Intel GPU via WMI: {} with {}MB VRAM",
+                                                    name, vram_total_mb
+                                                );
+
+                                                return GpuInfo {
+                                                    available: true,
+                                                    name: name.clone(),
+                                                    vram_total_mb,
+                                                    vram_used_mb: 0,
+                                                    vram_free_mb: vram_total_mb,
+                                                    temperature: 0.0,
+                                                    utilization: 0,
+                                                    cuda_available: false,
+                                                    compute_capability: "Intel".to_string(),
+                                                    driver_version: controller.driver_version
+                                                        .unwrap_or_else(|| "Unknown".to_string()),
+                                                };
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::error!(
+                                        "GPU detection failed: Could not query Win32_VideoController via WMI. \
+                                        Error: {}. This may indicate WMI service issues or insufficient permissions.",
+                                        e
                                     );
-
-                                    return GpuInfo {
-                                        available: true,
-                                        name: name.clone(),
-                                        vram_total_mb,
-                                        vram_used_mb: 0, // WMI doesn't provide real-time usage
-                                        vram_free_mb: vram_total_mb,
-                                        temperature: 0.0, // Would need AMD ADL for temperature
-                                        utilization: 0,   // Would need AMD ADL for utilization
-                                        cuda_available: false,
-                                        compute_capability: "ROCm".to_string(),
-                                        driver_version,
-                                    };
-                                } else if name.contains("Intel") {
-                                    // Also detect Intel integrated GPUs for completeness
-                                    let vram_total_mb = controller.adapter_ram
-                                        .map(|ram| ram / 1_048_576)
-                                        .unwrap_or(2048);
-
-                                    tracing::debug!(
-                                        "Detected Intel GPU via WMI: {} with {}MB VRAM",
-                                        name, vram_total_mb
-                                    );
-
-                                    return GpuInfo {
-                                        available: true,
-                                        name: name.clone(),
-                                        vram_total_mb,
-                                        vram_used_mb: 0,
-                                        vram_free_mb: vram_total_mb,
-                                        temperature: 0.0,
-                                        utilization: 0,
-                                        cuda_available: false,
-                                        compute_capability: "Intel".to_string(),
-                                        driver_version: controller.driver_version
-                                            .unwrap_or_else(|| "Unknown".to_string()),
-                                    };
                                 }
                             }
                         }
-                    } else {
-                        tracing::warn!("Failed to query Win32_VideoController via WMI");
+                        Err(e) => {
+                            tracing::error!(
+                                "GPU detection failed: Could not establish WMI connection. \
+                                Error: {}. Ensure WMI service is running and you have proper permissions.",
+                                e
+                            );
+                        }
                     }
-                } else {
-                    tracing::warn!("Failed to establish WMI connection");
                 }
-            } else {
-                tracing::warn!("Failed to initialize COM library for WMI");
+                Err(e) => {
+                    tracing::error!(
+                        "GPU detection failed: Could not initialize COM library for WMI. \
+                        Error: {}. This may indicate system-level COM configuration issues.",
+                        e
+                    );
+                }
             }
         }
 

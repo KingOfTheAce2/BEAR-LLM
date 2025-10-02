@@ -1,0 +1,215 @@
+# AI Model Card - TinyLlama-1.1B-Chat-v1.0
+# EU AI Act Article 53 Compliance Documentation
+# Format: TOML (Tom's Obvious Minimal Language)
+
+[model]
+name = "TinyLlama-1.1B-Chat-v1.0"
+version = "1.0"
+provider = "TinyLlama Team"
+license = "Apache-2.0"
+release_date = "2024-01-04"
+model_type = "Causal Language Model (Decoder-only Transformer)"
+architecture = "Llama 2"
+parameters = "1.1 billion"
+context_length = 2048
+vocabulary_size = 32000
+
+[format]
+type = "GGUF"
+quantization = "Q4_K_M"
+file_size_mb = 850
+precision = "4-bit quantized"
+inference_engine = "Candle (Rust)"
+
+[training]
+training_data = "SlimPajama (627B tokens), Starcoderdata (268B tokens)"
+training_tokens = "3 trillion tokens"
+data_cutoff = "2023-06-30"
+languages = ["English (primary)", "Code", "Limited multilingual"]
+training_hardware = "16x A100-40GB GPUs"
+training_duration = "90 days"
+compute_budget = "3072 GPU-hours"
+
+[intended_use]
+primary_use = "Fast text generation for basic conversational AI tasks"
+use_cases = [
+    "Simple question answering",
+    "Document summarization (short documents)",
+    "Basic writing assistance",
+    "Code completion (simple tasks)",
+    "Casual conversation",
+    "Educational demonstrations"
+]
+target_users = [
+    "Users with limited hardware (8GB RAM minimum)",
+    "Corporate laptops without dedicated GPUs",
+    "Educational and learning environments",
+    "Testing and development workflows"
+]
+deployment = "Local desktop application (BEAR AI LLM)"
+
+[capabilities]
+strengths = [
+    "Extremely fast inference (~45 tokens/sec on CPU)",
+    "Low memory footprint (~1.2 GB RAM during inference)",
+    "Quick startup time (<5 seconds)",
+    "Energy efficient",
+    "Good for simple tasks and prototyping"
+]
+weaknesses = [
+    "Limited reasoning capability",
+    "Struggles with complex logic",
+    "Smaller knowledge base than larger models",
+    "Less accurate on specialized topics",
+    "Higher hallucination rate",
+    "Limited context understanding"
+]
+
+[performance]
+# Benchmarks on standard academic datasets
+mmlu_score = 25.3  # Massive Multitask Language Understanding (0-100)
+hellaswag_score = 59.2  # Common sense reasoning
+arc_challenge = 30.1  # Science questions
+truthfulqa = 37.3  # Factual accuracy
+humaneval = 10.2  # Code generation (0-100)
+gsm8k = 5.8  # Math reasoning
+
+# Performance notes
+[performance.notes]
+description = "Scores reflect 4-bit quantized model performance. Lower than full-precision larger models but excellent for size/speed tradeoff."
+
+[limitations]
+technical = [
+    "2,048 token context limit (approximately 1,500 words)",
+    "4-bit quantization reduces precision vs full model",
+    "English-primary with limited multilingual support",
+    "Cannot handle very long documents (>1,500 words)",
+    "Limited factual knowledge compared to 7B+ models"
+]
+
+reasoning = [
+    "Basic reasoning only - not suitable for complex logic",
+    "May fail on multi-step reasoning tasks",
+    "Limited understanding of nuanced instructions",
+    "Struggles with ambiguous or contradictory prompts"
+]
+
+knowledge = [
+    "Knowledge cutoff: June 2023",
+    "No real-time information or current events",
+    "Limited domain expertise (medical, legal, scientific)",
+    "May provide outdated information on rapidly changing topics"
+]
+
+output_quality = [
+    "Higher hallucination rate than larger models (~15-25%)",
+    "May generate plausible but incorrect information",
+    "Less coherent over long conversations",
+    "Repetitive outputs in some contexts",
+    "Limited creative writing capability"
+]
+
+[risks]
+high_risk = [
+    "CRITICAL: Not suitable for professional legal advice",
+    "CRITICAL: Do not use for medical diagnosis or treatment",
+    "CRITICAL: Not suitable for financial or investment decisions",
+    "CRITICAL: Hallucination risk requires human verification",
+    "Higher false positive rate in PII detection scenarios"
+]
+
+medium_risk = [
+    "May perpetuate biases present in training data",
+    "Limited understanding of sensitive or cultural contexts",
+    "Potential for generating inappropriate content if misused",
+    "Factual accuracy not guaranteed - always verify critical information"
+]
+
+mitigation = [
+    "Always verify outputs with qualified professionals",
+    "Use only for informational and educational purposes",
+    "Implement human oversight for all important decisions",
+    "Cross-reference facts with authoritative sources",
+    "Never rely solely on model output for critical tasks"
+]
+
+[bias_and_fairness]
+known_biases = [
+    "English language bias (98% of training data)",
+    "Western cultural perspective predominant",
+    "Potential gender, racial, and demographic biases from web data",
+    "Underrepresentation of non-English languages and cultures",
+    "Coding bias toward popular languages (Python, JavaScript)"
+]
+
+fairness_testing = "Limited fairness evaluation on 1B parameter model. Inherits biases from Llama 2 architecture and SlimPajama dataset."
+
+recommendations = [
+    "Be aware of potential cultural and linguistic biases",
+    "Verify information across diverse sources",
+    "Do not use for sensitive decisions involving protected characteristics",
+    "Monitor outputs for bias in deployment contexts"
+]
+
+[pii_detection]
+# Performance when used with BEAR AI's PII protection
+role = "Text generation (not primary PII detector)"
+accuracy = "N/A - uses separate PII detection system"
+false_positive_rate = "N/A"
+false_negative_rate = "N/A"
+notes = "Model does not perform PII detection. BEAR AI uses dedicated Presidio or regex-based PII scanners."
+
+[environmental_impact]
+training_co2 = "Estimated ~8,000 kg CO2eq (16 A100 GPUs for 90 days)"
+inference_power = "Low - ~15W typical CPU usage"
+efficiency = "Excellent for size - 850MB enables broad accessibility"
+
+[compliance]
+eu_ai_act = "Article 53 - Technical Documentation"
+gdpr = "No personal data in model weights. Processes user data locally."
+intended_risk_level = "High-risk application context (legal/professional use)"
+transparency_obligations = "Fulfilled via this model card and AI Transparency Notice"
+
+[updates]
+update_frequency = "Model frozen - no ongoing training"
+version_control = "Versioned via HuggingFace model repository"
+security_patches = "Inference engine (Candle) receives security updates"
+
+[contact]
+provider = "TinyLlama Team"
+repository = "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+issues = "https://github.com/jzhang38/TinyLlama/issues"
+bear_ai_integration = "support@bear-ai.com"
+
+[bear_ai_specific]
+recommended_ram = "8 GB minimum"
+recommended_cpu = "4 cores, 2.0 GHz+"
+gpu_required = false
+typical_inference_speed = "40-50 tokens/second (CPU)"
+use_case_fit = "Corporate laptop - Fast configuration"
+user_group = "Users prioritizing speed over quality"
+
+[references]
+paper = "https://github.com/jzhang38/TinyLlama"
+huggingface = "https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+license_url = "https://www.apache.org/licenses/LICENSE-2.0"
+
+[metadata]
+card_version = "1.0.0"
+card_date = "2025-10-02"
+card_author = "BEAR AI Compliance Team"
+last_updated = "2025-10-02"
+eu_ai_act_version = "Regulation (EU) 2024/1689"
+
+# Compliance Statement
+[compliance_statement]
+statement = """
+This model card is provided in compliance with the EU AI Act Article 53 (Technical Documentation)
+and Article 13 (Transparency and Provision of Information to Deployers). TinyLlama-1.1B is deployed
+in BEAR AI LLM as part of a high-risk AI system for professional and legal document assistance.
+
+Users must understand this model's limitations and always maintain human oversight. The model is
+intended for assistance only and must not replace professional judgment in critical decisions.
+
+All outputs require verification by qualified professionals before reliance in professional contexts.
+"""

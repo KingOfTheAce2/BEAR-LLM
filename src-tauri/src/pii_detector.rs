@@ -188,7 +188,25 @@ impl PIIDetector {
         // Load exclusions config from file, fallback to defaults if not found
         let exclusions_config = Self::load_exclusions_config()
             .unwrap_or_else(|e| {
-                tracing::warn!("Failed to load PII exclusions config: {}. Using defaults.", e);
+                tracing::error!("==================== PII EXCLUSIONS CONFIG ERROR ====================");
+                tracing::error!("Failed to load PII exclusions configuration file!");
+                tracing::error!("Error: {}", e);
+                tracing::error!("");
+                tracing::error!("⚠️  WARNING: Without exclusions config, legal terms may be flagged as PII!");
+                tracing::error!("⚠️  Examples that may be incorrectly flagged:");
+                tracing::error!("   - 'United States', 'New York', 'Supreme Court'");
+                tracing::error!("   - 'First Amendment', 'Federal Court', 'Justice Department'");
+                tracing::error!("");
+                tracing::error!("To fix this issue:");
+                tracing::error!("1. Create 'pii_exclusions.toml' in project root");
+                tracing::error!("2. Or run: cargo run -- create-default-pii-config");
+                tracing::error!("3. See example at: src-tauri/pii_exclusions.example.toml");
+                tracing::error!("====================================================================");
+
+                // Also log to stderr for visibility during development
+                eprintln!("\n❌ PII EXCLUSIONS CONFIG MISSING - Legal terms may be flagged as PII!");
+                eprintln!("   Create 'pii_exclusions.toml' to fix this issue.\n");
+
                 PIIExclusionsConfig::default()
             });
 
@@ -212,24 +230,38 @@ impl PIIDetector {
                 .unwrap_or_else(|| PathBuf::from("pii_exclusions.toml")),
         ];
 
+        tracing::info!("Searching for PII exclusions config in the following locations:");
+        for path in &possible_paths {
+            tracing::info!("  - {:?} (exists: {})", path, path.exists());
+        }
+
         for path in possible_paths {
             if path.exists() {
-                tracing::info!("Loading PII exclusions config from: {:?}", path);
+                tracing::info!("✅ Loading PII exclusions config from: {:?}", path);
                 let content = fs::read_to_string(&path)?;
                 let config: PIIExclusionsConfig = toml::from_str(&content)?;
+                let total_patterns = config.exclusions.locations.len()
+                    + config.exclusions.legal_terms.len()
+                    + config.exclusions.organizations.len()
+                    + config.exclusions.time_terms.len()
+                    + config.exclusions.custom.len();
                 tracing::info!(
-                    "Loaded {} exclusion patterns from config",
-                    config.exclusions.locations.len()
-                        + config.exclusions.legal_terms.len()
-                        + config.exclusions.organizations.len()
-                        + config.exclusions.time_terms.len()
-                        + config.exclusions.custom.len()
+                    "✅ Successfully loaded {} exclusion patterns from config",
+                    total_patterns
+                );
+                tracing::info!(
+                    "   - Locations: {}, Legal Terms: {}, Organizations: {}, Time Terms: {}, Custom: {}",
+                    config.exclusions.locations.len(),
+                    config.exclusions.legal_terms.len(),
+                    config.exclusions.organizations.len(),
+                    config.exclusions.time_terms.len(),
+                    config.exclusions.custom.len()
                 );
                 return Ok(config);
             }
         }
 
-        Err(anyhow!("PII exclusions config file not found in any expected location"))
+        Err(anyhow!("❌ PII exclusions config file not found in any expected location"))
     }
 
     pub async fn initialize(&self) -> Result<()> {

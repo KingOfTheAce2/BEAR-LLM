@@ -46,15 +46,22 @@ impl FileProcessor {
     fn validate_path(&self, file_path: &str) -> Result<PathBuf> {
         let path = PathBuf::from(file_path);
 
-        // Canonicalize to resolve .. and . and symlinks
+        // SECURITY FIX: Check for symlinks BEFORE canonicalize to prevent TOCTOU
+        // Using symlink_metadata doesn't follow symlinks, preventing race conditions
+        let metadata = std::fs::symlink_metadata(&path)
+            .map_err(|e| anyhow!("Cannot access file path: {}", e))?;
+
+        // Explicitly reject symlinks for security - prevents symlink attacks
+        if metadata.file_type().is_symlink() {
+            return Err(anyhow!(
+                "Security violation: Symbolic links are not allowed. \
+                Please use the direct file path instead."
+            ));
+        }
+
+        // Now safe to canonicalize since we've verified it's not a symlink
         let canonical = path.canonicalize()
             .map_err(|e| anyhow!("Invalid or inaccessible file path: {}", e))?;
-
-        // Check if path is a symlink (additional safety check)
-        if std::fs::symlink_metadata(&path)?.file_type().is_symlink() {
-            tracing::warn!("Symlink detected at: {:?}", path);
-            // Still allow if it resolves within allowed directory
-        }
 
         // If base directory is set, ensure path is within it
         if let Some(ref base_dir) = self.allowed_base_dir {
@@ -70,7 +77,7 @@ impl FileProcessor {
             }
         }
 
-        tracing::debug!("Path validated: {:?}", canonical);
+        tracing::debug!("Path validated (not a symlink): {:?}", canonical);
         Ok(canonical)
     }
 

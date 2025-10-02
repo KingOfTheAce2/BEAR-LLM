@@ -2,12 +2,15 @@
 // This allows tests and external crates to use the modules
 
 pub mod compliance;
+pub mod constants;
 pub mod database;
 pub mod export_engine;
-pub mod hardware_detection;
+pub mod gguf_inference;
 pub mod llm_manager;
 pub mod pii_detector;
+pub mod process_helper;
 pub mod rag_engine;
+pub mod utils;
 
 // Re-export commonly used types
 pub use database::DatabaseManager;

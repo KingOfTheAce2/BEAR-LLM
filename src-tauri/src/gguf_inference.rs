@@ -161,11 +161,23 @@ impl GGUFInferenceEngine {
         let min_required_context = max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN;
         if min_required_context >= config.n_ctx as usize {
             return Err(anyhow!(
-                "max_tokens ({}) + safety margin ({}) exceeds context size ({}). \
-                Either reduce max_tokens or increase n_ctx.",
+                "Insufficient context for generation:\n\
+                - Requested max_tokens: {}\n\
+                - Safety margin: {}\n\
+                - Total required: {}\n\
+                - Available context (n_ctx): {}\n\
+                \n\
+                Solutions:\n\
+                1. Reduce max_tokens to {} or less\n\
+                2. Increase n_ctx (context size) to {} or more\n\
+                3. Use a model with larger context window\n\
+                4. Shorten your input prompt",
                 max_tokens,
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
-                config.n_ctx
+                min_required_context,
+                config.n_ctx,
+                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 1),
+                min_required_context + 1
             ));
         }
 
@@ -177,12 +189,22 @@ impl GGUFInferenceEngine {
         // Ensure we have at least some space for the prompt
         if max_prompt_tokens < 10 {
             return Err(anyhow!(
-                "Insufficient context space for prompt. Context: {}, Max tokens: {}, Safety: {}, \
-                Remaining: {}. Increase n_ctx or reduce max_tokens.",
+                "Insufficient context space for prompt:\n\
+                - Context size (n_ctx): {}\n\
+                - Requested max_tokens: {}\n\
+                - Safety margin: {}\n\
+                - Remaining for prompt: {} (minimum 10 required)\n\
+                \n\
+                Solutions:\n\
+                1. Increase n_ctx to {} or more\n\
+                2. Reduce max_tokens to {} or less\n\
+                3. Use a larger model with more context capacity",
                 config.n_ctx,
                 max_tokens,
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
-                max_prompt_tokens
+                max_prompt_tokens,
+                max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
+                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 10)
             ));
         }
 
@@ -320,11 +342,23 @@ impl GGUFInferenceEngine {
         let min_required_context = max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN;
         if min_required_context >= config.n_ctx as usize {
             return Err(anyhow!(
-                "max_tokens ({}) + safety margin ({}) exceeds context size ({}). \
-                Either reduce max_tokens or increase n_ctx.",
+                "Insufficient context for generation:\n\
+                - Requested max_tokens: {}\n\
+                - Safety margin: {}\n\
+                - Total required: {}\n\
+                - Available context (n_ctx): {}\n\
+                \n\
+                Solutions:\n\
+                1. Reduce max_tokens to {} or less\n\
+                2. Increase n_ctx (context size) to {} or more\n\
+                3. Use a model with larger context window\n\
+                4. Shorten your input prompt",
                 max_tokens,
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
-                config.n_ctx
+                min_required_context,
+                config.n_ctx,
+                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 1),
+                min_required_context + 1
             ));
         }
 
@@ -336,12 +370,22 @@ impl GGUFInferenceEngine {
         // Ensure we have at least some space for the prompt
         if max_prompt_tokens < 10 {
             return Err(anyhow!(
-                "Insufficient context space for prompt. Context: {}, Max tokens: {}, Safety: {}, \
-                Remaining: {}. Increase n_ctx or reduce max_tokens.",
+                "Insufficient context space for prompt:\n\
+                - Context size (n_ctx): {}\n\
+                - Requested max_tokens: {}\n\
+                - Safety margin: {}\n\
+                - Remaining for prompt: {} (minimum 10 required)\n\
+                \n\
+                Solutions:\n\
+                1. Increase n_ctx to {} or more\n\
+                2. Reduce max_tokens to {} or less\n\
+                3. Use a larger model with more context capacity",
                 config.n_ctx,
                 max_tokens,
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
-                max_prompt_tokens
+                max_prompt_tokens,
+                max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
+                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 10)
             ));
         }
 

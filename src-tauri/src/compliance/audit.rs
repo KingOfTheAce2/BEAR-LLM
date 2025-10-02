@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
@@ -263,7 +263,7 @@ impl AuditLogger {
     pub fn get_entity_logs(
         &self,
         entity_type: EntityType,
-        entity_id: &str,
+        _entity_id: &str,
         limit: usize
     ) -> Result<Vec<AuditLogEntry>> {
         self.query_logs(&AuditQuery {

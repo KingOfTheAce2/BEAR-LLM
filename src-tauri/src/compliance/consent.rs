@@ -12,6 +12,8 @@ pub enum ConsentType {
     ChatStorage,
     DocumentProcessing,
     Analytics,
+    AiProcessing,
+    DataRetention,
 }
 
 impl ConsentType {
@@ -21,6 +23,8 @@ impl ConsentType {
             ConsentType::ChatStorage => "chat_storage",
             ConsentType::DocumentProcessing => "document_processing",
             ConsentType::Analytics => "analytics",
+            ConsentType::AiProcessing => "ai_processing",
+            ConsentType::DataRetention => "data_retention",
         }
     }
 
@@ -30,6 +34,8 @@ impl ConsentType {
             "chat_storage" => Ok(ConsentType::ChatStorage),
             "document_processing" => Ok(ConsentType::DocumentProcessing),
             "analytics" => Ok(ConsentType::Analytics),
+            "ai_processing" => Ok(ConsentType::AiProcessing),
+            "data_retention" => Ok(ConsentType::DataRetention),
             _ => Err(anyhow!("Unknown consent type: {}", s)),
         }
     }
@@ -76,11 +82,12 @@ impl ConsentManager {
     pub fn initialize(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
-        // Run all migration files
+        // Run all migration files including granular consent log
         let migrations = vec![
             include_str!("../../migrations/001_create_user_consent.sql"),
             include_str!("../../migrations/002_create_consent_versions.sql"),
             include_str!("../../migrations/004_create_audit_log.sql"),
+            include_str!("../../migrations/006_create_consent_log.sql"),
         ];
 
         for migration in migrations {
@@ -88,7 +95,7 @@ impl ConsentManager {
             for statement in migration.split(';') {
                 let trimmed = statement.trim();
                 if !trimmed.is_empty() && !trimmed.starts_with("--") {
-                    conn.execute(trimmed, [])?;
+                    let _ = conn.execute(trimmed, []); // Ignore errors for IF NOT EXISTS
                 }
             }
         }
@@ -326,6 +333,147 @@ impl ConsentManager {
             "export_date": Utc::now().to_rfc3339(),
             "consents": consents,
             "total_consents": consents.len()
+        }))
+    }
+
+    /// Log granular consent action to consent_log table
+    /// Provides detailed audit trail with IP address and user agent
+    pub fn log_granular_consent(
+        &self,
+        user_id: &str,
+        consent_type: &ConsentType,
+        version: &str,
+        granted: bool,
+        ip_address: Option<&str>,
+        user_agent: Option<&str>,
+        withdrawal_reason: Option<&str>,
+    ) -> Result<i64> {
+        let conn = Connection::open(&self.db_path)?;
+
+        let consent_text = self.get_consent_text(consent_type, self.get_current_version(consent_type)?)?;
+
+        conn.execute(
+            "INSERT INTO consent_log (user_id, consent_type, version, granted, ip_address, user_agent, consent_text, withdrawal_reason)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                user_id,
+                consent_type.as_str(),
+                version,
+                granted,
+                ip_address,
+                user_agent,
+                consent_text,
+                withdrawal_reason
+            ],
+        )?;
+
+        Ok(conn.last_insert_rowid())
+    }
+
+    /// Get granular consent log for a user
+    /// Returns detailed history of all consent actions
+    pub fn get_granular_consent_log(&self, user_id: &str, limit: usize) -> Result<Vec<serde_json::Value>> {
+        let conn = Connection::open(&self.db_path)?;
+
+        let mut stmt = conn.prepare(
+            "SELECT id, user_id, consent_type, version, granted, timestamp, ip_address, user_agent, withdrawal_reason
+             FROM consent_log
+             WHERE user_id = ?1
+             ORDER BY timestamp DESC
+             LIMIT ?2"
+        )?;
+
+        let logs: Vec<serde_json::Value> = stmt.query_map(params![user_id, limit], |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_, i64>(0)?,
+                "user_id": row.get::<_, String>(1)?,
+                "consent_type": row.get::<_, String>(2)?,
+                "version": row.get::<_, String>(3)?,
+                "granted": row.get::<_, bool>(4)?,
+                "timestamp": row.get::<_, String>(5)?,
+                "ip_address": row.get::<_, Option<String>>(6)?,
+                "user_agent": row.get::<_, Option<String>>(7)?,
+                "withdrawal_reason": row.get::<_, Option<String>>(8)?
+            }))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(logs)
+    }
+
+    /// Easy withdrawal mechanism - revoke consent with reason
+    /// GDPR Article 7(3) - Right to withdraw consent
+    pub fn withdraw_consent_with_reason(
+        &self,
+        user_id: &str,
+        consent_type: &ConsentType,
+        reason: &str,
+        ip_address: Option<&str>,
+        user_agent: Option<&str>,
+    ) -> Result<()> {
+        // Revoke in main consent table
+        self.revoke_consent(user_id, consent_type)?;
+
+        // Log withdrawal in granular consent log
+        let version = self.get_current_version(consent_type)?.to_string();
+        self.log_granular_consent(
+            user_id,
+            consent_type,
+            &version,
+            false,
+            ip_address,
+            user_agent,
+            Some(reason),
+        )?;
+
+        Ok(())
+    }
+
+    /// Get consent statistics for compliance reporting
+    pub fn get_consent_statistics(&self) -> Result<serde_json::Value> {
+        let conn = Connection::open(&self.db_path)?;
+
+        let total_consents: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM consent_log",
+            [],
+            |row| row.get(0),
+        )?;
+
+        let granted_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM consent_log WHERE granted = 1",
+            [],
+            |row| row.get(0),
+        )?;
+
+        let withdrawn_count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM consent_log WHERE granted = 0",
+            [],
+            |row| row.get(0),
+        )?;
+
+        // Consent type distribution
+        let mut stmt = conn.prepare(
+            "SELECT consent_type, granted, COUNT(*) as count
+             FROM consent_log
+             GROUP BY consent_type, granted
+             ORDER BY consent_type"
+        )?;
+
+        let distribution: Vec<serde_json::Value> = stmt.query_map([], |row| {
+            Ok(serde_json::json!({
+                "consent_type": row.get::<_, String>(0)?,
+                "granted": row.get::<_, bool>(1)?,
+                "count": row.get::<_, i64>(2)?
+            }))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(serde_json::json!({
+            "total_consent_actions": total_consents,
+            "granted_count": granted_count,
+            "withdrawn_count": withdrawn_count,
+            "distribution": distribution,
+            "generated_at": Utc::now().to_rfc3339()
         }))
     }
 }

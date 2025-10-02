@@ -1,0 +1,116 @@
+# PII Exclusions Configuration
+# This file defines terms and patterns that should NOT be flagged as PII
+# Prevents legal terms, common locations, and standard phrases from being redacted
+
+[exclusions]
+
+# Geographic locations and jurisdictions
+# These are commonly mentioned in legal documents and should not be flagged
+locations = [
+    "United States",
+    "New York",
+    "California",
+    "Texas",
+    "Florida",
+    "Washington",
+    "District of Columbia",
+    "Washington DC",
+    "Supreme Court",
+    "Federal Court",
+    "Court of Appeals",
+    "District Court",
+    "Circuit Court",
+    "Northern District",
+    "Southern District",
+    "Eastern District",
+    "Western District",
+]
+
+# Legal terms and constitutional references
+# Common legal terminology that should not be redacted
+legal_terms = [
+    "First Amendment",
+    "Second Amendment",
+    "Fourth Amendment",
+    "Fifth Amendment",
+    "Sixth Amendment",
+    "Fourteenth Amendment",
+    "Supreme Court",
+    "Federal Court",
+    "Court of Appeals",
+    "Justice Department",
+    "Department of Justice",
+    "Attorney General",
+    "District Attorney",
+    "Public Defender",
+    "Chief Justice",
+    "Associate Justice",
+    "Circuit Judge",
+    "Magistrate Judge",
+    "United States Attorney",
+    "Federal Bureau of Investigation",
+    "Internal Revenue Service",
+    "Securities and Exchange Commission",
+    "Federal Trade Commission",
+    "Equal Employment Opportunity Commission",
+]
+
+# Government organizations and agencies
+organizations = [
+    "United States Government",
+    "Federal Bureau of Investigation",
+    "Central Intelligence Agency",
+    "National Security Agency",
+    "Department of Defense",
+    "Department of State",
+    "Department of Treasury",
+    "Department of Justice",
+    "Environmental Protection Agency",
+    "Food and Drug Administration",
+    "Federal Aviation Administration",
+    "Federal Communications Commission",
+]
+
+# Time-related terms that may be incorrectly flagged as names
+time_terms = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+# Custom exclusions - add your own domain-specific terms here
+custom = [
+    "Bear AI",
+    "BEAR-LLM",
+    "Claude",
+    "Anthropic",
+]
+
+[settings]
+# Case-sensitive matching (false = ignore case differences)
+case_sensitive = false
+
+# Minimum confidence threshold for PII detection (0.0 - 1.0)
+# Lower values = more aggressive detection
+# Higher values = more lenient detection
+min_confidence = 0.5
+
+# Enable fuzzy matching for exclusions (experimental)
+# May catch variations of excluded terms
+fuzzy_matching = false

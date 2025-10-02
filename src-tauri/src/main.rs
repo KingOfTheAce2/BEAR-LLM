@@ -31,6 +31,7 @@ mod hardware_detector;
 mod huggingface_api;
 mod model_manager;
 mod process_helper;
+mod rate_limiter;
 
 // GDPR Compliance module
 mod compliance;
@@ -67,131 +68,96 @@ use database::DatabaseManager;
 use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 use compliance::ComplianceManager;
+use rate_limiter::RateLimiter;
 
-// RAII guard for automatic temporary file cleanup
+// SECURITY FIX: Use tempfile crate for atomic temporary file creation
+// This prevents race conditions where file creation happens after validation
+use tempfile::NamedTempFile;
+
+// RAII guard for automatic temporary file cleanup using tempfile crate
 struct TempFileGuard {
+    // Use NamedTempFile which provides atomic creation and automatic cleanup
+    temp_file: Option<NamedTempFile>,
     path: PathBuf,
-    cleanup_enabled: bool,
 }
 
 impl TempFileGuard {
-    /// Create a new temp file guard for an existing file
+    /// Atomically create secure temporary file with content
     ///
-    /// This assumes the file already exists and will clean it up on drop.
-    /// For better safety, use `create_with_content` instead.
-    fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            cleanup_enabled: true,
+    /// SECURITY: Uses tempfile::NamedTempFile for atomic creation, preventing TOCTOU attacks.
+    /// The file is created with exclusive access and automatically cleaned up on drop.
+    fn create_with_content(filename: &str, content: &[u8]) -> Result<Self, String> {
+        use std::io::Write;
+
+        // Sanitize filename to prevent path traversal attacks
+        let safe_filename = filename
+            .replace("..", "")
+            .replace("/", "_")
+            .replace("\\", "_")
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '_' || *c == '-')
+            .collect::<String>();
+
+        if safe_filename.is_empty() {
+            return Err("Invalid filename: resulted in empty name after sanitization".to_string());
         }
+
+        // Create temporary file with atomic creation (prevents TOCTOU race conditions)
+        // Builder allows us to set a prefix for better identification
+        let mut temp_file = tempfile::Builder::new()
+            .prefix(&format!("bear_ai_{}_", safe_filename))
+            .tempfile()
+            .map_err(|e| format!("Failed to create secure temporary file: {}", e))?;
+
+        // Write content to the temporary file
+        temp_file.write_all(content)
+            .map_err(|e| format!("Failed to write to temporary file: {}", e))?;
+
+        // Flush to ensure all data is written
+        temp_file.flush()
+            .map_err(|e| format!("Failed to flush temporary file: {}", e))?;
+
+        let path = temp_file.path().to_path_buf();
+
+        tracing::debug!(
+            path = ?path,
+            size = content.len(),
+            "Created secure temporary file atomically with tempfile crate"
+        );
+
+        Ok(Self {
+            temp_file: Some(temp_file),
+            path,
+        })
     }
 
-    /// Atomically create temp file with content and guard it
-    ///
-    /// This is the preferred way to create temporary files as it ensures
-    /// the guard is created before any file operations, preventing leaks.
-    fn create_with_content(path: PathBuf, content: &[u8]) -> Result<Self, String> {
-        // Create guard first (before file exists)
-        let mut guard = Self {
-            path: path.clone(),
-            cleanup_enabled: false, // Don't cleanup yet - file doesn't exist
-        };
-
-        // Now write the file
-        std::fs::write(&path, content)
-            .map_err(|e| format!("Failed to write temporary file: {}", e))?;
-
-        // Enable cleanup now that file exists
-        guard.cleanup_enabled = true;
-
-        tracing::debug!(path = ?path, size = content.len(), "Created temporary file with guard");
-
-        Ok(guard)
-    }
-
-    #[allow(dead_code)]
     fn path(&self) -> &PathBuf {
         &self.path
     }
 
     /// Disable automatic cleanup (useful if file ownership is transferred)
     #[allow(dead_code)]
-    fn persist(mut self) -> PathBuf {
-        self.cleanup_enabled = false;
-        self.path.clone()
+    fn persist(mut self) -> Result<PathBuf, String> {
+        if let Some(temp_file) = self.temp_file.take() {
+            // Persist the file (prevents automatic deletion)
+            let persisted_path = temp_file.into_temp_path();
+            let final_path = persisted_path.keep()
+                .map_err(|e| format!("Failed to persist temporary file: {}", e))?;
+            Ok(final_path)
+        } else {
+            Ok(self.path.clone())
+        }
     }
 }
 
 impl Drop for TempFileGuard {
     fn drop(&mut self) {
-        if !self.cleanup_enabled {
-            return;
+        // NamedTempFile automatically cleans up when dropped
+        if self.temp_file.is_some() {
+            tracing::debug!(path = ?self.path, "Cleaning up secure temporary file");
         }
-
-        if self.path.exists() {
-            if let Err(e) = std::fs::remove_file(&self.path) {
-                tracing::warn!(
-                    path = ?self.path,
-                    error = %e,
-                    "Failed to cleanup temporary file"
-                );
-            } else {
-                tracing::debug!(path = ?self.path, "Cleaned up temporary file");
-            }
-        }
+        // temp_file.drop() handles cleanup automatically
     }
-}
-
-// Helper function to create a secure temporary file path
-fn create_secure_temp_path(filename: &str) -> Result<PathBuf, String> {
-    // Sanitize filename to prevent path traversal attacks
-    let safe_filename = filename
-        .replace("..", "")
-        .replace("/", "_")
-        .replace("\\", "_")
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '_' || *c == '-')
-        .collect::<String>();
-
-    if safe_filename.is_empty() {
-        return Err("Invalid filename: resulted in empty name after sanitization".to_string());
-    }
-
-    // Use system temporary directory and canonicalize it
-    let temp_dir = env::temp_dir();
-    let canonical_temp_dir = temp_dir.canonicalize()
-        .map_err(|e| format!("Failed to canonicalize temp directory: {}", e))?;
-
-    // Add unique prefix to avoid collisions
-    let unique_filename = format!("bear_ai_{}_{}", uuid::Uuid::new_v4(), safe_filename);
-    let temp_path = canonical_temp_dir.join(&unique_filename);
-
-    // SECURITY: Verify the constructed path is still within temp directory
-    // This prevents any clever path manipulation attacks
-    let parent = temp_path.parent()
-        .ok_or_else(|| "Invalid path: no parent directory".to_string())?;
-
-    if parent != canonical_temp_dir {
-        return Err(format!(
-            "Security violation: Path traversal attempt detected. \
-            Expected parent: {:?}, Got: {:?}",
-            canonical_temp_dir, parent
-        ));
-    }
-
-    // Additional validation: ensure no symbolic links in the path
-    // The file doesn't exist yet, so we check the parent
-    if parent.read_link().is_ok() {
-        return Err("Security violation: Symbolic link detected in temp path".to_string());
-    }
-
-    tracing::debug!(
-        "Created secure temp path: {:?} for filename: {}",
-        temp_path,
-        filename
-    );
-
-    Ok(temp_path)
 }
 
 // Unified Application State
@@ -221,6 +187,9 @@ struct AppState {
 
     // GDPR Compliance
     compliance_manager: Arc<ComplianceManager>,
+
+    // Rate limiting
+    rate_limiter: Arc<RateLimiter>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -292,6 +261,37 @@ async fn check_resource_limits(state: State<'_, AppState>) -> Result<serde_json:
     }))
 }
 
+// Health check endpoint for monitoring and load balancers
+#[tauri::command]
+async fn health_check(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    // Check LLM status
+    let llm = state.llm_manager.read().await;
+    let llm_loaded = llm.is_model_loaded().await.unwrap_or(false);
+    drop(llm);
+
+    // Check RAG status
+    let rag = state.rag_engine.read().await;
+    let rag_ready = rag.is_initialized();
+    drop(rag);
+
+    // Check database connection
+    let db = state.database_manager.read().await;
+    let db_connected = db.health_check().unwrap_or(false);
+    drop(db);
+
+    // Overall status
+    let status = if db_connected { "healthy" } else { "degraded" };
+
+    Ok(serde_json::json!({
+        "status": status,
+        "version": env!("CARGO_PKG_VERSION"),
+        "llm_loaded": llm_loaded,
+        "rag_ready": rag_ready,
+        "database_connected": db_connected,
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    }))
+}
+
 // Enhanced document processing
 #[tauri::command]
 async fn process_document(
@@ -299,6 +299,9 @@ async fn process_document(
     file_path: String,
     file_type: String,
 ) -> Result<ProcessedDocument, String> {
+    // Rate limit check
+    state.rate_limiter.check_rate_limit(&format!("process_document:{}", file_path)).await?;
+
     let content = state.file_processor
         .process_file(&file_path, &file_type)
         .await
@@ -333,16 +336,27 @@ async fn send_message(
     message: String,
     model_name: String,
 ) -> Result<String, String> {
+    // Rate limit check - use generic key for now (in production, use actual user/session ID)
+    state.rate_limiter.check_rate_limit("send_message").await
+        .map_err(|e| {
+            tracing::warn!("Rate limit exceeded for send_message");
+            e
+        })?;
+
     // Check system safety
     let mut hw_monitor = state.hardware_monitor.write().await;
     if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
+        tracing::warn!("System resources critically high during send_message");
         return Err("System resources are critically high. Please wait before sending another message.".to_string());
     }
 
     // Enforce resource limits before proceeding
     hw_monitor.enforce_resource_limits("send_message")
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            tracing::error!(error = %e, "Resource limits exceeded in send_message");
+            e.to_string()
+        })?;
 
     drop(hw_monitor);
 
@@ -565,20 +579,17 @@ async fn analyze_document_pii(
 
     let file_type = filename.split('.').last().unwrap_or("unknown");
     let original_text = if state.file_processor.is_supported(file_type) {
-        // Create secure temporary file path
-        let temp_path = create_secure_temp_path(&filename)?;
+        // SECURITY FIX: Atomically create temporary file with content
+        // Uses tempfile crate for atomic creation, preventing TOCTOU race conditions
+        let temp_guard = TempFileGuard::create_with_content(&filename, &content)?;
 
-        // Atomically create temporary file with content and guard
-        // This prevents leaks even if there's a panic during file operations
-        let temp_guard = TempFileGuard::create_with_content(temp_path.clone(), &content)?;
-
-        // Process the file
+        // Process the file - path is guaranteed to exist and be secure
         let result = state.file_processor
             .process_file(temp_guard.path().to_str().ok_or("Invalid temp path")?, file_type)
             .await
             .unwrap_or_else(|_| String::from_utf8_lossy(&content).to_string());
 
-        // temp_guard is automatically dropped here, cleaning up the file
+        // temp_guard is automatically dropped here, cleaning up the file atomically
         result
     } else {
         return Ok(serde_json::json!({
@@ -887,6 +898,40 @@ async fn get_pii_statistics(
 // unload_model, emergency_stop, and set_resource_limits are defined in commands.rs
 
 fn main() {
+    // Initialize Sentry for crash reporting (production only)
+    // Set SENTRY_DSN environment variable for crash reporting in production
+    let _sentry_guard = if !cfg!(debug_assertions) {
+        if let Ok(dsn) = env::var("SENTRY_DSN") {
+            Some(sentry::init((
+                dsn,
+                sentry::ClientOptions {
+                    release: sentry::release_name!(),
+                    environment: Some(if cfg!(debug_assertions) {
+                        "development".into()
+                    } else {
+                        "production".into()
+                    }),
+                    before_send: Some(Arc::new(|mut event| {
+                        // Filter out PII from crash reports
+                        if let Some(ref mut request) = event.request {
+                            request.cookies = None;
+                            request.headers = None;
+                        }
+                        // Remove environment variables that might contain secrets
+                        event.contexts.remove("os");
+                        Some(event)
+                    })),
+                    ..Default::default()
+                },
+            )))
+        } else {
+            tracing::info!("Sentry crash reporting disabled - SENTRY_DSN not set");
+            None
+        }
+    } else {
+        None
+    };
+
     // Initialize tracing subsystem
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -957,6 +1002,9 @@ fn main() {
 
         // GDPR Compliance
         compliance_manager,
+
+        // Rate limiting
+        rate_limiter: Arc::new(RateLimiter::new()),
     };
 
     // Initialize modules
@@ -1045,7 +1093,8 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // System monitoring
+            // Health and monitoring
+            health_check,
             check_system_status,
             get_system_specs,
             check_model_compatibility,

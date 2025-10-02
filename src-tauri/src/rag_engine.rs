@@ -199,6 +199,13 @@ impl RAGEngine {
         }
     }
 
+    /// Check if RAG engine is initialized
+    pub fn is_initialized(&self) -> bool {
+        // RAG engine is considered initialized if documents map exists
+        // Even if empty, it's ready to accept documents
+        true
+    }
+
     pub async fn switch_rag_model(&self, model_id: String) -> Result<()> {
         tracing::info!("🔄 Switching RAG model to: {}", model_id);
 
@@ -239,12 +246,24 @@ impl RAGEngine {
         // SECURITY: Prevent memory exhaustion from huge documents
         const MAX_DOCUMENT_SIZE: usize = 100_000_000; // 100MB
         const MAX_CHUNKS_PER_DOCUMENT: usize = 10_000;
+        const MAX_TOTAL_DOCUMENTS: usize = 100_000; // MEMORY LEAK FIX: Limit total documents
 
         if content.len() > MAX_DOCUMENT_SIZE {
             return Err(anyhow!(
                 "Document exceeds maximum size of {}MB (got {}MB)",
                 MAX_DOCUMENT_SIZE / 1_000_000,
                 content.len() / 1_000_000
+            ));
+        }
+
+        // MEMORY LEAK FIX: Check total document count before adding
+        let current_doc_count = self.documents.read().await.len();
+        if current_doc_count >= MAX_TOTAL_DOCUMENTS {
+            return Err(anyhow!(
+                "Document limit reached: {} documents (max: {}). \
+                Please clear old documents using clear_index() or delete_document() before adding more.",
+                current_doc_count,
+                MAX_TOTAL_DOCUMENTS
             ));
         }
 

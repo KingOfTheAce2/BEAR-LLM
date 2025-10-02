@@ -166,11 +166,13 @@ impl ComplianceManager {
         let consent_data = consent.export_consent_data(user_id)?;
         drop(consent);
 
-        let audit = self.audit_logger.read().await;
-        let audit_data = audit.export_user_audit_trail(user_id)?;
-        drop(audit);
+        let audit_data = {
+            let audit = self.audit_logger.read().await;
+            audit.export_user_audit_trail(user_id)?
+        };
 
         // Log export action
+        let audit = self.audit_logger.write().await;
         audit.log_success(
             user_id,
             AuditAction::DataExported,

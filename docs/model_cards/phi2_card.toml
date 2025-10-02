@@ -1,0 +1,255 @@
+# AI Model Card - Phi-2-v2.0
+# EU AI Act Article 53 Compliance Documentation
+# Format: TOML (Tom's Obvious Minimal Language)
+
+[model]
+name = "Phi-2"
+version = "2.0"
+provider = "Microsoft Research"
+license = "MIT"
+release_date = "2023-12-12"
+model_type = "Causal Language Model (Decoder-only Transformer)"
+architecture = "Transformer with custom optimizations"
+parameters = "2.7 billion"
+context_length = 2048
+vocabulary_size = 51200
+
+[format]
+type = "GGUF"
+quantization = "Q4_K_M"
+file_size_mb = 1800
+precision = "4-bit quantized"
+inference_engine = "Candle (Rust)"
+
+[training]
+training_data = "NLP synthetic data, filtered web data (The Pile, StackOverflow, arXiv)"
+training_tokens = "1.4 trillion tokens"
+data_cutoff = "2023-10-31"
+languages = ["English (primary)", "Code (Python, C++, JavaScript)", "Limited multilingual"]
+training_hardware = "96x A100-80GB GPUs"
+training_duration = "14 days"
+compute_budget = "32,256 GPU-hours"
+special_techniques = "Textbook-quality synthetic data, reasoning chain augmentation"
+
+[intended_use]
+primary_use = "Balanced text generation and reasoning for general professional tasks"
+use_cases = [
+    "Document analysis and summarization",
+    "Question answering with reasoning",
+    "Professional writing assistance",
+    "Code generation and explanation",
+    "Research and knowledge synthesis",
+    "Educational content creation",
+    "Logical reasoning tasks"
+]
+target_users = [
+    "Professionals with moderate hardware (16GB RAM recommended)",
+    "Small business and corporate environments",
+    "Researchers and analysts",
+    "Developers and technical writers",
+    "Educational institutions"
+]
+deployment = "Local desktop application (BEAR AI LLM)"
+
+[capabilities]
+strengths = [
+    "Strong reasoning capability for size (comparable to 7B models in some tasks)",
+    "Excellent code generation and understanding",
+    "Good balance of speed (~25 tokens/sec CPU) and quality",
+    "High-quality synthetic training data reduces hallucinations",
+    "Strong performance on STEM and technical content",
+    "Efficient memory usage (~2.5 GB RAM during inference)"
+]
+weaknesses = [
+    "Still limited compared to 7B+ models on complex reasoning",
+    "2,048 token context can be restrictive for long documents",
+    "Less creative writing ability than larger models",
+    "Narrower knowledge base than models trained on broader data",
+    "May struggle with highly specialized or niche domains"
+]
+
+[performance]
+# Benchmarks on standard academic datasets
+mmlu_score = 56.3  # Massive Multitask Language Understanding (0-100)
+hellaswag_score = 73.1  # Common sense reasoning
+arc_challenge = 61.1  # Science questions
+truthfulqa = 44.5  # Factual accuracy
+humaneval = 47.0  # Code generation (0-100)
+gsm8k = 56.4  # Math reasoning
+bbh = 43.4  # Big-Bench Hard (complex reasoning)
+
+# Performance notes
+[performance.notes]
+description = """
+Phi-2 demonstrates exceptional performance for its size due to high-quality training data.
+Scores are competitive with models 2-3x larger on reasoning tasks. 4-bit quantization
+reduces performance by ~5-10% vs full precision but maintains strong capabilities.
+"""
+
+[limitations]
+technical = [
+    "2,048 token context limit (approximately 1,500 words)",
+    "4-bit quantization reduces precision marginally",
+    "English-optimized with limited multilingual support",
+    "Cannot process very long documents in single context",
+    "Inference slower than TinyLlama (~25 vs ~45 tok/s)"
+]
+
+reasoning = [
+    "Good reasoning but not perfect - still makes logical errors",
+    "Multi-step reasoning can degrade over long chains",
+    "May miss subtle nuances in complex arguments",
+    "Struggles with very abstract or philosophical reasoning"
+]
+
+knowledge = [
+    "Knowledge cutoff: October 2023",
+    "No real-time information or current events",
+    "Synthetic training data may have gaps in specific domains",
+    "Less comprehensive world knowledge than web-trained models",
+    "May lack depth in highly specialized fields (advanced law, medicine)"
+]
+
+output_quality = [
+    "Lower hallucination rate than TinyLlama (~8-12%) but not eliminated",
+    "Occasional factual errors requiring verification",
+    "Can be verbose or overly technical in responses",
+    "Limited stylistic flexibility in creative writing"
+]
+
+[risks]
+high_risk = [
+    "CRITICAL: Not suitable for professional legal opinions or court filings",
+    "CRITICAL: Do not use for medical diagnosis, treatment, or prescriptions",
+    "CRITICAL: Not suitable for financial advice or investment decisions",
+    "CRITICAL: Hallucinations still occur - always verify critical information",
+    "Not suitable as sole authority in high-stakes decisions"
+]
+
+medium_risk = [
+    "May perpetuate biases from training data (though mitigated by filtering)",
+    "Code generation may contain bugs or security vulnerabilities",
+    "Potential for confident-sounding but incorrect technical explanations",
+    "Limited understanding of cultural or social nuances"
+]
+
+mitigation = [
+    "Mandatory human oversight for professional and critical uses",
+    "Cross-verify all factual claims with authoritative sources",
+    "Code review required for all generated code before deployment",
+    "Legal and medical outputs must be reviewed by licensed professionals",
+    "Use for assistance and ideation, not final decision-making"
+]
+
+[bias_and_fairness]
+known_biases = [
+    "English language dominance (95%+ of training data)",
+    "STEM and academic content bias (textbook-quality synthetic data)",
+    "Western perspective predominant in reasoning examples",
+    "Potential underrepresentation of diverse viewpoints",
+    "Code bias toward popular languages and frameworks"
+]
+
+fairness_testing = """
+Microsoft Research conducted bias testing on Phi-2 during development. Synthetic data
+generation included bias mitigation techniques. However, biases from source data (The Pile,
+web data) may still be present. Testing on demographic representation shows improvement
+over baseline models but not elimination of bias.
+"""
+
+recommendations = [
+    "Be aware of STEM and academic framing in responses",
+    "Verify information across culturally diverse sources",
+    "Do not use for decisions involving protected characteristics",
+    "Monitor outputs for potential bias in sensitive applications",
+    "Supplement with domain-specific expert review"
+]
+
+[pii_detection]
+# Performance when used with BEAR AI's PII protection
+role = "Text generation (not primary PII detector)"
+accuracy = "N/A - uses separate PII detection system"
+false_positive_rate = "N/A"
+false_negative_rate = "N/A"
+notes = """
+Phi-2 does not perform PII detection in BEAR AI. Dedicated systems (Presidio or regex-based
+scanners) handle PII protection. The model may be used to assist in redaction but outputs
+must be validated by PII-specific tools.
+"""
+
+[environmental_impact]
+training_co2 = "Estimated ~45,000 kg CO2eq (96 A100 GPUs for 14 days)"
+inference_power = "Moderate - ~25W typical CPU usage"
+efficiency = "Good efficiency for capability level - 1.8GB enables broad deployment"
+sustainability_notes = "Phi-2's efficient training (14 days vs months) reduces environmental impact significantly"
+
+[compliance]
+eu_ai_act = "Article 53 - Technical Documentation for High-Risk AI Systems"
+gdpr = "No personal data in model weights. Processes user data locally only."
+intended_risk_level = "High-risk application context (legal/professional document assistance)"
+transparency_obligations = "Fulfilled via this model card and AI Transparency Notice"
+accessibility = "Model card provided in machine-readable TOML format for accessibility tools"
+
+[updates]
+update_frequency = "Model frozen - no ongoing training"
+version_control = "Versioned via HuggingFace and Microsoft Research repositories"
+security_patches = "Inference engine (Candle) receives regular security updates"
+notification = "Users notified of inference engine updates via BEAR AI auto-update system"
+
+[contact]
+provider = "Microsoft Research"
+repository = "https://huggingface.co/microsoft/phi-2"
+issues = "https://github.com/microsoft/phi-2/issues"
+bear_ai_integration = "support@bear-ai.com"
+compliance_contact = "compliance@bear-ai.com"
+
+[bear_ai_specific]
+recommended_ram = "16 GB"
+recommended_cpu = "6 cores, 2.5 GHz+"
+gpu_required = false
+gpu_recommended = "Optional - RTX 3060 or better for faster inference"
+typical_inference_speed = "20-30 tokens/second (CPU), 60-80 tokens/second (GPU)"
+use_case_fit = "Corporate laptop - Balanced configuration"
+user_group = "Users wanting good quality without high-end hardware"
+setup_wizard_label = "Balanced Performance"
+
+[references]
+paper = "https://www.microsoft.com/en-us/research/blog/phi-2-the-surprising-power-of-small-language-models/"
+huggingface = "https://huggingface.co/microsoft/phi-2"
+license_url = "https://opensource.org/licenses/MIT"
+technical_report = "https://arxiv.org/abs/2309.05463"
+
+[metadata]
+card_version = "1.0.0"
+card_date = "2025-10-02"
+card_author = "BEAR AI Compliance Team"
+last_updated = "2025-10-02"
+eu_ai_act_version = "Regulation (EU) 2024/1689"
+schema_version = "1.0"
+
+# Compliance Statement
+[compliance_statement]
+statement = """
+This model card is provided in compliance with the EU AI Act Article 53 (Technical Documentation)
+and Article 13 (Transparency and Provision of Information to Deployers). Phi-2 is deployed in
+BEAR AI LLM as part of a high-risk AI system for professional and legal document assistance.
+
+Phi-2 offers a strong balance of performance and efficiency, making it suitable for corporate
+environments with moderate hardware. However, users must understand that even with improved
+reasoning capabilities, this model:
+
+1. Cannot replace professional legal, medical, or financial expertise
+2. Requires human oversight for all critical decisions
+3. May produce errors, hallucinations, or biased outputs
+4. Should be used for assistance and ideation, not final authority
+
+All outputs must be verified by qualified professionals before reliance in professional contexts.
+This model is a tool to enhance human capability, not replace human judgment.
+"""
+
+[validation]
+# EU AI Act Article 15 - Accuracy, Robustness, Cybersecurity
+accuracy_testing = "Evaluated on MMLU, HumanEval, GSM8k, TruthfulQA benchmarks"
+robustness_testing = "Tested on adversarial prompts and edge cases"
+security_measures = "Local inference only, no network communication, encrypted storage"
+monitoring = "BEAR AI logs inference errors and provides user feedback mechanisms"

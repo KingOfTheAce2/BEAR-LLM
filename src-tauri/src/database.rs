@@ -4,9 +4,12 @@ use serde_json::{Value as JsonValue, json};
 use std::path::PathBuf;
 use dirs;
 use tracing;
+use r2d2::{Pool, PooledConnection};
+use r2d2_sqlite::SqliteConnectionManager;
 
 pub struct DatabaseManager {
     db_path: PathBuf,
+    pool: Pool<SqliteConnectionManager>,
 }
 
 impl DatabaseManager {
@@ -17,20 +20,82 @@ impl DatabaseManager {
         std::fs::create_dir_all(&db_path)?;
         db_path.push("bear_ai.db");
 
-        let manager = Self { db_path };
-        manager.initialize_database()?;
-        Ok(manager)
+        // Create connection pool with optimal settings
+        let manager = SqliteConnectionManager::file(&db_path);
+        let pool = Pool::builder()
+            .max_size(5) // Maximum 5 connections in pool
+            .min_idle(Some(1)) // Keep at least 1 connection ready
+            .connection_timeout(std::time::Duration::from_secs(30))
+            .build(manager)
+            .map_err(|e| anyhow!("Failed to create connection pool: {}", e))?;
+
+        let db_manager = Self {
+            db_path,
+            pool,
+        };
+
+        db_manager.initialize_database()?;
+        tracing::info!("Database connection pool initialized with max_size=5");
+
+        Ok(db_manager)
     }
 
     pub fn new_in_memory() -> Self {
         let db_path = PathBuf::from(":memory:");
-        let manager = Self { db_path };
-        let _ = manager.initialize_database();
-        manager
+
+        // Create in-memory connection pool
+        let manager = SqliteConnectionManager::memory();
+        let pool = Pool::builder()
+            .max_size(5)
+            .build(manager)
+            .expect("Failed to create in-memory pool");
+
+        let db_manager = Self { db_path, pool };
+        let _ = db_manager.initialize_database();
+        db_manager
+    }
+
+    /// Get a pooled connection from the pool
+    fn get_connection(&self) -> Result<PooledConnection<SqliteConnectionManager>> {
+        self.pool.get()
+            .map_err(|e| anyhow!("Failed to get database connection from pool: {}", e))
+    }
+
+    /// Get pool health status
+    #[allow(dead_code)]
+    pub fn get_pool_status(&self) -> JsonValue {
+        let state = self.pool.state();
+        json!({
+            "connections": state.connections,
+            "idle_connections": state.idle_connections,
+            "max_size": self.pool.max_size(),
+        })
     }
 
     fn initialize_database(&self) -> Result<()> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
+
+        // Run migrations in order
+        self.run_migrations(&conn)?;
+
+        Ok(())
+    }
+
+    fn run_migrations(&self, conn: &Connection) -> Result<()> {
+        // Run all migrations
+        let migrations = vec![
+            include_str!("../migrations/005_create_processing_records.sql"),
+            include_str!("../migrations/006_create_consent_log.sql"),
+        ];
+
+        for migration in migrations {
+            for statement in migration.split(';') {
+                let trimmed = statement.trim();
+                if !trimmed.is_empty() && !trimmed.starts_with("--") {
+                    let _ = conn.execute(trimmed, []); // Ignore errors for IF NOT EXISTS
+                }
+            }
+        }
 
         // Create documents table for RAG
         conn.execute(
@@ -161,24 +226,48 @@ impl DatabaseManager {
     }
 
     pub fn validate_query_security(query: &str) -> Result<()> {
-        let query_normalized = query.trim().to_uppercase()
-            .replace("/*", "")     // Remove block comment start
-            .replace("*/", "")     // Remove block comment end
-            .replace("--", "")     // Remove line comments
-            .replace(";", " ")     // Replace statement terminators
+        // SECURITY FIX: Check raw query BEFORE normalization to prevent bypass
+        // This prevents attacks like: SELECT * FROM users; DROP TABLE users;--
+
+        // 1. First, check raw query for dangerous patterns BEFORE any transformation
+        let raw_query = query.trim();
+
+        // Block semicolons (statement terminators) - critical for preventing query chaining
+        if raw_query.contains(';') {
+            return Err(anyhow!(
+                "Security violation: Multiple statements not allowed (semicolon detected)"
+            ));
+        }
+
+        // Block comment syntax that could be used to bypass validation
+        if raw_query.contains("/*") || raw_query.contains("*/") {
+            return Err(anyhow!(
+                "Security violation: Block comments not allowed"
+            ));
+        }
+
+        if raw_query.contains("--") {
+            return Err(anyhow!(
+                "Security violation: Line comments not allowed"
+            ));
+        }
+
+        // 2. Check that query starts with SELECT (case-insensitive but strict position)
+        // Use regex to ensure SELECT is at the very beginning (only whitespace before it)
+        let select_regex = regex::Regex::new(r"(?i)^\s*SELECT\s+").unwrap();
+        if !select_regex.is_match(raw_query) {
+            return Err(anyhow!(
+                "Only SELECT queries are allowed. Query must start with SELECT"
+            ));
+        }
+
+        // 3. Now normalize for additional checks (safe since we've blocked injection vectors)
+        let query_normalized = raw_query.to_uppercase()
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");
 
-        // 1. Only allow SELECT statements (check normalized query)
-        if !query_normalized.starts_with("SELECT") {
-            return Err(anyhow!(
-                "Only SELECT queries are allowed. Found: {}",
-                query_normalized.split_whitespace().next().unwrap_or("UNKNOWN")
-            ));
-        }
-
-        // 2. Block dangerous keywords - check as separate tokens, not just contains
+        // 4. Block dangerous keywords - check as separate tokens
         let dangerous = [
             "DROP", "DELETE", "INSERT", "UPDATE", "ALTER",
             "EXEC", "EXECUTE", "CREATE", "PRAGMA", "ATTACH",
@@ -192,7 +281,7 @@ impl DatabaseManager {
             }
         }
 
-        // 3. Additional security checks
+        // 5. Additional security checks
         if query_normalized.contains("UNION") {
             return Err(anyhow!("UNION queries are not allowed"));
         }
@@ -201,7 +290,7 @@ impl DatabaseManager {
             return Err(anyhow!("File write operations are not allowed"));
         }
 
-        // 4. Limit query length to prevent resource exhaustion
+        // 6. Limit query length to prevent resource exhaustion
         if query.len() > 10000 {
             return Err(anyhow!("Query exceeds maximum length of 10000 characters"));
         }
@@ -213,7 +302,7 @@ impl DatabaseManager {
         // Validate query security before execution
         Self::validate_query_security(query)?;
 
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
         let start_time = std::time::Instant::now();
 
         let mut stmt = conn.prepare(query)?;
@@ -250,7 +339,7 @@ impl DatabaseManager {
     }
 
     pub fn store_document(&self, filename: &str, content: &str, file_type: &str) -> Result<i64> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
 
         conn.execute(
             "INSERT INTO documents (filename, content, file_type) VALUES (?1, ?2, ?3)",
@@ -285,7 +374,7 @@ impl DatabaseManager {
         position_start: usize,
         position_end: usize
     ) -> Result<()> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
 
         // SECURITY: We do NOT store the original PII text
         // Only store: type, replacement, confidence, and position info
@@ -307,7 +396,7 @@ impl DatabaseManager {
 
     #[allow(dead_code)]
     pub fn search_documents(&self, query: &str, limit: usize) -> Result<JsonValue> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
         let start_time = std::time::Instant::now();
 
         // Text-based search (vector similarity handled by RAG engine)
@@ -346,7 +435,7 @@ impl DatabaseManager {
     }
 
     pub fn get_document_statistics(&self) -> Result<JsonValue> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
 
         let doc_count: i64 = conn.query_row("SELECT COUNT(*) FROM documents", [], |row| row.get(0))?;
         let pii_count: i64 = conn.query_row("SELECT COUNT(*) FROM pii_detections", [], |row| row.get(0))?;
@@ -371,7 +460,7 @@ impl DatabaseManager {
     }
 
     fn log_query_history(&self, query: &str, query_type: &str, results_count: usize, execution_time: i64, success: bool, error_message: Option<&str>) -> Result<()> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
 
         conn.execute(
             "INSERT INTO query_history (query_text, query_type, results_count, execution_time_ms, success, error_message)
@@ -391,7 +480,7 @@ impl DatabaseManager {
 
     #[allow(dead_code)]
     pub fn get_query_history(&self, limit: usize) -> Result<JsonValue> {
-        let conn = Connection::open(&self.db_path)?;
+        let conn = self.get_connection()?;
 
         let mut stmt = conn.prepare(
             "SELECT query_text, query_type, results_count, execution_time_ms, success, error_message, query_date
@@ -415,6 +504,144 @@ impl DatabaseManager {
         Ok(json!({
             "history": history?,
             "total": limit
+        }))
+    }
+
+    /// GDPR Article 30 - Log processing activity
+    /// Records all data processing operations for compliance
+    pub fn log_processing_activity(
+        &self,
+        user_id: &str,
+        processing_purpose: &str,
+        data_categories: &[&str],
+        legal_basis: &str,
+        retention_days: i64,
+        recipients: &[&str],
+        entity_type: &str,
+        entity_id: Option<&str>,
+    ) -> Result<i64> {
+        let conn = self.get_connection()?;
+
+        let data_categories_json = json!(data_categories).to_string();
+        let recipients_json = json!(recipients).to_string();
+        let controller_info = json!({
+            "name": "BEAR AI - Legal Document Assistant",
+            "contact": "privacy@bear-ai.local",
+            "role": "Data Controller"
+        }).to_string();
+
+        let security_measures = json!([
+            "End-to-end encryption",
+            "PII detection and redaction",
+            "Access control and authentication",
+            "Audit logging",
+            "Regular security updates"
+        ]).to_string();
+
+        conn.execute(
+            "INSERT INTO processing_records (
+                user_id, processing_purpose, data_categories, legal_basis,
+                retention_period, recipients, controller_info, security_measures,
+                entity_type, entity_id
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            [
+                user_id,
+                processing_purpose,
+                &data_categories_json,
+                legal_basis,
+                &retention_days.to_string(),
+                &recipients_json,
+                &controller_info,
+                &security_measures,
+                entity_type,
+                entity_id.unwrap_or(""),
+            ],
+        )?;
+
+        Ok(conn.last_insert_rowid())
+    }
+
+    /// Health check for database connectivity
+    /// Returns true if database connection pool is healthy and responsive
+    pub fn health_check(&self) -> Result<bool> {
+        // Check if we can get a connection from the pool
+        let conn = self.get_connection()?;
+
+        // Try a simple query to verify database is responsive
+        let result: Result<i64, _> = conn.query_row("SELECT 1", [], |row| row.get(0));
+
+        match result {
+            Ok(val) if val == 1 => {
+                // Log pool health status
+                let state = self.pool.state();
+                if state.idle_connections == 0 && state.connections >= self.pool.max_size() as u32 {
+                    tracing::warn!(
+                        connections = state.connections,
+                        idle = state.idle_connections,
+                        max_size = self.pool.max_size(),
+                        "Database pool exhausted - all connections in use"
+                    );
+                }
+                Ok(true)
+            }
+            _ => {
+                tracing::error!("Database health check failed - query returned unexpected result");
+                Ok(false)
+            }
+        }
+    }
+
+    /// Get processing records for GDPR Article 30 compliance report
+    #[allow(dead_code)]
+    pub fn get_processing_records(&self, user_id: Option<&str>, limit: usize) -> Result<JsonValue> {
+        let conn = self.get_connection()?;
+
+        let mut sql = String::from(
+            "SELECT id, timestamp, processing_purpose, data_categories, legal_basis,
+                    retention_period, recipients, controller_info, entity_type, entity_id
+             FROM processing_records"
+        );
+
+        let records = if let Some(uid) = user_id {
+            sql.push_str(" WHERE user_id = ?1 ORDER BY timestamp DESC LIMIT ?2");
+            let mut stmt = conn.prepare(&sql)?;
+            stmt.query_map([uid, &limit.to_string()], |row| {
+                Ok(json!({
+                    "id": row.get::<_, i64>(0)?,
+                    "timestamp": row.get::<_, String>(1)?,
+                    "processing_purpose": row.get::<_, String>(2)?,
+                    "data_categories": serde_json::from_str::<JsonValue>(&row.get::<_, String>(3)?).unwrap_or(json!([])),
+                    "legal_basis": row.get::<_, String>(4)?,
+                    "retention_period_days": row.get::<_, i64>(5)?,
+                    "recipients": serde_json::from_str::<JsonValue>(&row.get::<_, String>(6)?).unwrap_or(json!([])),
+                    "controller_info": serde_json::from_str::<JsonValue>(&row.get::<_, String>(7)?).unwrap_or(json!({})),
+                    "entity_type": row.get::<_, String>(8)?,
+                    "entity_id": row.get::<_, String>(9).unwrap_or_default()
+                }))
+            })?.collect::<Result<Vec<_>, _>>()?
+        } else {
+            sql.push_str(" ORDER BY timestamp DESC LIMIT ?1");
+            let mut stmt = conn.prepare(&sql)?;
+            stmt.query_map([&limit.to_string()], |row| {
+                Ok(json!({
+                    "id": row.get::<_, i64>(0)?,
+                    "timestamp": row.get::<_, String>(1)?,
+                    "processing_purpose": row.get::<_, String>(2)?,
+                    "data_categories": serde_json::from_str::<JsonValue>(&row.get::<_, String>(3)?).unwrap_or(json!([])),
+                    "legal_basis": row.get::<_, String>(4)?,
+                    "retention_period_days": row.get::<_, i64>(5)?,
+                    "recipients": serde_json::from_str::<JsonValue>(&row.get::<_, String>(6)?).unwrap_or(json!([])),
+                    "controller_info": serde_json::from_str::<JsonValue>(&row.get::<_, String>(7)?).unwrap_or(json!({})),
+                    "entity_type": row.get::<_, String>(8)?,
+                    "entity_id": row.get::<_, String>(9).unwrap_or_default()
+                }))
+            })?.collect::<Result<Vec<_>, _>>()?
+        };
+
+        Ok(json!({
+            "processing_records": records,
+            "total": records.len(),
+            "generated_at": chrono::Utc::now().to_rfc3339()
         }))
     }
 }
