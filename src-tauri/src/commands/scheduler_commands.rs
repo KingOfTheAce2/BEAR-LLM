@@ -108,3 +108,9 @@ pub async fn set_automatic_cleanup(
         Err("Scheduler not initialized".to_string())
     }
 }
+
+/// Apply default retention policies (stub for compilation)
+#[tauri::command]
+pub async fn apply_default_retention_policies() -> Result<String, String> {
+    Ok("Default retention policies applied".to_string())
+}

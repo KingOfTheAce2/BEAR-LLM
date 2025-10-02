@@ -7,7 +7,7 @@ use rusqlite::{params, Connection};
 use serde_json;
 use std::path::PathBuf;
 
-use crate::export_engine::{
+use bear_ai_llm::export_engine::{
     ChatExport, ComplianceInfo, DocumentExport, ExportMetadata, MessageExport, PIIDetection,
     SettingsExport, UserDataExport,
 };
