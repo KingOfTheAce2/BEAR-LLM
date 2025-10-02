@@ -1768,9 +1768,9 @@ fn main() {
             commands::model_transparency::clear_all_model_cache,
             commands::model_transparency::get_general_disclaimer,
             commands::model_transparency::get_ai_act_disclaimer,
-            // commands::model_transparency::get_high_risk_disclaimer, // TODO: Unused - remove from frontend
-            // commands::model_transparency::format_disclaimer_display, // TODO: Unused - remove from frontend
-            // commands::model_transparency::format_generic_disclaimer_display, // TODO: Unused - remove from frontend
+            commands::model_transparency::get_high_risk_disclaimer,
+            commands::model_transparency::format_disclaimer_display,
+            commands::model_transparency::format_generic_disclaimer_display,
             // PII Detection & Memory Management
             get_memory_info,
             can_use_pii_mode,

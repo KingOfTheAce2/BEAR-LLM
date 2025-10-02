@@ -14,6 +14,7 @@ pub mod middleware;
 pub mod pii_detector;
 pub mod process_helper;
 pub mod rag_engine;
+pub mod risk_assessment;
 pub mod scheduler;
 pub mod security;
 pub mod system;
@@ -26,6 +27,9 @@ pub use export_engine::ExportEngine;
 pub use llm_manager::LLMManager;
 pub use pii_detector::PIIDetector;
 pub use rag_engine::RAGEngine;
+pub use risk_assessment::{
+    Disclaimer, DisclaimerCategory, LegalSuitability, RiskAssessment, RiskAssessor, SeverityLevel,
+};
 
 // SystemStatus - temporary stub for hardware_monitor.rs until main.rs types are refactored
 #[derive(Debug, Clone)]
