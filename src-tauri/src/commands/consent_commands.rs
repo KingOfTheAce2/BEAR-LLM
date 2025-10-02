@@ -1,10 +1,10 @@
 // Tauri Commands for Consent Management
 // Provides frontend integration for GDPR consent operations
 
-use tauri::State;
-use serde_json::Value as JsonValue;
-use crate::middleware::ConsentGuard;
 use crate::compliance::ConsentType;
+use crate::middleware::ConsentGuard;
+use serde_json::Value as JsonValue;
+use tauri::State;
 
 /// Check consent status for a specific operation
 #[tauri::command]
