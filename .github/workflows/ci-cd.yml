@@ -14,6 +14,11 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.31)'
+        required: true
+        default: '1.0.31'
 
 env:
   CARGO_TERM_COLOR: always
@@ -125,10 +130,10 @@ jobs:
         working-directory: src-tauri
         run: cargo audit
 
-  # Release build (only on tags)
+  # Release build (only on tags or manual trigger)
   release:
     name: Release Build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: [check, test-unit, security]
     runs-on: windows-latest
 
@@ -158,8 +163,8 @@ jobs:
           GGML_CUDA: OFF
           GGML_METAL: OFF
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'BEAR AI ${{ github.ref_name }}'
+          tagName: ${{ github.event.inputs.version || github.ref_name }}
+          releaseName: 'BEAR AI v${{ github.event.inputs.version || github.ref_name }}'
           releaseBody: |
             🐻 BEAR AI Local LLM Assistant v1.0.28
 
