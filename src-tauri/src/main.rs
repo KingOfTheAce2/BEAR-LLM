@@ -404,44 +404,47 @@ async fn send_message(
             e
         })?;
 
-    // Check system safety
-    let mut hw_monitor = state.hardware_monitor.write().await;
-    if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
-        tracing::warn!("System resources critically high during send_message");
-        return Err(
-            "System resources are critically high. Please wait before sending another message."
-                .to_string(),
-        );
-    }
+    // Check system safety - scope the lock
+    {
+        let mut hw_monitor = state.hardware_monitor.write().await;
+        if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
+            tracing::warn!("System resources critically high during send_message");
+            return Err(
+                "System resources are critically high. Please wait before sending another message."
+                    .to_string(),
+            );
+        }
 
-    // Enforce resource limits before proceeding
-    hw_monitor
-        .enforce_resource_limits("send_message")
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "Resource limits exceeded in send_message");
-            e.to_string()
-        })?;
+        // Enforce resource limits before proceeding
+        hw_monitor
+            .enforce_resource_limits("send_message")
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "Resource limits exceeded in send_message");
+                e.to_string()
+            })?;
+    } // hw_monitor dropped here
 
-    drop(hw_monitor);
-
-    // Clean PII from message
-    let detector = state.pii_detector.read().await;
-    let cleaned_message = detector
-        .redact_pii(&message)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Clean PII from message - scope the detector
+    let cleaned_message = {
+        let detector = state.pii_detector.read().await;
+        detector
+            .redact_pii(&message)
+            .await
+            .map_err(|e| e.to_string())?
+    }; // detector dropped here
 
     // Ensure model is ready and generate response
-    let llm = state.llm_manager.read().await;
-    llm.ensure_model_ready(&model_name)
-        .await
-        .map_err(|e| e.to_string())?;
+    let result = {
+        let llm = state.llm_manager.read().await;
+        llm.ensure_model_ready(&model_name)
+            .await
+            .map_err(|e| e.to_string())?;
 
-    let result = llm
-        .generate(&cleaned_message, None)
-        .await
-        .map_err(|e| e.to_string())?;
+        llm.generate(&cleaned_message, None)
+            .await
+            .map_err(|e| e.to_string())?
+    }; // llm dropped here
 
     Ok(result.text)
 }
@@ -543,10 +546,14 @@ async fn list_available_models(state: State<'_, AppState>) -> Result<Vec<String>
 // Download model using new LLM manager
 #[tauri::command]
 async fn download_model(state: State<'_, AppState>, model_name: String) -> Result<String, String> {
-    let llm = state.llm_manager.read().await;
-    llm.ensure_model_ready(&model_name)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Scope the lock so it doesn't cross await boundaries
+    {
+        let llm = state.llm_manager.read().await;
+        llm.ensure_model_ready(&model_name)
+            .await
+            .map_err(|e| e.to_string())?;
+    } // llm dropped here
+
     Ok(format!("Model {} is ready", model_name))
 }
 
