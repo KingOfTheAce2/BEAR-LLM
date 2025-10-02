@@ -1,14 +1,14 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use nvml_wrapper::Nvml;
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
-use nvml_wrapper::Nvml;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HardwareSpecs {
     pub cpu_cores: usize,
     pub cpu_frequency: u64, // MHz
     pub cpu_brand: String,
-    pub total_memory: u64, // MB
+    pub total_memory: u64,     // MB
     pub available_memory: u64, // MB
     pub gpu_info: Option<GpuInfo>,
     pub system_type: SystemType,
@@ -19,7 +19,7 @@ pub struct HardwareSpecs {
 pub struct GpuInfo {
     pub name: String,
     pub memory_total: u64, // MB
-    pub memory_free: u64, // MB
+    pub memory_free: u64,  // MB
     pub compute_capability: Option<String>,
     pub driver_version: String,
 }
@@ -45,9 +45,9 @@ pub enum PerformanceCategory {
 pub struct ModelRecommendation {
     pub model_id: String,
     pub model_name: String,
-    pub confidence: f64, // 0.0-1.0
+    pub confidence: f64,              // 0.0-1.0
     pub expected_performance: String, // e.g., "15-20 words/sec"
-    pub memory_usage: String, // e.g., "6-8 GB"
+    pub memory_usage: String,         // e.g., "6-8 GB"
     pub reasoning: String,
     pub compatibility_score: f64, // 0.0-1.0
 }
@@ -68,10 +68,16 @@ impl HardwareDetector {
         self.system.refresh_all();
 
         let cpu_cores = self.system.cpus().len();
-        let cpu_frequency = self.system.cpus().first()
+        let cpu_frequency = self
+            .system
+            .cpus()
+            .first()
             .map(|cpu| cpu.frequency())
             .unwrap_or(0);
-        let cpu_brand = self.system.cpus().first()
+        let cpu_brand = self
+            .system
+            .cpus()
+            .first()
             .map(|cpu| cpu.brand().to_string())
             .unwrap_or_else(|| "Unknown CPU".to_string());
 
@@ -100,11 +106,21 @@ impl HardwareDetector {
             if let Ok(device_count) = nvml.device_count() {
                 if device_count > 0 {
                     if let Ok(device) = nvml.device_by_index(0) {
-                        let name = device.name().unwrap_or_else(|_| "Unknown NVIDIA GPU".to_string());
+                        let name = device
+                            .name()
+                            .unwrap_or_else(|_| "Unknown NVIDIA GPU".to_string());
                         let memory_info = device.memory_info().ok();
-                        let memory_total = memory_info.as_ref().map(|m| m.total / 1024 / 1024).unwrap_or(0);
-                        let memory_free = memory_info.as_ref().map(|m| m.free / 1024 / 1024).unwrap_or(0);
-                        let driver_version = nvml.sys_driver_version().unwrap_or_else(|_| "Unknown".to_string());
+                        let memory_total = memory_info
+                            .as_ref()
+                            .map(|m| m.total / 1024 / 1024)
+                            .unwrap_or(0);
+                        let memory_free = memory_info
+                            .as_ref()
+                            .map(|m| m.free / 1024 / 1024)
+                            .unwrap_or(0);
+                        let driver_version = nvml
+                            .sys_driver_version()
+                            .unwrap_or_else(|_| "Unknown".to_string());
 
                         return Ok(GpuInfo {
                             name,
@@ -122,7 +138,12 @@ impl HardwareDetector {
         Err(anyhow!("No compatible GPU detected"))
     }
 
-    fn classify_system_type(&self, cpu_cores: usize, total_memory: u64, gpu_info: &Option<GpuInfo>) -> SystemType {
+    fn classify_system_type(
+        &self,
+        cpu_cores: usize,
+        total_memory: u64,
+        gpu_info: &Option<GpuInfo>,
+    ) -> SystemType {
         // Heuristics to classify system type
         if total_memory < 16 * 1024 && cpu_cores <= 8 {
             if self.is_laptop_cpu() {
@@ -131,7 +152,11 @@ impl HardwareDetector {
                 SystemType::PersonalComputer
             }
         } else if total_memory >= 32 * 1024 && cpu_cores >= 8 {
-            if gpu_info.as_ref().map(|gpu| gpu.memory_total >= 8 * 1024).unwrap_or(false) {
+            if gpu_info
+                .as_ref()
+                .map(|gpu| gpu.memory_total >= 8 * 1024)
+                .unwrap_or(false)
+            {
                 SystemType::Workstation
             } else {
                 SystemType::Server
@@ -141,9 +166,15 @@ impl HardwareDetector {
         }
     }
 
-    fn classify_performance(&self, cpu_cores: usize, total_memory: u64, gpu_info: &Option<GpuInfo>) -> PerformanceCategory {
+    fn classify_performance(
+        &self,
+        cpu_cores: usize,
+        total_memory: u64,
+        gpu_info: &Option<GpuInfo>,
+    ) -> PerformanceCategory {
         let memory_gb = total_memory / 1024;
-        let has_powerful_gpu = gpu_info.as_ref()
+        let has_powerful_gpu = gpu_info
+            .as_ref()
             .map(|gpu| gpu.memory_total >= 8 * 1024)
             .unwrap_or(false);
 
@@ -157,7 +188,10 @@ impl HardwareDetector {
     }
 
     fn is_laptop_cpu(&self) -> bool {
-        let cpu_brand = self.system.cpus().first()
+        let cpu_brand = self
+            .system
+            .cpus()
+            .first()
             .map(|cpu| cpu.brand().to_lowercase())
             .unwrap_or_default();
 
@@ -190,7 +224,8 @@ impl HardwareDetector {
                     confidence: 0.88,
                     expected_performance: "15-22 words/sec".to_string(),
                     memory_usage: "2-3 GB".to_string(),
-                    reasoning: "Lightweight conversational model for resource-constrained systems".to_string(),
+                    reasoning: "Lightweight conversational model for resource-constrained systems"
+                        .to_string(),
                     compatibility_score: 0.95,
                 });
 
@@ -203,7 +238,7 @@ impl HardwareDetector {
                     reasoning: "Efficient BERT model for text understanding tasks".to_string(),
                     compatibility_score: 0.90,
                 });
-            },
+            }
 
             PerformanceCategory::Standard => {
                 recommendations.push(ModelRecommendation {
@@ -222,7 +257,8 @@ impl HardwareDetector {
                     confidence: 0.87,
                     expected_performance: "15-22 words/sec".to_string(),
                     memory_usage: "8-12 GB".to_string(),
-                    reasoning: "Small language model with strong reasoning capabilities".to_string(),
+                    reasoning: "Small language model with strong reasoning capabilities"
+                        .to_string(),
                     compatibility_score: 0.88,
                 });
 
@@ -235,7 +271,7 @@ impl HardwareDetector {
                     reasoning: "Efficient option with room for other applications".to_string(),
                     compatibility_score: 0.91,
                 });
-            },
+            }
 
             PerformanceCategory::Performance => {
                 if hardware.gpu_info.is_some() {
@@ -245,7 +281,8 @@ impl HardwareDetector {
                         confidence: 0.89,
                         expected_performance: "12-18 words/sec".to_string(),
                         memory_usage: "12-16 GB".to_string(),
-                        reasoning: "Large model for high-performance systems with GPU acceleration".to_string(),
+                        reasoning: "Large model for high-performance systems with GPU acceleration"
+                            .to_string(),
                         compatibility_score: 0.85,
                     });
                 }
@@ -269,7 +306,7 @@ impl HardwareDetector {
                     reasoning: "Fast performance with available system resources".to_string(),
                     compatibility_score: 0.96,
                 });
-            },
+            }
 
             PerformanceCategory::Workstation => {
                 recommendations.push(ModelRecommendation {
@@ -302,14 +339,16 @@ impl HardwareDetector {
                     reasoning: "Specialized code generation and analysis model".to_string(),
                     compatibility_score: 0.85,
                 });
-            },
+            }
         }
 
         // Sort by compatibility score and confidence
         recommendations.sort_by(|a, b| {
             let score_a = (a.compatibility_score + a.confidence) / 2.0;
             let score_b = (b.compatibility_score + b.confidence) / 2.0;
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Take top 3 recommendations
@@ -318,7 +357,9 @@ impl HardwareDetector {
     }
 
     pub fn get_system_summary(&self, hardware: &HardwareSpecs) -> String {
-        let gpu_info = hardware.gpu_info.as_ref()
+        let gpu_info = hardware
+            .gpu_info
+            .as_ref()
             .map(|gpu| format!("GPU: {} ({} MB VRAM)", gpu.name, gpu.memory_total))
             .unwrap_or_else(|| "GPU: None (CPU-only mode)".to_string());
 
@@ -335,7 +376,11 @@ impl HardwareDetector {
         )
     }
 
-    pub fn estimate_model_performance(&self, hardware: &HardwareSpecs, model_size_gb: f64) -> String {
+    pub fn estimate_model_performance(
+        &self,
+        hardware: &HardwareSpecs,
+        model_size_gb: f64,
+    ) -> String {
         let _memory_gb = hardware.total_memory as f64 / 1024.0;
         let available_gb = hardware.available_memory as f64 / 1024.0;
 
@@ -351,16 +396,28 @@ impl HardwareDetector {
         };
 
         // Adjust for GPU
-        let gpu_multiplier = if hardware.gpu_info.is_some() { 1.5 } else { 1.0 };
+        let gpu_multiplier = if hardware.gpu_info.is_some() {
+            1.5
+        } else {
+            1.0
+        };
 
         // Adjust for model size
-        let size_factor = if model_size_gb < 2.0 { 1.2 } else if model_size_gb > 10.0 { 0.7 } else { 1.0 };
+        let size_factor = if model_size_gb < 2.0 {
+            1.2
+        } else if model_size_gb > 10.0 {
+            0.7
+        } else {
+            1.0
+        };
 
         let estimated_words_per_sec = base_performance * gpu_multiplier * size_factor;
 
-        format!("{:.0}-{:.0} words/sec",
-                estimated_words_per_sec * 0.8,
-                estimated_words_per_sec * 1.2)
+        format!(
+            "{:.0}-{:.0} words/sec",
+            estimated_words_per_sec * 0.8,
+            estimated_words_per_sec * 1.2
+        )
     }
 }
 

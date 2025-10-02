@@ -1,11 +1,10 @@
 /// Tauri Commands for AI Transparency Features
 ///
 /// Exposes transparency functionality to the frontend application.
-
 use crate::ai_transparency::{
-    TransparencyContext, TransparencyPreferences, RiskLevel,
-    confidence::{ConfidenceScore, ConfidenceFactors},
+    confidence::{ConfidenceFactors, ConfidenceScore},
     notices::NoticeTemplates,
+    RiskLevel, TransparencyContext, TransparencyPreferences,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -89,7 +88,10 @@ pub async fn get_legal_disclaimer(
     is_high_risk: bool,
     includes_citations: bool,
 ) -> Result<String, String> {
-    Ok(state.notices.legal_disclaimer.get_disclaimer(is_high_risk, includes_citations))
+    Ok(state
+        .notices
+        .legal_disclaimer
+        .get_disclaimer(is_high_risk, includes_citations))
 }
 
 /// Create transparency context for an AI interaction
@@ -97,10 +99,7 @@ pub async fn get_legal_disclaimer(
 pub async fn create_transparency_context(
     request: CreateTransparencyContextRequest,
 ) -> Result<TransparencyContext, String> {
-    let risk_level = RiskLevel::from_context(
-        request.is_legal_advice,
-        request.affects_rights,
-    );
+    let risk_level = RiskLevel::from_context(request.is_legal_advice, request.affects_rights);
 
     let mut context = TransparencyContext::new(request.model_name, risk_level);
 
@@ -113,9 +112,7 @@ pub async fn create_transparency_context(
 
 /// Get formatted transparency notice for a context
 #[tauri::command]
-pub async fn get_transparency_notice(
-    context: TransparencyContext,
-) -> Result<String, String> {
+pub async fn get_transparency_notice(context: TransparencyContext) -> Result<String, String> {
     Ok(context.get_notice())
 }
 
@@ -156,9 +153,7 @@ pub async fn update_transparency_preferences(
 
 /// Mark onboarding as completed
 #[tauri::command]
-pub async fn complete_onboarding(
-    state: tauri::State<'_, TransparencyState>,
-) -> Result<(), String> {
+pub async fn complete_onboarding(state: tauri::State<'_, TransparencyState>) -> Result<(), String> {
     let mut prefs = state.preferences.write().await;
     *prefs = prefs.clone().complete_onboarding();
     Ok(())
@@ -166,9 +161,7 @@ pub async fn complete_onboarding(
 
 /// Check if disclaimer needs to be shown
 #[tauri::command]
-pub async fn needs_disclaimer(
-    state: tauri::State<'_, TransparencyState>,
-) -> Result<bool, String> {
+pub async fn needs_disclaimer(state: tauri::State<'_, TransparencyState>) -> Result<bool, String> {
     let prefs = state.preferences.read().await;
     Ok(prefs.needs_disclaimer())
 }
@@ -206,9 +199,7 @@ pub async fn get_all_notices(
 
 /// Export transparency context as JSON
 #[tauri::command]
-pub async fn export_transparency_context(
-    context: TransparencyContext,
-) -> Result<String, String> {
+pub async fn export_transparency_context(context: TransparencyContext) -> Result<String, String> {
     serde_json::to_string_pretty(&context)
         .map_err(|e| format!("Failed to serialize context: {}", e))
 }

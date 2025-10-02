@@ -1,14 +1,14 @@
-use anyhow::{Result, anyhow};
-use serde::{Serialize, Deserialize};
+use crate::constants::*;
+use crate::gguf_inference::{GGUFInferenceConfig, GGUFInferenceEngine};
+use anyhow::{anyhow, Result};
+use candle_core::Device;
+use hf_hub::api::tokio::Api;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use hf_hub::api::tokio::Api;
-use candle_core::Device;
 use tokenizers::Tokenizer;
-use crate::gguf_inference::{GGUFInferenceEngine, GGUFInferenceConfig};
-use crate::constants::*;
+use tokio::sync::RwLock;
 
 // Production LLM Manager with real model downloading and inference
 // This is the single source of truth for LLM management in BEAR AI
@@ -27,7 +27,7 @@ pub struct ModelConfig {
     pub quantization: String,
     pub requires_gpu: bool,
     pub recommended_gpu_layers: Option<u32>, // Recommended GPU layers for this model
-    pub recommended_vram_mb: Option<u64>,   // Recommended VRAM for full offload
+    pub recommended_vram_mb: Option<u64>,    // Recommended VRAM for full offload
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -253,7 +253,8 @@ impl LLMManager {
     pub async fn download_model(&self, model_name: &str) -> Result<()> {
         let model_config = {
             let registry = self.models_registry.read().await;
-            registry.get(model_name)
+            registry
+                .get(model_name)
                 .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_name))?
                 .clone()
         };
@@ -261,7 +262,10 @@ impl LLMManager {
         // Update status
         {
             let mut status = self.model_status.write().await;
-            status.insert(model_name.to_string(), ModelStatus::Downloading { progress: 0.0 });
+            status.insert(
+                model_name.to_string(),
+                ModelStatus::Downloading { progress: 0.0 },
+            );
         }
 
         tracing::info!(model = %model_name, "Starting model download");
@@ -293,8 +297,10 @@ impl LLMManager {
                 }
                 Err(e) => {
                     let mut status = self.model_status.write().await;
-                    status.insert(model_name.to_string(),
-                                 ModelStatus::Failed(format!("Download failed: {}", e)));
+                    status.insert(
+                        model_name.to_string(),
+                        ModelStatus::Failed(format!("Download failed: {}", e)),
+                    );
                     tracing::error!(model = %model_name, error = %e, "Failed to download model");
                     return Err(anyhow!("Failed to download model: {}", e));
                 }
@@ -334,7 +340,12 @@ impl LLMManager {
 
     pub async fn load_model(&self, model_name: &str) -> Result<()> {
         // Check if model is downloaded
-        let status = self.model_status.read().await.get(model_name).cloned()
+        let status = self
+            .model_status
+            .read()
+            .await
+            .get(model_name)
+            .cloned()
             .unwrap_or(ModelStatus::NotDownloaded);
 
         match status {
@@ -365,7 +376,8 @@ impl LLMManager {
         // Get model config
         let model_config = {
             let registry = self.models_registry.read().await;
-            registry.get(model_name)
+            registry
+                .get(model_name)
                 .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_name))?
                 .clone()
         };
@@ -383,7 +395,10 @@ impl LLMManager {
 
         if !model_file.exists() {
             let mut status = self.model_status.write().await;
-            status.insert(model_name.to_string(), ModelStatus::Failed("Model file not found".to_string()));
+            status.insert(
+                model_name.to_string(),
+                ModelStatus::Failed("Model file not found".to_string()),
+            );
             return Err(anyhow!("Model file not found: {:?}", model_file));
         }
 
@@ -391,7 +406,9 @@ impl LLMManager {
         let n_gpu_layers = self.calculate_optimal_gpu_layers(&model_config).await;
 
         // Load model into GGUF engine
-        self.gguf_engine.load_model(model_file, n_gpu_layers).await
+        self.gguf_engine
+            .load_model(model_file, n_gpu_layers)
+            .await
             .map_err(|e| {
                 tracing::error!("Failed to load GGUF model: {}", e);
                 e
@@ -430,7 +447,12 @@ impl LLMManager {
     }
 
     pub async fn ensure_model_ready(&self, model_name: &str) -> Result<()> {
-        let status = self.model_status.read().await.get(model_name).cloned()
+        let status = self
+            .model_status
+            .read()
+            .await
+            .get(model_name)
+            .cloned()
             .unwrap_or(ModelStatus::NotDownloaded);
 
         match status {
@@ -440,21 +462,20 @@ impl LLMManager {
                 self.download_model(model_name).await?;
                 self.load_model(model_name).await
             }
-            ModelStatus::Downloading { .. } => {
-                Err(anyhow!("Model is currently downloading"))
-            }
-            ModelStatus::Loading => {
-                Err(anyhow!("Model is currently loading"))
-            }
-            ModelStatus::Failed(err) => {
-                Err(anyhow!("Model failed to load: {}", err))
-            }
+            ModelStatus::Downloading { .. } => Err(anyhow!("Model is currently downloading")),
+            ModelStatus::Loading => Err(anyhow!("Model is currently loading")),
+            ModelStatus::Failed(err) => Err(anyhow!("Model failed to load: {}", err)),
         }
     }
 
-    pub async fn generate(&self, prompt: &str, config: Option<GenerationConfig>) -> Result<InferenceResult> {
+    pub async fn generate(
+        &self,
+        prompt: &str,
+        config: Option<GenerationConfig>,
+    ) -> Result<InferenceResult> {
         let active_model = self.active_model.read().await;
-        let _model_name = active_model.as_ref()
+        let _model_name = active_model
+            .as_ref()
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
         let gen_config = match config {
@@ -467,14 +488,20 @@ impl LLMManager {
             return Err(anyhow!("GGUF model not loaded. Call load_model() first."));
         }
 
-        tracing::debug!("Generating text for prompt: {}", &prompt[..prompt.len().min(50)]);
+        tracing::debug!(
+            "Generating text for prompt: {}",
+            &prompt[..prompt.len().min(50)]
+        );
 
         // Generate using GGUF engine
-        let result = self.gguf_engine.generate(
-            prompt,
-            gen_config.max_tokens,
-            gen_config.stop_sequences.clone(),
-        ).await?;
+        let result = self
+            .gguf_engine
+            .generate(
+                prompt,
+                gen_config.max_tokens,
+                gen_config.stop_sequences.clone(),
+            )
+            .await?;
 
         tracing::info!(
             "Generated {} tokens in {:.2}s ({:.2} tok/s)",
@@ -502,7 +529,8 @@ impl LLMManager {
         F: FnMut(&str) -> bool + Send + 'static,
     {
         let active_model = self.active_model.read().await;
-        let _model_name = active_model.as_ref()
+        let _model_name = active_model
+            .as_ref()
             .ok_or_else(|| anyhow!("No model is currently loaded"))?;
 
         let gen_config = match config {
@@ -515,15 +543,21 @@ impl LLMManager {
             return Err(anyhow!("GGUF model not loaded. Call load_model() first."));
         }
 
-        tracing::debug!("Streaming generation for prompt: {}", &prompt[..prompt.len().min(50)]);
+        tracing::debug!(
+            "Streaming generation for prompt: {}",
+            &prompt[..prompt.len().min(50)]
+        );
 
         // Generate with streaming using GGUF engine
-        let result = self.gguf_engine.generate_stream(
-            prompt,
-            gen_config.max_tokens,
-            gen_config.stop_sequences.clone(),
-            on_token,
-        ).await?;
+        let result = self
+            .gguf_engine
+            .generate_stream(
+                prompt,
+                gen_config.max_tokens,
+                gen_config.stop_sequences.clone(),
+                on_token,
+            )
+            .await?;
 
         tracing::info!(
             "Streamed {} tokens in {:.2}s ({:.2} tok/s)",
@@ -544,9 +578,11 @@ impl LLMManager {
         let registry = self.models_registry.read().await;
         let status_map = self.model_status.read().await;
 
-        registry.iter()
+        registry
+            .iter()
             .map(|(name, config)| {
-                let status = status_map.get(name)
+                let status = status_map
+                    .get(name)
                     .cloned()
                     .unwrap_or(ModelStatus::NotDownloaded);
                 (name.clone(), config.clone(), status)
@@ -663,14 +699,13 @@ impl LLMManager {
             }
         };
 
-        tracing::info!(
-            "GPU detected with ~{}MB VRAM available",
-            available_vram_mb
-        );
+        tracing::info!("GPU detected with ~{}MB VRAM available", available_vram_mb);
 
         // Get recommended layers and VRAM for this model
         let recommended_layers = model_config.recommended_gpu_layers.unwrap_or(0);
-        let recommended_vram = model_config.recommended_vram_mb.unwrap_or(model_config.size_mb);
+        let recommended_vram = model_config
+            .recommended_vram_mb
+            .unwrap_or(model_config.size_mb);
 
         // Calculate what percentage of the model we can offload
         // Keep some VRAM free for context and computation (based on VRAM_USAGE_RATIO)
@@ -745,7 +780,8 @@ impl LLMManager {
 
         // Check if model exists in registry
         let registry = self.models_registry.read().await;
-        let model_config = registry.get(model_path)
+        let model_config = registry
+            .get(model_path)
             .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_path))?
             .clone();
         drop(registry);

@@ -1,12 +1,12 @@
-use anyhow::{Result, anyhow};
-use serde::{Deserialize, Serialize};
-use std::process::Command;
-use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tokio::process::Command as AsyncCommand;
 use crate::process_helper::ProcessCommandExt;
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::process::Command;
+use std::sync::Arc;
+use tokio::process::Command as AsyncCommand;
+use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PresidioEntity {
@@ -104,11 +104,7 @@ impl PresidioBridge {
         let mut found_python = None;
 
         for cmd in python_commands {
-            if let Ok(output) = Command::new(cmd)
-                .arg("--version")
-                .no_window()
-                .output()
-            {
+            if let Ok(output) = Command::new(cmd).arg("--version").no_window().output() {
                 if output.status.success() {
                     found_python = Some(cmd.to_string());
                     let version = String::from_utf8_lossy(&output.stdout);
@@ -131,7 +127,8 @@ impl PresidioBridge {
         println!("📦 Installing Microsoft Presidio and dependencies...");
 
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         // Create requirements file for LITE mode (spaCy only)
@@ -155,7 +152,8 @@ scipy>=1.10.0
 "#;
 
         let model_path = self.model_path.read().await;
-        let requirements_path = model_path.as_ref()
+        let requirements_path = model_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Model path not set"))?
             .join("requirements.txt");
 
@@ -206,7 +204,8 @@ scipy>=1.10.0
         println!("🤖 Downloading OpenPipe PII-Redact models...");
 
         let model_path = self.model_path.read().await;
-        let model_dir = model_path.as_ref()
+        let model_dir = model_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Model path not set"))?;
 
         // Create Python script to download models
@@ -261,7 +260,8 @@ if __name__ == "__main__":
         tokio::fs::write(&script_path, download_script).await?;
 
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let output = AsyncCommand::new(python)
@@ -285,7 +285,8 @@ if __name__ == "__main__":
         println!("🔍 Verifying Presidio installation...");
 
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let verification_script = r#"
@@ -303,7 +304,8 @@ except ImportError as e:
 "#;
 
         let model_path = self.model_path.read().await;
-        let script_path = model_path.as_ref()
+        let script_path = model_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Model path not set"))?
             .join("verify.py");
 
@@ -333,14 +335,16 @@ except ImportError as e:
         }
 
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let config = self.config.read().await;
         let model_path = self.model_path.read().await;
 
         // Create detection script (LITE mode - spaCy only, no transformers)
-        let detection_script = format!(r#"
+        let detection_script = format!(
+            r#"
 import json
 import sys
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
@@ -403,9 +407,11 @@ if __name__ == "__main__":
     config = json.loads(sys.argv[2])
     result = detect_pii(text, config)
     print(result)
-"#);
+"#
+        );
 
-        let script_path = model_path.as_ref()
+        let script_path = model_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Model path not set"))?
             .join("detect.py");
 
@@ -434,7 +440,8 @@ if __name__ == "__main__":
 
     pub async fn anonymize(&self, text: &str, entities: Vec<PresidioEntity>) -> Result<String> {
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let model_path = self.model_path.read().await;
@@ -489,7 +496,8 @@ if __name__ == "__main__":
     print(result)
 "#;
 
-        let script_path = model_path.as_ref()
+        let script_path = model_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Model path not set"))?
             .join("anonymize.py");
 

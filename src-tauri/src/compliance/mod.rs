@@ -1,14 +1,14 @@
 // GDPR Compliance Module for BEAR AI
 // Implements consent management, data retention, and audit logging
 
-pub mod consent;
-pub mod retention;
 pub mod audit;
 pub mod commands;
+pub mod consent;
+pub mod retention;
 
+pub use audit::{AuditAction, AuditLogger, AuditQuery, EntityType};
 pub use consent::{ConsentManager, ConsentType};
 pub use retention::RetentionManager;
-pub use audit::{AuditLogger, AuditAction, EntityType, AuditQuery};
 
 use anyhow::Result;
 use std::path::PathBuf;
@@ -77,11 +77,7 @@ impl ComplianceManager {
     }
 
     /// Check if operation is allowed based on consent
-    pub async fn check_operation_consent(
-        &self,
-        user_id: &str,
-        operation: &str,
-    ) -> Result<bool> {
+    pub async fn check_operation_consent(&self, user_id: &str, operation: &str) -> Result<bool> {
         let consent_type = match operation {
             "pii_detection" => ConsentType::PiiDetection,
             "chat_storage" => ConsentType::ChatStorage,
@@ -107,7 +103,10 @@ impl ComplianceManager {
         // Clean old audit logs (keep 2 years)
         let audit = self.audit_logger.write().await;
         let deleted_logs = audit.delete_old_logs(730)?;
-        results.insert("audit_logs_cleaned".to_string(), serde_json::json!(deleted_logs));
+        results.insert(
+            "audit_logs_cleaned".to_string(),
+            serde_json::json!(deleted_logs),
+        );
         drop(audit);
 
         // Log maintenance completion
@@ -117,17 +116,16 @@ impl ComplianceManager {
             AuditAction::SettingChanged,
             EntityType::UserSetting,
             None,
-            Some(serde_json::json!({"action": "maintenance_completed", "results": results.clone()})),
+            Some(
+                serde_json::json!({"action": "maintenance_completed", "results": results.clone()}),
+            ),
         )?;
 
         Ok(serde_json::Value::Object(results))
     }
 
     /// Generate GDPR compliance report
-    pub async fn generate_compliance_report(
-        &self,
-        user_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn generate_compliance_report(&self, user_id: &str) -> Result<serde_json::Value> {
         let consent = self.consent_manager.read().await;
         let consents = consent.get_user_consents(user_id)?;
         let consent_audit = consent.get_consent_audit_trail(user_id)?;
@@ -158,10 +156,7 @@ impl ComplianceManager {
     }
 
     /// Export all user data (GDPR "Right to Data Portability")
-    pub async fn export_user_data(
-        &self,
-        user_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn export_user_data(&self, user_id: &str) -> Result<serde_json::Value> {
         let consent = self.consent_manager.read().await;
         let consent_data = consent.export_consent_data(user_id)?;
         drop(consent);
@@ -193,16 +188,16 @@ impl ComplianceManager {
     }
 
     /// Delete all user data (GDPR "Right to Erasure")
-    pub async fn delete_user_data(
-        &self,
-        user_id: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn delete_user_data(&self, user_id: &str) -> Result<serde_json::Value> {
         let mut results = serde_json::Map::new();
 
         // Withdraw all consents
         let consent = self.consent_manager.write().await;
         let consents_withdrawn = consent.withdraw_all_consents(user_id)?;
-        results.insert("consents_withdrawn".to_string(), serde_json::json!(consents_withdrawn));
+        results.insert(
+            "consents_withdrawn".to_string(),
+            serde_json::json!(consents_withdrawn),
+        );
         drop(consent);
 
         // Note: Actual data deletion (documents, chats, etc.) should be handled
@@ -244,11 +239,16 @@ mod tests {
         // Grant consent
         {
             let mut consent = manager.consent().write().await;
-            consent.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
+            consent
+                .grant_consent(user_id, &ConsentType::ChatStorage)
+                .unwrap();
         }
 
         // Check consent
-        let has_consent = manager.check_operation_consent(user_id, "chat_storage").await.unwrap();
+        let has_consent = manager
+            .check_operation_consent(user_id, "chat_storage")
+            .await
+            .unwrap();
         assert!(has_consent);
 
         // Generate report

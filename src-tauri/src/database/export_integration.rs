@@ -1,15 +1,15 @@
 // Database Export Integration for GDPR Article 20 Data Portability
 // Maps database records to UserDataExport structure for export engine
 
-use anyhow::{Result, anyhow};
-use rusqlite::{Connection, params};
+use anyhow::{anyhow, Result};
 use chrono::Utc;
-use std::path::PathBuf;
+use rusqlite::{params, Connection};
 use serde_json;
+use std::path::PathBuf;
 
 use crate::export_engine::{
-    UserDataExport, ChatExport, MessageExport, DocumentExport, PIIDetection,
-    SettingsExport, ExportMetadata, ComplianceInfo
+    ChatExport, ComplianceInfo, DocumentExport, ExportMetadata, MessageExport, PIIDetection,
+    SettingsExport, UserDataExport,
 };
 
 /// Database Export Manager - fetches all user data for GDPR export
@@ -24,8 +24,7 @@ impl ExportIntegration {
 
     /// Get database connection
     fn get_connection(&self) -> Result<Connection> {
-        Connection::open(&self.db_path)
-            .map_err(|e| anyhow!("Failed to open database: {}", e))
+        Connection::open(&self.db_path).map_err(|e| anyhow!("Failed to open database: {}", e))
     }
 
     /// Fetch all user data from database and convert to export format
@@ -61,7 +60,7 @@ impl ExportIntegration {
                  SELECT DISTINCT chat_id FROM chat_messages
                  -- In production, filter by user_id if messages table has user association
              )
-             ORDER BY created_at DESC"
+             ORDER BY created_at DESC",
         )?;
 
         let chat_sessions: Vec<(String, String, String, String, String, String)> = stmt
@@ -84,8 +83,7 @@ impl ExportIntegration {
             let messages = self.fetch_chat_messages(&chat_id)?;
 
             // Parse tags JSON
-            let tags: Vec<String> = serde_json::from_str(&tags_json)
-                .unwrap_or_else(|_| vec![]);
+            let tags: Vec<String> = serde_json::from_str(&tags_json).unwrap_or_else(|_| vec![]);
 
             chats.push(ChatExport {
                 id: chat_id,
@@ -109,7 +107,7 @@ impl ExportIntegration {
             "SELECT role, content, timestamp, metadata
              FROM chat_messages
              WHERE chat_id = ?1
-             ORDER BY timestamp ASC"
+             ORDER BY timestamp ASC",
         )?;
 
         let messages = stmt
@@ -120,7 +118,10 @@ impl ExportIntegration {
                 Ok(MessageExport {
                     role: row.get(0)?,
                     content: row.get(1)?,
-                    timestamp: row.get::<_, String>(2)?.parse().unwrap_or_else(|_| Utc::now()),
+                    timestamp: row
+                        .get::<_, String>(2)?
+                        .parse()
+                        .unwrap_or_else(|_| Utc::now()),
                     metadata,
                 })
             })?
@@ -138,7 +139,7 @@ impl ExportIntegration {
         let mut stmt = conn.prepare(
             "SELECT id, filename, file_type, upload_date, chunk_count
              FROM documents
-             ORDER BY upload_date DESC"
+             ORDER BY upload_date DESC",
         )?;
 
         let docs: Vec<(i64, String, String, String, i64)> = stmt
@@ -180,7 +181,7 @@ impl ExportIntegration {
             "SELECT pii_type, replacement_text, confidence, position_start, position_end
              FROM pii_detections
              WHERE document_id = ?1
-             ORDER BY position_start ASC"
+             ORDER BY position_start ASC",
         )?;
 
         let detections = stmt
@@ -206,7 +207,7 @@ impl ExportIntegration {
         let mut stmt = conn.prepare(
             "SELECT setting_key, setting_value
              FROM user_settings
-             ORDER BY setting_key"
+             ORDER BY setting_key",
         )?;
 
         let mut preferences = serde_json::Map::new();
@@ -217,8 +218,8 @@ impl ExportIntegration {
         for row in rows {
             let (key, value) = row?;
             // Try to parse as JSON, fallback to string
-            let parsed_value = serde_json::from_str(&value)
-                .unwrap_or_else(|_| serde_json::Value::String(value));
+            let parsed_value =
+                serde_json::from_str(&value).unwrap_or_else(|_| serde_json::Value::String(value));
             preferences.insert(key, parsed_value);
         }
 
@@ -280,7 +281,7 @@ impl ExportIntegration {
 
     /// Generate SHA-256 hash for data integrity
     fn generate_sha256_hash(&self, data: &str) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(data.as_bytes());
         hex::encode(hasher.finalize())
@@ -337,7 +338,8 @@ impl ExportIntegration {
         let logs: Vec<serde_json::Value> = stmt
             .query_map(params![user_id, limit as i64], |row| {
                 let details_str: Option<String> = row.get(5)?;
-                let details: Option<serde_json::Value> = details_str.and_then(|s| serde_json::from_str(&s).ok());
+                let details: Option<serde_json::Value> =
+                    details_str.and_then(|s| serde_json::from_str(&s).ok());
 
                 Ok(serde_json::json!({
                     "id": row.get::<_, i64>(0)?,
@@ -529,7 +531,8 @@ mod tests {
         conn.execute(
             "INSERT INTO chat_messages (chat_id, role, content) VALUES ('chat1', 'user', 'Hello')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         conn.execute(
             "INSERT INTO documents (filename, content, file_type, chunk_count) VALUES ('test.pdf', 'content', 'pdf', 5)",
@@ -571,7 +574,8 @@ mod tests {
             "INSERT INTO user_consent (user_id, consent_type, granted, version, consent_text)
              VALUES ('test_user', 'chat_storage', 1, 1, 'Test consent text')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         drop(conn);
 
@@ -602,13 +606,15 @@ mod tests {
             "INSERT INTO user_consent (user_id, consent_type, granted, version, consent_text)
              VALUES ('test_user', 'chat_storage', 1, 1, 'Consent')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         conn.execute(
             "INSERT INTO audit_log (user_id, action_type, entity_type, success)
              VALUES ('test_user', 'data_accessed', 'document', 1)",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         drop(conn);
 

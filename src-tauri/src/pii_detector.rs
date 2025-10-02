@@ -32,17 +32,17 @@
 //! - Organizations (companies, law firms)
 //! - Custom patterns (configurable)
 
-use anyhow::{Result, anyhow};
+use crate::process_helper::ProcessCommandExt;
+use anyhow::{anyhow, Result};
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use regex::Regex;
-use lazy_static::lazy_static;
-use crate::process_helper::ProcessCommandExt;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tokio::process::Command as AsyncCommand;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::process::Command as AsyncCommand;
+use tokio::sync::RwLock;
 
 lazy_static! {
     // Compiled regex patterns for performance
@@ -209,14 +209,8 @@ impl Default for PIIExclusionsConfig {
     fn default() -> Self {
         Self {
             exclusions: PIIExclusions {
-                locations: vec![
-                    "United States".to_string(),
-                    "New York".to_string(),
-                ],
-                legal_terms: vec![
-                    "First Amendment".to_string(),
-                    "Supreme Court".to_string(),
-                ],
+                locations: vec!["United States".to_string(), "New York".to_string()],
+                legal_terms: vec!["First Amendment".to_string(), "Supreme Court".to_string()],
                 organizations: vec![],
                 time_terms: vec![],
                 custom: vec![],
@@ -241,29 +235,32 @@ pub struct PIIDetector {
 impl PIIDetector {
     pub fn new() -> Self {
         // Load exclusions config from file, fallback to defaults if not found
-        let exclusions_config = Self::load_exclusions_config()
-            .unwrap_or_else(|e| {
-                tracing::error!("==================== PII EXCLUSIONS CONFIG ERROR ====================");
-                tracing::error!("Failed to load PII exclusions configuration file!");
-                tracing::error!("Error: {}", e);
-                tracing::error!("");
-                tracing::error!("⚠️  WARNING: Without exclusions config, legal terms may be flagged as PII!");
-                tracing::error!("⚠️  Examples that may be incorrectly flagged:");
-                tracing::error!("   - 'United States', 'New York', 'Supreme Court'");
-                tracing::error!("   - 'First Amendment', 'Federal Court', 'Justice Department'");
-                tracing::error!("");
-                tracing::error!("To fix this issue:");
-                tracing::error!("1. Create 'pii_exclusions.toml' in project root");
-                tracing::error!("2. Or run: cargo run -- create-default-pii-config");
-                tracing::error!("3. See example at: src-tauri/pii_exclusions.example.toml");
-                tracing::error!("====================================================================");
+        let exclusions_config = Self::load_exclusions_config().unwrap_or_else(|e| {
+            tracing::error!(
+                "==================== PII EXCLUSIONS CONFIG ERROR ===================="
+            );
+            tracing::error!("Failed to load PII exclusions configuration file!");
+            tracing::error!("Error: {}", e);
+            tracing::error!("");
+            tracing::error!(
+                "⚠️  WARNING: Without exclusions config, legal terms may be flagged as PII!"
+            );
+            tracing::error!("⚠️  Examples that may be incorrectly flagged:");
+            tracing::error!("   - 'United States', 'New York', 'Supreme Court'");
+            tracing::error!("   - 'First Amendment', 'Federal Court', 'Justice Department'");
+            tracing::error!("");
+            tracing::error!("To fix this issue:");
+            tracing::error!("1. Create 'pii_exclusions.toml' in project root");
+            tracing::error!("2. Or run: cargo run -- create-default-pii-config");
+            tracing::error!("3. See example at: src-tauri/pii_exclusions.example.toml");
+            tracing::error!("====================================================================");
 
-                // Also log to stderr for visibility during development
-                eprintln!("\n❌ PII EXCLUSIONS CONFIG MISSING - Legal terms may be flagged as PII!");
-                eprintln!("   Create 'pii_exclusions.toml' to fix this issue.\n");
+            // Also log to stderr for visibility during development
+            eprintln!("\n❌ PII EXCLUSIONS CONFIG MISSING - Legal terms may be flagged as PII!");
+            eprintln!("   Create 'pii_exclusions.toml' to fix this issue.\n");
 
-                PIIExclusionsConfig::default()
-            });
+            PIIExclusionsConfig::default()
+        });
 
         Self {
             config: Arc::new(RwLock::new(PIIDetectionConfig::default())),
@@ -316,7 +313,9 @@ impl PIIDetector {
             }
         }
 
-        Err(anyhow!("❌ PII exclusions config file not found in any expected location"))
+        Err(anyhow!(
+            "❌ PII exclusions config file not found in any expected location"
+        ))
     }
 
     pub async fn initialize(&self) -> Result<()> {
@@ -393,7 +392,8 @@ impl PIIDetector {
 
     async fn detect_with_presidio(&self, text: &str) -> Result<Vec<PIIEntity>> {
         let python_path = self.python_path.read().await;
-        let python = python_path.as_ref()
+        let python = python_path
+            .as_ref()
             .ok_or_else(|| anyhow!("Python path not set"))?;
 
         let script = r#"
@@ -439,7 +439,11 @@ print(json.dumps(entities))
         Ok(entities)
     }
 
-    async fn detect_with_builtin(&self, text: &str, config: &PIIDetectionConfig) -> Result<Vec<PIIEntity>> {
+    async fn detect_with_builtin(
+        &self,
+        text: &str,
+        config: &PIIDetectionConfig,
+    ) -> Result<Vec<PIIEntity>> {
         let mut entities = Vec::new();
 
         // High-confidence regex patterns
@@ -642,21 +646,31 @@ print(json.dumps(entities))
 
             match entity.entity_type.as_str() {
                 "PERSON" => {
-                    if context.contains("plaintiff") || context.contains("defendant") ||
-                       context.contains("attorney") || context.contains("client") ||
-                       context.contains("witness") || context.contains("judge") {
+                    if context.contains("plaintiff")
+                        || context.contains("defendant")
+                        || context.contains("attorney")
+                        || context.contains("client")
+                        || context.contains("witness")
+                        || context.contains("judge")
+                    {
                         entity.confidence = (entity.confidence * 1.2).min(1.0);
                     }
                 }
                 "ORGANIZATION" => {
-                    if context.contains("company") || context.contains("corporation") ||
-                       context.contains("firm") || context.contains("agency") {
+                    if context.contains("company")
+                        || context.contains("corporation")
+                        || context.contains("firm")
+                        || context.contains("agency")
+                    {
                         entity.confidence = (entity.confidence * 1.15).min(1.0);
                     }
                 }
                 "SSN" | "CREDIT_CARD" => {
-                    if context.contains("social security") || context.contains("ssn") ||
-                       context.contains("credit") || context.contains("card") {
+                    if context.contains("social security")
+                        || context.contains("ssn")
+                        || context.contains("credit")
+                        || context.contains("card")
+                    {
                         entity.confidence = 1.0;
                     }
                 }
@@ -667,11 +681,18 @@ print(json.dumps(entities))
         entities
     }
 
-    fn deduplicate_and_filter(&self, mut entities: Vec<PIIEntity>, threshold: f32) -> Vec<PIIEntity> {
+    fn deduplicate_and_filter(
+        &self,
+        mut entities: Vec<PIIEntity>,
+        threshold: f32,
+    ) -> Vec<PIIEntity> {
         // Sort by position and confidence (handle NaN values safely)
         entities.sort_by(|a, b| {
-            a.start.cmp(&b.start)
-                .then(b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal))
+            a.start.cmp(&b.start).then(
+                b.confidence
+                    .partial_cmp(&a.confidence)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+            )
         });
 
         let mut filtered = Vec::new();
@@ -737,7 +758,10 @@ print(json.dumps(entities))
             let case_sensitive = config.settings.case_sensitive;
 
             // Check all exclusion categories
-            let all_exclusions: Vec<&String> = config.exclusions.locations.iter()
+            let all_exclusions: Vec<&String> = config
+                .exclusions
+                .locations
+                .iter()
                 .chain(config.exclusions.legal_terms.iter())
                 .chain(config.exclusions.organizations.iter())
                 .chain(config.exclusions.time_terms.iter())
@@ -761,7 +785,10 @@ print(json.dumps(entities))
         } else {
             // Fallback to basic exclusions if config is locked
             const FALLBACK_EXCLUSIONS: &[&str] = &[
-                "United States", "New York", "Supreme Court", "Federal Court"
+                "United States",
+                "New York",
+                "Supreme Court",
+                "Federal Court",
             ];
             FALLBACK_EXCLUSIONS.contains(&text)
         }

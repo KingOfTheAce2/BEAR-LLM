@@ -44,7 +44,7 @@ impl PIIMode {
     pub fn memory_overhead_bytes(&self) -> u64 {
         match self {
             PIIMode::Builtin => 0,
-            PIIMode::PresidioLite => 500 * 1024 * 1024,      // 500MB
+            PIIMode::PresidioLite => 500 * 1024 * 1024, // 500MB
             PIIMode::PresidioFull => 2 * 1024 * 1024 * 1024, // 2GB
         }
     }
@@ -84,9 +84,13 @@ impl PIIMode {
     /// Get description
     pub fn description(&self) -> &str {
         match self {
-            PIIMode::Builtin => "Fast regex-based detection with 0MB overhead. Recommended for laptops.",
+            PIIMode::Builtin => {
+                "Fast regex-based detection with 0MB overhead. Recommended for laptops."
+            }
             PIIMode::PresidioLite => "Enhanced detection with spaCy NER. Moderate memory usage.",
-            PIIMode::PresidioFull => "State-of-the-art ML detection with DeBERTa. High memory usage.",
+            PIIMode::PresidioFull => {
+                "State-of-the-art ML detection with DeBERTa. High memory usage."
+            }
         }
     }
 
@@ -158,7 +162,10 @@ impl MemoryDetector {
 
         self.system.refresh_processes(ProcessesToUpdate::All, true);
 
-        if let Some(process) = self.system.process(sysinfo::get_current_pid().ok().unwrap()) {
+        if let Some(process) = self
+            .system
+            .process(sysinfo::get_current_pid().ok().unwrap())
+        {
             process.memory()
         } else {
             0
@@ -204,10 +211,7 @@ impl MemoryDetector {
         } else {
             // High memory: Full mode available
             if available_for_pii >= 2.0 {
-                (
-                    PIIMode::PresidioFull.to_string(),
-                    None
-                )
+                (PIIMode::PresidioFull.to_string(), None)
             } else if available_for_pii >= 0.5 {
                 (
                     PIIMode::PresidioLite.to_string(),
@@ -221,7 +225,7 @@ impl MemoryDetector {
                     PIIMode::Builtin.to_string(),
                     Some(format!(
                         "High memory usage detected. Built-in detection recommended.",
-                    ))
+                    )),
                 )
             }
         };
@@ -247,7 +251,7 @@ impl MemoryDetector {
                     mode.display_name(),
                     required_mb,
                     available_mb
-                ))
+                )),
             ))
         } else {
             Ok((true, None))
@@ -255,7 +259,11 @@ impl MemoryDetector {
     }
 
     /// Get memory impact estimate for switching modes
-    pub fn estimate_mode_impact(&mut self, current_mode: &PIIMode, new_mode: &PIIMode) -> Result<String> {
+    pub fn estimate_mode_impact(
+        &mut self,
+        current_mode: &PIIMode,
+        new_mode: &PIIMode,
+    ) -> Result<String> {
         let current_overhead = current_mode.memory_overhead_mb();
         let new_overhead = new_mode.memory_overhead_mb();
         let delta = (new_overhead as i64) - (current_overhead as i64);

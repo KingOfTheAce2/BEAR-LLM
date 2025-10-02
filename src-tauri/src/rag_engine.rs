@@ -1,13 +1,13 @@
-use anyhow::{Result, anyhow};
-use serde::{Serialize, Deserialize};
+use crate::utils::cosine_similarity;
+use anyhow::{anyhow, Result};
+use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
 use uuid::Uuid;
-use crate::utils::cosine_similarity;
 
 // Production RAG Engine with real embeddings and vector search
 // This is the single source of truth for RAG functionality in BEAR AI
@@ -150,8 +150,10 @@ impl RAGEngine {
         // Load existing index (fast)
         self.load_index().await?;
 
-        tracing::info!("✅ RAG Engine initialized with {} documents (embeddings will load on first use)",
-                 self.documents.read().await.len());
+        tracing::info!(
+            "✅ RAG Engine initialized with {} documents (embeddings will load on first use)",
+            self.documents.read().await.len()
+        );
 
         Ok(())
     }
@@ -178,8 +180,7 @@ impl RAGEngine {
 
         // Initialize embeddings model (uses cache if available)
         let model = TextEmbedding::try_new(
-            InitOptions::new(embedding_model)
-                .with_show_download_progress(true)
+            InitOptions::new(embedding_model).with_show_download_progress(true),
         )?;
 
         let mut model_lock = self.embeddings_model.write().await;
@@ -222,7 +223,10 @@ impl RAGEngine {
         *model_lock = None;
         drop(model_lock);
 
-        tracing::info!("✅ RAG model switched to: {}. Will load on next use.", model_id);
+        tracing::info!(
+            "✅ RAG model switched to: {}. Will load on next use.",
+            model_id
+        );
 
         Ok(())
     }
@@ -284,7 +288,8 @@ impl RAGEngine {
         }
 
         let mut model_lock = self.embeddings_model.write().await;
-        let model = model_lock.as_mut()
+        let model = model_lock
+            .as_mut()
             .ok_or_else(|| anyhow!("Embeddings model not initialized"))?;
 
         let mut documents = self.documents.write().await;
@@ -295,7 +300,8 @@ impl RAGEngine {
             let chunk_id = format!("{}_{}", doc_id, idx);
 
             // Generate embeddings
-            let embeddings = model.embed(vec![chunk.as_str()], None)?
+            let embeddings = model
+                .embed(vec![chunk.as_str()], None)?
                 .into_iter()
                 .next()
                 .ok_or_else(|| anyhow!("Failed to generate embeddings"))?
@@ -335,10 +341,12 @@ impl RAGEngine {
 
         // Generate query embedding
         let mut model_lock = self.embeddings_model.write().await;
-        let model = model_lock.as_mut()
+        let model = model_lock
+            .as_mut()
             .ok_or_else(|| anyhow!("Embeddings model not initialized"))?;
 
-        let query_embedding = model.embed(vec![query], None)?
+        let query_embedding = model
+            .embed(vec![query], None)?
             .into_iter()
             .next()
             .ok_or_else(|| anyhow!("Failed to generate query embedding"))?
@@ -360,7 +368,11 @@ impl RAGEngine {
         Ok(results)
     }
 
-    async fn vector_search(&self, query_embedding: &[f32], limit: usize) -> Result<Vec<SearchResult>> {
+    async fn vector_search(
+        &self,
+        query_embedding: &[f32],
+        limit: usize,
+    ) -> Result<Vec<SearchResult>> {
         let documents = self.documents.read().await;
         let config = self.config.read().await;
         let mut scores: Vec<(String, f32, Document)> = Vec::new();
@@ -379,21 +391,24 @@ impl RAGEngine {
         scores.truncate(limit);
 
         // Convert to SearchResult
-        Ok(scores.into_iter().map(|(id, score, doc)| SearchResult {
-            document_id: id,
-            content: doc.content,
-            score,
-            metadata: doc.metadata,
-            highlight: None,
-            reasoning: None,
-        }).collect())
+        Ok(scores
+            .into_iter()
+            .map(|(id, score, doc)| SearchResult {
+                document_id: id,
+                content: doc.content,
+                score,
+                metadata: doc.metadata,
+                highlight: None,
+                reasoning: None,
+            })
+            .collect())
     }
 
     async fn hybrid_search(
         &self,
         query: &str,
         query_embedding: &[f32],
-        limit: usize
+        limit: usize,
     ) -> Result<Vec<SearchResult>> {
         // Get vector search results
         let vector_results = self.vector_search(query_embedding, limit * 2).await?;
@@ -407,17 +422,15 @@ impl RAGEngine {
         // Add vector results with weight
         for result in vector_results {
             let weighted_score = result.score * 0.7; // 70% weight for vector search
-            merged_scores.insert(
-                result.document_id.clone(),
-                (weighted_score, result)
-            );
+            merged_scores.insert(result.document_id.clone(), (weighted_score, result));
         }
 
         // Add or update with keyword results
         for result in keyword_results {
             let weighted_score = result.score * 0.3; // 30% weight for keyword search
 
-            merged_scores.entry(result.document_id.clone())
+            merged_scores
+                .entry(result.document_id.clone())
                 .and_modify(|e| e.0 += weighted_score)
                 .or_insert((weighted_score, result));
         }
@@ -431,7 +444,11 @@ impl RAGEngine {
             })
             .collect();
 
-        final_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        final_results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         final_results.truncate(limit);
 
         Ok(final_results)
@@ -478,13 +495,21 @@ impl RAGEngine {
             }
         }
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
 
         Ok(results)
     }
 
-    async fn rerank_results(&self, query: &str, mut results: Vec<SearchResult>) -> Result<Vec<SearchResult>> {
+    async fn rerank_results(
+        &self,
+        query: &str,
+        mut results: Vec<SearchResult>,
+    ) -> Result<Vec<SearchResult>> {
         // Cross-encoder style reranking
         let query_lower = query.to_lowercase();
         let query_tokens: Vec<&str> = query_lower.split_whitespace().collect();
@@ -499,7 +524,8 @@ impl RAGEngine {
             }
 
             // Boost for all query tokens present
-            let all_tokens_present = query_tokens.iter()
+            let all_tokens_present = query_tokens
+                .iter()
                 .all(|token| content_lower.contains(token));
             if all_tokens_present {
                 boost += 0.2;
@@ -516,7 +542,11 @@ impl RAGEngine {
         }
 
         // Re-sort after reranking, handling NaN values safely
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         Ok(results)
     }
@@ -554,8 +584,10 @@ impl RAGEngine {
             let mut min_pos = *first_pos;
 
             for token_positions in &positions[1..] {
-                if let Some(closest) = token_positions.iter()
-                    .min_by_key(|&&p| (*first_pos as i32 - p as i32).abs()) {
+                if let Some(closest) = token_positions
+                    .iter()
+                    .min_by_key(|&&p| (*first_pos as i32 - p as i32).abs())
+                {
                     max_pos = max_pos.max(*closest);
                     min_pos = min_pos.min(*closest);
                 }
@@ -581,7 +613,8 @@ impl RAGEngine {
 
         for i in 0..content.len().saturating_sub(window_size) {
             let window = &content_lower[i..std::cmp::min(i + window_size, content.len())];
-            let score = query_tokens.iter()
+            let score = query_tokens
+                .iter()
                 .filter(|token| window.contains(token.as_str()))
                 .count();
 
@@ -639,7 +672,7 @@ impl RAGEngine {
         &self,
         doc_id: &str,
         content: &str,
-        index: &mut HashMap<String, Vec<String>>
+        index: &mut HashMap<String, Vec<String>>,
     ) {
         // Tokenize and index
         let tokens: Vec<String> = content
@@ -650,7 +683,8 @@ impl RAGEngine {
             .collect();
 
         for token in tokens {
-            index.entry(token)
+            index
+                .entry(token)
                 .or_insert_with(Vec::new)
                 .push(doc_id.to_string());
         }
@@ -673,7 +707,8 @@ impl RAGEngine {
         for key in &keys_to_remove {
             if let Some(doc) = documents.get(key) {
                 // Remove from inverted index
-                let tokens: Vec<String> = doc.content
+                let tokens: Vec<String> = doc
+                    .content
                     .to_lowercase()
                     .split_whitespace()
                     .filter(|w| w.len() > 2)
@@ -745,9 +780,10 @@ impl RAGEngine {
     fn estimate_index_size(
         &self,
         documents: &HashMap<String, Document>,
-        inverted_index: &HashMap<String, Vec<String>>
+        inverted_index: &HashMap<String, Vec<String>>,
     ) -> usize {
-        let doc_size: usize = documents.iter()
+        let doc_size: usize = documents
+            .iter()
             .map(|(k, v)| {
                 k.len() + v.content.len() +
                 v.embeddings.len() * 4 + // f32 = 4 bytes
@@ -755,7 +791,8 @@ impl RAGEngine {
             })
             .sum();
 
-        let index_size: usize = inverted_index.iter()
+        let index_size: usize = inverted_index
+            .iter()
             .map(|(k, v)| k.len() + v.iter().map(|s| s.len()).sum::<usize>())
             .sum();
 
@@ -835,13 +872,20 @@ impl RAGEngine {
     /// ).await?;
     /// // Use prompt with LLM: llm_manager.generate(&prompt, None).await?
     /// ```
-    pub async fn generate_augmented_prompt(&self, query: &str, limit: Option<usize>) -> Result<String> {
+    pub async fn generate_augmented_prompt(
+        &self,
+        query: &str,
+        limit: Option<usize>,
+    ) -> Result<String> {
         // Execute search to retrieve relevant document chunks
         let search_results = self.search(query, limit).await?;
 
         if search_results.is_empty() {
             // No relevant documents found - return prompt without context
-            tracing::warn!("No relevant documents found for query: {}", &query[..query.len().min(50)]);
+            tracing::warn!(
+                "No relevant documents found for query: {}",
+                &query[..query.len().min(50)]
+            );
 
             return Ok(format!(
                 "INSTRUCTION: Answer the following question to the best of your ability.\n\
@@ -858,11 +902,16 @@ impl RAGEngine {
 
         for (idx, result) in search_results.iter().enumerate() {
             // Add source marker and content
-            let source_marker = format!("--- SOURCE {} (Relevance: {:.2}) ---", idx + 1, result.score);
+            let source_marker = format!(
+                "--- SOURCE {} (Relevance: {:.2}) ---",
+                idx + 1,
+                result.score
+            );
 
             // Include metadata if available
             let metadata_str = if let Some(obj) = result.metadata.as_object() {
-                let meta_items: Vec<String> = obj.iter()
+                let meta_items: Vec<String> = obj
+                    .iter()
                     .filter_map(|(k, v)| {
                         if let Some(s) = v.as_str() {
                             Some(format!("{}: {}", k, s))
@@ -888,12 +937,7 @@ impl RAGEngine {
                 result.content.clone()
             };
 
-            context_parts.push(format!(
-                "{}{}\n\n{}",
-                source_marker,
-                metadata_str,
-                content
-            ));
+            context_parts.push(format!("{}{}\n\n{}", source_marker, metadata_str, content));
         }
 
         let formatted_context = context_parts.join("\n\n");
@@ -914,8 +958,7 @@ impl RAGEngine {
             QUESTION: {}\n\
             \n\
             ANSWER (based solely on the context above):",
-            formatted_context,
-            query
+            formatted_context, query
         );
 
         tracing::info!(
@@ -927,5 +970,4 @@ impl RAGEngine {
 
         Ok(augmented_prompt)
     }
-
 }

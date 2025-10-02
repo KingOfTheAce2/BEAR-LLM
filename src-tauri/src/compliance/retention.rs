@@ -1,15 +1,15 @@
-use anyhow::{Result, anyhow};
-use rusqlite::{Connection, params};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc, Duration as ChronoDuration};
 use std::path::PathBuf;
 
 /// Data retention policy
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetentionPolicy {
-    pub entity_type: String,  // 'document', 'chat_message', 'query_history'
-    pub retention_days: i64,  // How many days to retain
-    pub auto_delete: bool,    // Enable automatic deletion
+    pub entity_type: String, // 'document', 'chat_message', 'query_history'
+    pub retention_days: i64, // How many days to retain
+    pub auto_delete: bool,   // Enable automatic deletion
 }
 
 /// Default retention policies (GDPR recommends minimal retention)
@@ -19,16 +19,16 @@ impl RetentionPolicy {
             RetentionPolicy {
                 entity_type: "document".to_string(),
                 retention_days: 365 * 2, // 2 years for documents
-                auto_delete: false,       // Don't auto-delete documents by default
+                auto_delete: false,      // Don't auto-delete documents by default
             },
             RetentionPolicy {
                 entity_type: "chat_message".to_string(),
-                retention_days: 90,       // 90 days for chat history
-                auto_delete: true,        // Auto-delete old chats
+                retention_days: 90, // 90 days for chat history
+                auto_delete: true,  // Auto-delete old chats
             },
             RetentionPolicy {
                 entity_type: "query_history".to_string(),
-                retention_days: 30,       // 30 days for query logs
+                retention_days: 30, // 30 days for query logs
                 auto_delete: true,
             },
         ]
@@ -76,7 +76,7 @@ impl RetentionManager {
         &self,
         entity_type: &str,
         entity_id: i64,
-        retention_days: i64
+        retention_days: i64,
     ) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
         let retention_until = Utc::now() + ChronoDuration::days(retention_days);
@@ -89,10 +89,7 @@ impl RetentionManager {
             _ => return Err(anyhow!("Unknown entity type: {}", entity_type)),
         };
 
-        let query = format!(
-            "UPDATE {} SET retention_until = ?1 WHERE id = ?2",
-            table
-        );
+        let query = format!("UPDATE {} SET retention_until = ?1 WHERE id = ?2", table);
 
         conn.execute(&query, params![retention_until.to_rfc3339(), entity_id])?;
 
@@ -100,11 +97,7 @@ impl RetentionManager {
     }
 
     /// Set retention for all entities of a type
-    pub fn set_retention_policy(
-        &self,
-        entity_type: &str,
-        retention_days: i64
-    ) -> Result<usize> {
+    pub fn set_retention_policy(&self, entity_type: &str, retention_days: i64) -> Result<usize> {
         let conn = Connection::open(&self.db_path)?;
         let retention_until = Utc::now() + ChronoDuration::days(retention_days);
 
@@ -145,7 +138,8 @@ impl RetentionManager {
         );
 
         let mut stmt = conn.prepare(&query)?;
-        let ids: Vec<i64> = stmt.query_map(params![now], |row| row.get(0))?
+        let ids: Vec<i64> = stmt
+            .query_map(params![now], |row| row.get(0))?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ids)
@@ -178,7 +172,7 @@ impl RetentionManager {
                     params![now],
                 )?;
                 "documents"
-            },
+            }
             "chat_session" => {
                 // Delete related messages
                 conn.execute(
@@ -188,7 +182,7 @@ impl RetentionManager {
                     params![now],
                 )?;
                 "chat_sessions"
-            },
+            }
             "chat_message" => "chat_messages",
             "query_history" => "query_history",
             _ => return Err(anyhow!("Unknown entity type: {}", entity_type)),
@@ -231,11 +225,10 @@ impl RetentionManager {
         };
 
         // Total count
-        let total_count: i64 = conn.query_row(
-            &format!("SELECT COUNT(*) FROM {}", table),
-            [],
-            |row| row.get(0),
-        )?;
+        let total_count: i64 =
+            conn.query_row(&format!("SELECT COUNT(*) FROM {}", table), [], |row| {
+                row.get(0)
+            })?;
 
         // Expired count
         let expired_count: i64 = conn.query_row(
@@ -270,10 +263,7 @@ impl RetentionManager {
             _ => return Err(anyhow!("Unknown entity type: {}", entity_type)),
         };
 
-        let query = format!(
-            "UPDATE {} SET retention_until = NULL WHERE id = ?1",
-            table
-        );
+        let query = format!("UPDATE {} SET retention_until = NULL WHERE id = ?1", table);
 
         conn.execute(&query, params![entity_id])?;
 
@@ -300,13 +290,14 @@ impl RetentionManager {
 
         for policy in policies {
             if policy.auto_delete {
-                let count = self.set_retention_policy(&policy.entity_type, policy.retention_days)?;
+                let count =
+                    self.set_retention_policy(&policy.entity_type, policy.retention_days)?;
                 results.insert(
                     policy.entity_type.clone(),
                     serde_json::json!({
                         "entities_updated": count,
                         "retention_days": policy.retention_days
-                    })
+                    }),
                 );
             }
         }
@@ -319,7 +310,7 @@ impl RetentionManager {
         &self,
         entity_type: &str,
         entity_id: i64,
-        additional_days: i64
+        additional_days: i64,
     ) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
@@ -333,7 +324,9 @@ impl RetentionManager {
 
         // Get current retention date or use now
         let query = format!("SELECT retention_until FROM {} WHERE id = ?1", table);
-        let current: Option<String> = conn.query_row(&query, params![entity_id], |row| row.get(0)).ok();
+        let current: Option<String> = conn
+            .query_row(&query, params![entity_id], |row| row.get(0))
+            .ok();
 
         let new_retention = if let Some(current_str) = current {
             let current_date: DateTime<Utc> = current_str.parse()?;
@@ -342,12 +335,12 @@ impl RetentionManager {
             Utc::now() + ChronoDuration::days(additional_days)
         };
 
-        let update_query = format!(
-            "UPDATE {} SET retention_until = ?1 WHERE id = ?2",
-            table
-        );
+        let update_query = format!("UPDATE {} SET retention_until = ?1 WHERE id = ?2", table);
 
-        conn.execute(&update_query, params![new_retention.to_rfc3339(), entity_id])?;
+        conn.execute(
+            &update_query,
+            params![new_retention.to_rfc3339(), entity_id],
+        )?;
 
         Ok(())
     }
@@ -380,7 +373,8 @@ mod tests {
                     retention_until DATETIME
                 )",
                 [],
-            ).unwrap();
+            )
+            .unwrap();
             conn.execute(
                 "INSERT INTO documents (filename, content, file_type) VALUES ('test.txt', 'content', 'txt')",
                 [],

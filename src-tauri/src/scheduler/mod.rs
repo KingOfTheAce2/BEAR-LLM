@@ -1,11 +1,11 @@
-use anyhow::{Result, Context};
-use tokio::sync::{mpsc, RwLock};
-use tokio::time::{interval, Duration};
-use std::sync::Arc;
-use std::path::PathBuf;
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::{info, error, debug};
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::{mpsc, RwLock};
+use tokio::time::{interval, Duration};
+use tracing::{debug, error, info};
 
 pub mod retention_tasks;
 
@@ -108,7 +108,8 @@ impl RetentionScheduler {
     pub async fn start(mut self) -> Result<()> {
         info!("Starting retention cleanup scheduler");
 
-        let mut command_rx = self.command_rx
+        let mut command_rx = self
+            .command_rx
             .take()
             .context("Scheduler already started")?;
 

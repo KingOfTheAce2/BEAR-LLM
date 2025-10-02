@@ -1,17 +1,17 @@
-use anyhow::{Result, anyhow};
+use crate::constants::*;
+use anyhow::{anyhow, Result};
 use llama_cpp_2::context::params::LlamaContextParams;
+use llama_cpp_2::context::LlamaContext;
 use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
 use llama_cpp_2::model::LlamaModel;
-use llama_cpp_2::context::LlamaContext;
 use llama_cpp_2::token::data_array::LlamaTokenDataArray;
 use llama_cpp_2::token::LlamaToken;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
-use crate::constants::*;
 
 /// Production-ready GGUF inference engine using llama.cpp
 /// Supports full GGUF model loading and text generation
@@ -19,15 +19,15 @@ use crate::constants::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GGUFInferenceConfig {
     pub model_path: PathBuf,
-    pub n_ctx: u32,           // Context size
-    pub n_batch: u32,         // Batch size for prompt processing
-    pub n_threads: u32,       // Number of threads
-    pub n_gpu_layers: u32,    // Number of layers to offload to GPU
-    pub temperature: f32,     // Sampling temperature
-    pub top_k: i32,           // Top-k sampling
-    pub top_p: f32,           // Top-p (nucleus) sampling
-    pub repeat_penalty: f32,  // Repetition penalty
-    pub seed: u32,            // Random seed for reproducibility
+    pub n_ctx: u32,          // Context size
+    pub n_batch: u32,        // Batch size for prompt processing
+    pub n_threads: u32,      // Number of threads
+    pub n_gpu_layers: u32,   // Number of layers to offload to GPU
+    pub temperature: f32,    // Sampling temperature
+    pub top_k: i32,          // Top-k sampling
+    pub top_p: f32,          // Top-p (nucleus) sampling
+    pub repeat_penalty: f32, // Repetition penalty
+    pub seed: u32,           // Random seed for reproducibility
 }
 
 impl Default for GGUFInferenceConfig {
@@ -39,7 +39,7 @@ impl Default for GGUFInferenceConfig {
             n_threads: std::thread::available_parallelism()
                 .map(|n| n.get() as u32)
                 .unwrap_or(CPU_THREAD_POOL_SIZE as u32),
-            n_gpu_layers: 0,  // CPU by default
+            n_gpu_layers: 0, // CPU by default
             temperature: DEFAULT_TEMPERATURE,
             top_k: DEFAULT_TOP_K,
             top_p: DEFAULT_TOP_P,
@@ -95,8 +95,7 @@ impl GGUFInferenceEngine {
         tracing::info!("Loading GGUF model from: {:?}", path);
 
         // Configure model parameters
-        let model_params = LlamaModelParams::default()
-            .with_n_gpu_layers(n_gpu_layers);
+        let model_params = LlamaModelParams::default().with_n_gpu_layers(n_gpu_layers);
 
         // Load the model
         let model = LlamaModel::load_from_file(&self.backend, path, &model_params)
@@ -136,7 +135,8 @@ impl GGUFInferenceEngine {
         stop_sequences: Vec<String>,
     ) -> Result<GenerationResult> {
         let model_lock = self.model.read().await;
-        let model = model_lock.as_ref()
+        let model = model_lock
+            .as_ref()
             .ok_or_else(|| anyhow!("No model loaded. Call load_model() first."))?;
 
         let config = self.config.read().await.clone();
@@ -149,11 +149,13 @@ impl GGUFInferenceEngine {
             .with_n_threads_batch(config.n_threads as i32);
 
         // Create context
-        let mut ctx = model.new_context(&self.backend, ctx_params)
+        let mut ctx = model
+            .new_context(&self.backend, ctx_params)
             .map_err(|e| anyhow!("Failed to create context: {}", e))?;
 
         // Tokenize prompt
-        let mut tokens = model.str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
+        let mut tokens = model
+            .str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
             .map_err(|e| anyhow!("Failed to tokenize prompt: {}", e))?;
 
         tracing::debug!("Prompt tokenized: {} tokens", tokens.len());
@@ -177,7 +179,9 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 min_required_context,
                 config.n_ctx,
-                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
+                config
+                    .n_ctx
+                    .saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
                 min_required_context + 1
             ));
         }
@@ -205,7 +209,10 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 max_prompt_tokens,
                 max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
-                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32) as usize
+                config
+                    .n_ctx
+                    .saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32)
+                    as usize
             ));
         }
 
@@ -227,7 +234,8 @@ impl GGUFInferenceEngine {
 
         // Add prompt tokens to batch
         for (i, token) in tokens.iter().enumerate() {
-            batch.add(*token, i as i32, &[0], false)
+            batch
+                .add(*token, i as i32, &[0], false)
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
         }
 
@@ -256,28 +264,36 @@ impl GGUFInferenceEngine {
             }
 
             // Convert token to text
-            let piece = model.token_to_str(LlamaToken(next_token), llama_cpp_2::model::Special::Tokenize)
+            let piece = model
+                .token_to_str(
+                    LlamaToken(next_token),
+                    llama_cpp_2::model::Special::Tokenize,
+                )
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
             tokens_generated += 1;
 
             // Check for stop sequences (prioritize longest match at the end)
-            if let Some((matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
+            if let Some((matched_seq, pos)) =
+                self.find_stop_sequence(&generated_text, &stop_sequences)
+            {
                 stop_reason = StopReason::StopSequence;
                 // Remove stop sequence from output
                 generated_text.truncate(pos);
-                tracing::debug!(
-                    "Stop sequence found: '{}' at position {}",
-                    matched_seq,
-                    pos
-                );
+                tracing::debug!("Stop sequence found: '{}' at position {}", matched_seq, pos);
                 break;
             }
 
             // Clear batch and add new token
             batch.clear();
-            batch.add(LlamaToken(next_token), tokens.len() as i32 + tokens_generated as i32, &[0], true)
+            batch
+                .add(
+                    LlamaToken(next_token),
+                    tokens.len() as i32 + tokens_generated as i32,
+                    &[0],
+                    true,
+                )
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
 
             // Decode next token
@@ -320,7 +336,8 @@ impl GGUFInferenceEngine {
         F: FnMut(&str) -> bool, // Return false to stop generation
     {
         let model_lock = self.model.read().await;
-        let model = model_lock.as_ref()
+        let model = model_lock
+            .as_ref()
             .ok_or_else(|| anyhow!("No model loaded. Call load_model() first."))?;
 
         let config = self.config.read().await.clone();
@@ -332,11 +349,13 @@ impl GGUFInferenceEngine {
             .with_n_threads(config.n_threads as i32)
             .with_n_threads_batch(config.n_threads as i32);
 
-        let mut ctx = model.new_context(&self.backend, ctx_params)
+        let mut ctx = model
+            .new_context(&self.backend, ctx_params)
             .map_err(|e| anyhow!("Failed to create context: {}", e))?;
 
         // Tokenize and process prompt
-        let mut tokens = model.str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
+        let mut tokens = model
+            .str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
             .map_err(|e| anyhow!("Failed to tokenize prompt: {}", e))?;
 
         // SECURITY: Validate max_tokens doesn't exceed context size
@@ -358,7 +377,9 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 min_required_context,
                 config.n_ctx,
-                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
+                config
+                    .n_ctx
+                    .saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
                 min_required_context + 1
             ));
         }
@@ -386,7 +407,10 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 max_prompt_tokens,
                 max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
-                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32) as usize
+                config
+                    .n_ctx
+                    .saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32)
+                    as usize
             ));
         }
 
@@ -406,7 +430,8 @@ impl GGUFInferenceEngine {
         let mut batch = LlamaBatch::new(config.n_batch as usize, 1);
 
         for (i, token) in tokens.iter().enumerate() {
-            batch.add(*token, i as i32, &[0], false)
+            batch
+                .add(*token, i as i32, &[0], false)
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
         }
 
@@ -432,7 +457,11 @@ impl GGUFInferenceEngine {
                 break;
             }
 
-            let piece = model.token_to_str(LlamaToken(next_token), llama_cpp_2::model::Special::Tokenize)
+            let piece = model
+                .token_to_str(
+                    LlamaToken(next_token),
+                    llama_cpp_2::model::Special::Tokenize,
+                )
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
@@ -445,20 +474,24 @@ impl GGUFInferenceEngine {
             }
 
             // Check stop sequences (prioritize longest match at the end)
-            if let Some((matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
+            if let Some((matched_seq, pos)) =
+                self.find_stop_sequence(&generated_text, &stop_sequences)
+            {
                 stop_reason = StopReason::StopSequence;
                 // Remove stop sequence from output
                 generated_text.truncate(pos);
-                tracing::debug!(
-                    "Stop sequence found: '{}' at position {}",
-                    matched_seq,
-                    pos
-                );
+                tracing::debug!("Stop sequence found: '{}' at position {}", matched_seq, pos);
                 break;
             }
 
             batch.clear();
-            batch.add(LlamaToken(next_token), tokens.len() as i32 + tokens_generated as i32, &[0], true)
+            batch
+                .add(
+                    LlamaToken(next_token),
+                    tokens.len() as i32 + tokens_generated as i32,
+                    &[0],
+                    true,
+                )
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
 
             ctx.decode(&mut batch)
@@ -477,7 +510,11 @@ impl GGUFInferenceEngine {
             tokens_generated,
             time_ms: elapsed.as_millis(),
             tokens_per_second,
-            stop_reason: if user_stopped { StopReason::MaxTokens } else { stop_reason },
+            stop_reason: if user_stopped {
+                StopReason::MaxTokens
+            } else {
+                stop_reason
+            },
         })
     }
 
@@ -562,7 +599,8 @@ impl GGUFInferenceEngine {
     /// Get model information
     pub async fn get_model_info(&self) -> Result<serde_json::Value> {
         let model_lock = self.model.read().await;
-        let model = model_lock.as_ref()
+        let model = model_lock
+            .as_ref()
             .ok_or_else(|| anyhow!("No model loaded"))?;
 
         let config = self.config.read().await;

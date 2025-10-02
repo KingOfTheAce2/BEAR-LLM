@@ -1,15 +1,15 @@
 // MCP (Model Context Protocol) Server for Local Agent Capabilities
 // This provides tool-use capabilities for the LLM to act as an autonomous agent
 
+use crate::file_processor::FileProcessor;
+use crate::rag_engine::RAGEngine;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tokio::fs;
-use anyhow::Result;
 use std::sync::Arc;
+use tokio::fs;
 use tokio::sync::RwLock;
-use crate::rag_engine::RAGEngine;
-use crate::file_processor::FileProcessor;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tool {
@@ -94,13 +94,14 @@ impl MCPServer {
             description: "Read contents of a file".to_string(),
             parameters: ToolParameters {
                 r#type: "object".to_string(),
-                properties: HashMap::from([
-                    ("path".to_string(), ParameterProperty {
+                properties: HashMap::from([(
+                    "path".to_string(),
+                    ParameterProperty {
                         r#type: "string".to_string(),
                         description: "Path to the file".to_string(),
                         r#enum: None,
-                    }),
-                ]),
+                    },
+                )]),
                 required: vec!["path".to_string()],
             },
         });
@@ -111,16 +112,22 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("path".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Path to the file".to_string(),
-                        r#enum: None,
-                    }),
-                    ("content".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Content to write".to_string(),
-                        r#enum: None,
-                    }),
+                    (
+                        "path".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Path to the file".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "content".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Content to write".to_string(),
+                            r#enum: None,
+                        },
+                    ),
                 ]),
                 required: vec!["path".to_string(), "content".to_string()],
             },
@@ -131,13 +138,14 @@ impl MCPServer {
             description: "List contents of a directory".to_string(),
             parameters: ToolParameters {
                 r#type: "object".to_string(),
-                properties: HashMap::from([
-                    ("path".to_string(), ParameterProperty {
+                properties: HashMap::from([(
+                    "path".to_string(),
+                    ParameterProperty {
                         r#type: "string".to_string(),
                         description: "Path to the directory".to_string(),
                         r#enum: None,
-                    }),
-                ]),
+                    },
+                )]),
                 required: vec!["path".to_string()],
             },
         });
@@ -149,16 +157,22 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("query".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Search query".to_string(),
-                        r#enum: None,
-                    }),
-                    ("limit".to_string(), ParameterProperty {
-                        r#type: "integer".to_string(),
-                        description: "Maximum results to return".to_string(),
-                        r#enum: None,
-                    }),
+                    (
+                        "query".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Search query".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "limit".to_string(),
+                        ParameterProperty {
+                            r#type: "integer".to_string(),
+                            description: "Maximum results to return".to_string(),
+                            r#enum: None,
+                        },
+                    ),
                 ]),
                 required: vec!["query".to_string()],
             },
@@ -170,16 +184,26 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("path".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Path to the file".to_string(),
-                        r#enum: None,
-                    }),
-                    ("format".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "File format".to_string(),
-                        r#enum: Some(vec!["pdf".to_string(), "docx".to_string(), "txt".to_string()]),
-                    }),
+                    (
+                        "path".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Path to the file".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "format".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "File format".to_string(),
+                            r#enum: Some(vec![
+                                "pdf".to_string(),
+                                "docx".to_string(),
+                                "txt".to_string(),
+                            ]),
+                        },
+                    ),
                 ]),
                 required: vec!["path".to_string()],
             },
@@ -192,22 +216,28 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("content".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Contract text".to_string(),
-                        r#enum: None,
-                    }),
-                    ("type".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Type of contract".to_string(),
-                        r#enum: Some(vec![
-                            "employment".to_string(),
-                            "nda".to_string(),
-                            "service".to_string(),
-                            "lease".to_string(),
-                            "purchase".to_string(),
-                        ]),
-                    }),
+                    (
+                        "content".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Contract text".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "type".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Type of contract".to_string(),
+                            r#enum: Some(vec![
+                                "employment".to_string(),
+                                "nda".to_string(),
+                                "service".to_string(),
+                                "lease".to_string(),
+                                "purchase".to_string(),
+                            ]),
+                        },
+                    ),
                 ]),
                 required: vec!["content".to_string()],
             },
@@ -219,16 +249,22 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("case_description".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Description of the case".to_string(),
-                        r#enum: None,
-                    }),
-                    ("jurisdiction".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Legal jurisdiction".to_string(),
-                        r#enum: None,
-                    }),
+                    (
+                        "case_description".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Description of the case".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "jurisdiction".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Legal jurisdiction".to_string(),
+                            r#enum: None,
+                        },
+                    ),
                 ]),
                 required: vec!["case_description".to_string()],
             },
@@ -240,13 +276,14 @@ impl MCPServer {
             description: "Execute SQL query on local database".to_string(),
             parameters: ToolParameters {
                 r#type: "object".to_string(),
-                properties: HashMap::from([
-                    ("query".to_string(), ParameterProperty {
+                properties: HashMap::from([(
+                    "query".to_string(),
+                    ParameterProperty {
                         r#type: "string".to_string(),
                         description: "SQL query (SELECT only in sandbox mode)".to_string(),
                         r#enum: None,
-                    }),
-                ]),
+                    },
+                )]),
                 required: vec!["query".to_string()],
             },
         });
@@ -257,16 +294,22 @@ impl MCPServer {
             parameters: ToolParameters {
                 r#type: "object".to_string(),
                 properties: HashMap::from([
-                    ("code".to_string(), ParameterProperty {
-                        r#type: "string".to_string(),
-                        description: "Python code to execute".to_string(),
-                        r#enum: None,
-                    }),
-                    ("imports".to_string(), ParameterProperty {
-                        r#type: "array".to_string(),
-                        description: "Required Python packages".to_string(),
-                        r#enum: None,
-                    }),
+                    (
+                        "code".to_string(),
+                        ParameterProperty {
+                            r#type: "string".to_string(),
+                            description: "Python code to execute".to_string(),
+                            r#enum: None,
+                        },
+                    ),
+                    (
+                        "imports".to_string(),
+                        ParameterProperty {
+                            r#type: "array".to_string(),
+                            description: "Required Python packages".to_string(),
+                            r#enum: None,
+                        },
+                    ),
                 ]),
                 required: vec!["code".to_string()],
             },
@@ -304,7 +347,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_read_file(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let path = params["path"].as_str()
+        let path = params["path"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
 
         // Security check for sandboxed mode
@@ -332,9 +376,11 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_write_file(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let path = params["path"].as_str()
+        let path = params["path"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
-        let content = params["content"].as_str()
+        let content = params["content"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing content parameter"))?;
 
         // Security check for sandboxed mode
@@ -362,7 +408,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_list_directory(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let path = params["path"].as_str()
+        let path = params["path"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing path parameter"))?;
 
         if self.sandboxed && !self.is_path_allowed(path) {
@@ -390,7 +437,7 @@ impl MCPServer {
                     result: serde_json::json!({ "files": files }),
                     error: None,
                 })
-            },
+            }
             Err(e) => Ok(ToolResult {
                 success: false,
                 result: serde_json::Value::Null,
@@ -401,7 +448,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_search_documents(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let query = params["query"].as_str()
+        let query = params["query"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing query parameter"))?;
         let limit = params["limit"].as_u64().unwrap_or(10) as usize;
 
@@ -410,25 +458,30 @@ impl MCPServer {
             let rag = rag_engine.read().await;
             match rag.search(query, Some(limit)).await {
                 Ok(results) => {
-                    let formatted_results: Vec<serde_json::Value> = results.iter().map(|doc| {
-                        let content = &doc.content;
+                    let formatted_results: Vec<serde_json::Value> = results
+                        .iter()
+                        .map(|doc| {
+                            let content = &doc.content;
 
-                        let title = doc.metadata.get("title")
-                            .and_then(|t| t.as_str())
-                            .or_else(|| doc.metadata.get("filename").and_then(|f| f.as_str()))
-                            .unwrap_or("Document");
+                            let title = doc
+                                .metadata
+                                .get("title")
+                                .and_then(|t| t.as_str())
+                                .or_else(|| doc.metadata.get("filename").and_then(|f| f.as_str()))
+                                .unwrap_or("Document");
 
-                        serde_json::json!({
-                            "title": title,
-                            "snippet": if content.len() > 200 {
-                                format!("{}...", &content[..200])
-                            } else {
-                                content.to_string()
-                            },
-                            "relevance": 0.85,
-                            "metadata": doc
+                            serde_json::json!({
+                                "title": title,
+                                "snippet": if content.len() > 200 {
+                                    format!("{}...", &content[..200])
+                                } else {
+                                    content.to_string()
+                                },
+                                "relevance": 0.85,
+                                "metadata": doc
+                            })
                         })
-                    }).collect();
+                        .collect();
 
                     Ok(ToolResult {
                         success: true,
@@ -444,7 +497,7 @@ impl MCPServer {
                     success: false,
                     result: serde_json::Value::Null,
                     error: Some(format!("Search failed: {}", e)),
-                })
+                }),
             }
         } else {
             // Fallback response when RAG engine is not available
@@ -467,17 +520,17 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_extract_text(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let file_path = params["file_path"].as_str()
+        let file_path = params["file_path"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing file_path parameter"))?;
 
-        let file_type = params["file_type"].as_str()
-            .unwrap_or_else(|| {
-                // Extract file type from extension
-                std::path::Path::new(file_path)
-                    .extension()
-                    .and_then(|ext| ext.to_str())
-                    .unwrap_or("txt")
-            });
+        let file_type = params["file_type"].as_str().unwrap_or_else(|| {
+            // Extract file type from extension
+            std::path::Path::new(file_path)
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .unwrap_or("txt")
+        });
 
         if let Some(processor) = &self.file_processor {
             match processor.process_file(file_path, file_type).await {
@@ -502,7 +555,7 @@ impl MCPServer {
                     success: false,
                     result: serde_json::Value::Null,
                     error: Some(format!("Text extraction failed: {}", e)),
-                })
+                }),
             }
         } else {
             // Fallback when file processor is not available
@@ -521,7 +574,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_analyze_contract(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let content = params["content"].as_str()
+        let content = params["content"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing content parameter"))?;
 
         let contract_type = params["contract_type"].as_str().unwrap_or("general");
@@ -538,7 +592,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_find_precedents(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let _case_description = params["case_description"].as_str()
+        let _case_description = params["case_description"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing case_description parameter"))?;
 
         // Search legal precedents and case law database
@@ -560,7 +615,8 @@ impl MCPServer {
 
     #[allow(dead_code)]
     async fn handle_execute_sql(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let _query = params["query"].as_str()
+        let _query = params["query"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing query parameter"))?;
 
         // 🚨 SECURITY: SQL execution is DISABLED for safety
@@ -594,14 +650,16 @@ impl MCPServer {
             error: Some(
                 "SQL execution is disabled for security. \
                 This feature requires read-only database connections and query validation. \
-                Contact system administrator to enable.".to_string()
+                Contact system administrator to enable."
+                    .to_string(),
             ),
         })
     }
 
     #[allow(dead_code)]
     async fn handle_run_python(&self, params: serde_json::Value) -> Result<ToolResult> {
-        let _code = params["code"].as_str()
+        let _code = params["code"]
+            .as_str()
             .ok_or_else(|| anyhow::anyhow!("Missing code parameter"))?;
 
         // 🚨 SECURITY: Python execution is DISABLED for safety
@@ -632,7 +690,8 @@ impl MCPServer {
             error: Some(
                 "Python execution is disabled for security. \
                 This feature requires containerized sandboxing. \
-                Contact system administrator to enable.".to_string()
+                Contact system administrator to enable."
+                    .to_string(),
             ),
         })
     }
@@ -660,7 +719,8 @@ impl MCPServer {
                 Err(e) => {
                     tracing::warn!(
                         "Allowed path canonicalization failed for {:?}: {}",
-                        allowed, e
+                        allowed,
+                        e
                     );
                     continue; // Skip invalid allowed paths
                 }
@@ -701,7 +761,9 @@ impl MCPServer {
         let content_lower = content.to_lowercase();
 
         // Extract dates (basic patterns)
-        if let Ok(date_regex) = regex::Regex::new(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b") {
+        if let Ok(date_regex) =
+            regex::Regex::new(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b")
+        {
             for mat in date_regex.find_iter(content) {
                 dates.push(mat.as_str().to_string());
             }
@@ -710,30 +772,64 @@ impl MCPServer {
         // Identify key contract terms based on type
         match contract_type {
             "employment" => {
-                if content_lower.contains("salary") { key_terms.push("Salary/Compensation".to_string()); }
-                if content_lower.contains("vacation") || content_lower.contains("pto") { key_terms.push("Paid Time Off".to_string()); }
-                if content_lower.contains("termination") { key_terms.push("Termination Clause".to_string()); }
-                if content_lower.contains("non-compete") { key_terms.push("Non-Compete Agreement".to_string()); }
-                if content_lower.contains("confidentiality") { key_terms.push("Confidentiality Agreement".to_string()); }
+                if content_lower.contains("salary") {
+                    key_terms.push("Salary/Compensation".to_string());
+                }
+                if content_lower.contains("vacation") || content_lower.contains("pto") {
+                    key_terms.push("Paid Time Off".to_string());
+                }
+                if content_lower.contains("termination") {
+                    key_terms.push("Termination Clause".to_string());
+                }
+                if content_lower.contains("non-compete") {
+                    key_terms.push("Non-Compete Agreement".to_string());
+                }
+                if content_lower.contains("confidentiality") {
+                    key_terms.push("Confidentiality Agreement".to_string());
+                }
             }
             "service" => {
-                if content_lower.contains("payment") { key_terms.push("Payment Terms".to_string()); }
-                if content_lower.contains("deliverable") { key_terms.push("Deliverables".to_string()); }
-                if content_lower.contains("warranty") { key_terms.push("Warranty Provisions".to_string()); }
-                if content_lower.contains("liability") { key_terms.push("Liability Limitations".to_string()); }
+                if content_lower.contains("payment") {
+                    key_terms.push("Payment Terms".to_string());
+                }
+                if content_lower.contains("deliverable") {
+                    key_terms.push("Deliverables".to_string());
+                }
+                if content_lower.contains("warranty") {
+                    key_terms.push("Warranty Provisions".to_string());
+                }
+                if content_lower.contains("liability") {
+                    key_terms.push("Liability Limitations".to_string());
+                }
             }
             "purchase" => {
-                if content_lower.contains("price") || content_lower.contains("cost") { key_terms.push("Purchase Price".to_string()); }
-                if content_lower.contains("delivery") { key_terms.push("Delivery Terms".to_string()); }
-                if content_lower.contains("inspection") { key_terms.push("Inspection Rights".to_string()); }
-                if content_lower.contains("title") { key_terms.push("Title Transfer".to_string()); }
+                if content_lower.contains("price") || content_lower.contains("cost") {
+                    key_terms.push("Purchase Price".to_string());
+                }
+                if content_lower.contains("delivery") {
+                    key_terms.push("Delivery Terms".to_string());
+                }
+                if content_lower.contains("inspection") {
+                    key_terms.push("Inspection Rights".to_string());
+                }
+                if content_lower.contains("title") {
+                    key_terms.push("Title Transfer".to_string());
+                }
             }
             _ => {
                 // General contract analysis
-                if content_lower.contains("payment") { key_terms.push("Payment Obligations".to_string()); }
-                if content_lower.contains("termination") { key_terms.push("Termination Provisions".to_string()); }
-                if content_lower.contains("liability") { key_terms.push("Liability Terms".to_string()); }
-                if content_lower.contains("confidential") { key_terms.push("Confidentiality".to_string()); }
+                if content_lower.contains("payment") {
+                    key_terms.push("Payment Obligations".to_string());
+                }
+                if content_lower.contains("termination") {
+                    key_terms.push("Termination Provisions".to_string());
+                }
+                if content_lower.contains("liability") {
+                    key_terms.push("Liability Terms".to_string());
+                }
+                if content_lower.contains("confidential") {
+                    key_terms.push("Confidentiality".to_string());
+                }
             }
         }
 
@@ -755,7 +851,10 @@ impl MCPServer {
         }
 
         // Extract obligations
-        if content_lower.contains("shall") || content_lower.contains("must") || content_lower.contains("required") {
+        if content_lower.contains("shall")
+            || content_lower.contains("must")
+            || content_lower.contains("required")
+        {
             obligations.push("Mandatory performance obligations identified".to_string());
         }
         if content_lower.contains("insurance") {
@@ -766,18 +865,24 @@ impl MCPServer {
         }
 
         // Extract payment terms
-        if content_lower.contains("net 30") { payment_terms.push("Net 30 payment terms".to_string()); }
-        if content_lower.contains("net 60") { payment_terms.push("Net 60 payment terms".to_string()); }
+        if content_lower.contains("net 30") {
+            payment_terms.push("Net 30 payment terms".to_string());
+        }
+        if content_lower.contains("net 60") {
+            payment_terms.push("Net 60 payment terms".to_string());
+        }
         if content_lower.contains("advance") || content_lower.contains("upfront") {
             payment_terms.push("Advance payment required".to_string());
         }
 
         // Try to identify parties (basic heuristic)
         let lines: Vec<&str> = content.lines().collect();
-        for line in lines.iter().take(20) { // Check first 20 lines
-            if line.to_lowercase().contains("party") ||
-               line.to_lowercase().contains("company") ||
-               line.to_lowercase().contains("corporation") {
+        for line in lines.iter().take(20) {
+            // Check first 20 lines
+            if line.to_lowercase().contains("party")
+                || line.to_lowercase().contains("company")
+                || line.to_lowercase().contains("corporation")
+            {
                 let clean_line = line.trim();
                 if !clean_line.is_empty() && clean_line.len() < 100 {
                     parties.push(clean_line.to_string());
@@ -789,7 +894,7 @@ impl MCPServer {
         let risk_score = match risks.len() {
             0..=1 => "Low",
             2..=3 => "Medium",
-            _ => "High"
+            _ => "High",
         };
 
         serde_json::json!({

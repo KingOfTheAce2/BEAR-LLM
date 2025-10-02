@@ -1,10 +1,10 @@
-use tauri::State;
-use std::sync::Mutex;
-use std::path::PathBuf;
 use crate::ai_transparency::{
-    ModelCardFetcher, ModelRegistry, ModelCardParser, DisclaimerGenerator,
-    GenericDisclaimerGenerator, ModelDisclaimer, GenericDisclaimer,
+    DisclaimerGenerator, GenericDisclaimer, GenericDisclaimerGenerator, ModelCardFetcher,
+    ModelCardParser, ModelDisclaimer, ModelRegistry,
 };
+use std::path::PathBuf;
+use std::sync::Mutex;
+use tauri::State;
 
 pub struct ModelTransparencyState {
     fetcher: Mutex<ModelCardFetcher>,
@@ -63,10 +63,8 @@ pub async fn get_model_info(
         let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
         match fetcher.fetch_model_card(model_id).await {
             Ok(cached_card) => {
-                let model_card = ModelCardParser::parse(
-                    model_id.clone(),
-                    &cached_card.readme_content,
-                );
+                let model_card =
+                    ModelCardParser::parse(model_id.clone(), &cached_card.readme_content);
                 let disclaimer = DisclaimerGenerator::generate(&model_card);
 
                 return Ok(ModelInfo {
@@ -79,7 +77,8 @@ pub async fn get_model_info(
             }
             Err(_) => {
                 // Fallback to offline disclaimer
-                let generic_disclaimer = GenericDisclaimerGenerator::generate_offline_disclaimer(&display_name);
+                let generic_disclaimer =
+                    GenericDisclaimerGenerator::generate_offline_disclaimer(&display_name);
 
                 return Ok(ModelInfo {
                     filename,
@@ -151,9 +150,7 @@ pub async fn clear_model_cache(
 
 /// Clear all cached model cards
 #[tauri::command]
-pub async fn clear_all_model_cache(
-    state: State<'_, ModelTransparencyState>,
-) -> Result<(), String> {
+pub async fn clear_all_model_cache(state: State<'_, ModelTransparencyState>) -> Result<(), String> {
     let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
     fetcher.clear_all_cache()
 }

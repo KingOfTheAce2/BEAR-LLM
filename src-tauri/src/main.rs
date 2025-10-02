@@ -2,37 +2,37 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Duration;
 use std::env;
 use std::path::PathBuf;
-use tauri::{State, Emitter};
+use std::sync::Arc;
+use std::time::Duration;
+use tauri::{Emitter, State};
 use tokio::sync::RwLock;
 
 // Core AI modules
+mod gguf_inference;
+mod llm_manager;
 mod pii_detector;
 mod rag_engine;
-mod llm_manager;
-mod gguf_inference;
 
 // Core modules
+mod commands;
+mod constants;
+mod database;
+mod file_processor;
+mod hardware_detector;
+mod hardware_monitor;
+mod huggingface_api;
+mod mcp_server;
+mod model_manager;
 mod presidio_bridge;
 mod presidio_service;
-mod setup_manager;
-mod utils;
-mod constants;
-mod hardware_monitor;
-mod file_processor;
-mod system_monitor;
-mod commands;
-mod database;
-mod mcp_server;
-mod hardware_detector;
-mod huggingface_api;
-mod model_manager;
 mod process_helper;
 mod rate_limiter;
+mod setup_manager;
 mod system;
+mod system_monitor;
+mod utils;
 
 // GDPR Compliance module
 mod compliance;
@@ -49,23 +49,23 @@ mod scheduler;
 // Import commands - removed non-existent commands
 
 // Use core AI modules
+use llm_manager::LLMManager;
 use pii_detector::PIIDetector;
 use rag_engine::RAGEngine;
-use llm_manager::LLMManager;
 
 // Use other modules
+use file_processor::FileProcessor;
+use hardware_monitor::HardwareMonitor;
 use presidio_bridge::PresidioBridge;
 use setup_manager::SetupManager;
-use hardware_monitor::HardwareMonitor;
-use file_processor::FileProcessor;
 // DatabaseManager is internal to the database module
-use mcp_server::{MCPServer, AgentOrchestrator};
-use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
-use compliance::ComplianceManager;
-use rate_limiter::RateLimiter;
-use middleware::{ConsentGuard, ConsentGuardBuilder};
-use scheduler::{RetentionScheduler, SchedulerHandle};
 use bear_ai_llm::commands::transparency_commands::TransparencyState;
+use compliance::ComplianceManager;
+use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
+use mcp_server::{AgentOrchestrator, MCPServer};
+use middleware::{ConsentGuard, ConsentGuardBuilder};
+use rate_limiter::RateLimiter;
+use scheduler::{RetentionScheduler, SchedulerHandle};
 
 // SECURITY FIX: Use tempfile crate for atomic temporary file creation
 // This prevents race conditions where file creation happens after validation
@@ -107,11 +107,13 @@ impl TempFileGuard {
             .map_err(|e| format!("Failed to create secure temporary file: {}", e))?;
 
         // Write content to the temporary file
-        temp_file.write_all(content)
+        temp_file
+            .write_all(content)
             .map_err(|e| format!("Failed to write to temporary file: {}", e))?;
 
         // Flush to ensure all data is written
-        temp_file.flush()
+        temp_file
+            .flush()
             .map_err(|e| format!("Failed to flush temporary file: {}", e))?;
 
         let path = temp_file.path().to_path_buf();
@@ -138,7 +140,8 @@ impl TempFileGuard {
         if let Some(temp_file) = self.temp_file.take() {
             // Persist the file (prevents automatic deletion)
             let persisted_path = temp_file.into_temp_path();
-            let final_path = persisted_path.keep()
+            let final_path = persisted_path
+                .keep()
                 .map_err(|e| format!("Failed to persist temporary file: {}", e))?;
             Ok(final_path)
         } else {
@@ -249,7 +252,8 @@ async fn get_resource_limits(state: State<'_, AppState>) -> Result<serde_json::V
 #[tauri::command]
 async fn check_resource_limits(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let monitor = state.hardware_monitor.read().await;
-    let status = monitor.check_resource_limits()
+    let status = monitor
+        .check_resource_limits()
         .await
         .map_err(|e| e.to_string())?;
 
@@ -306,9 +310,13 @@ async fn process_document(
     file_type: String,
 ) -> Result<ProcessedDocument, String> {
     // Rate limit check
-    state.rate_limiter.check_rate_limit(&format!("process_document:{}", file_path)).await?;
+    state
+        .rate_limiter
+        .check_rate_limit(&format!("process_document:{}", file_path))
+        .await?;
 
-    let content = state.file_processor
+    let content = state
+        .file_processor
         .process_file(&file_path, &file_type)
         .await
         .map_err(|e| e.to_string())?;
@@ -321,10 +329,16 @@ async fn process_document(
 
     // Add to RAG engine
     let rag = state.rag_engine.write().await;
-    let doc_id = rag.add_document(&cleaned_content, serde_json::json!({
-        "filename": file_path.clone(),
-        "file_type": file_type.clone()
-    })).await.map_err(|e| e.to_string())?;
+    let doc_id = rag
+        .add_document(
+            &cleaned_content,
+            serde_json::json!({
+                "filename": file_path.clone(),
+                "file_type": file_type.clone()
+            }),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(ProcessedDocument {
         id: doc_id,
@@ -343,7 +357,10 @@ async fn send_message(
     model_name: String,
 ) -> Result<String, String> {
     // Rate limit check - use generic key for now (in production, use actual user/session ID)
-    state.rate_limiter.check_rate_limit("send_message").await
+    state
+        .rate_limiter
+        .check_rate_limit("send_message")
+        .await
         .map_err(|e| {
             tracing::warn!("Rate limit exceeded for send_message");
             e
@@ -353,11 +370,15 @@ async fn send_message(
     let mut hw_monitor = state.hardware_monitor.write().await;
     if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
         tracing::warn!("System resources critically high during send_message");
-        return Err("System resources are critically high. Please wait before sending another message.".to_string());
+        return Err(
+            "System resources are critically high. Please wait before sending another message."
+                .to_string(),
+        );
     }
 
     // Enforce resource limits before proceeding
-    hw_monitor.enforce_resource_limits("send_message")
+    hw_monitor
+        .enforce_resource_limits("send_message")
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "Resource limits exceeded in send_message");
@@ -379,7 +400,8 @@ async fn send_message(
         .await
         .map_err(|e| e.to_string())?;
 
-    let result = llm.generate(&cleaned_message, None)
+    let result = llm
+        .generate(&cleaned_message, None)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -387,16 +409,14 @@ async fn send_message(
 }
 
 #[tauri::command]
-async fn detect_hardware(
-    state: State<'_, AppState>
-) -> Result<HardwareSpecs, String> {
+async fn detect_hardware(state: State<'_, AppState>) -> Result<HardwareSpecs, String> {
     let mut detector = state.hardware_detector.write().await;
     detector.detect_hardware().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn get_model_recommendations(
-    state: State<'_, AppState>
+    state: State<'_, AppState>,
 ) -> Result<Vec<ModelRecommendation>, String> {
     let mut detector = state.hardware_detector.write().await;
     let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
@@ -404,9 +424,7 @@ async fn get_model_recommendations(
 }
 
 #[tauri::command]
-async fn get_system_summary(
-    state: State<'_, AppState>
-) -> Result<String, String> {
+async fn get_system_summary(state: State<'_, AppState>) -> Result<String, String> {
     let mut detector = state.hardware_detector.write().await;
     let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
     Ok(detector.get_system_summary(&hardware))
@@ -415,7 +433,7 @@ async fn get_system_summary(
 #[tauri::command]
 async fn estimate_model_performance(
     state: State<'_, AppState>,
-    model_size_gb: f64
+    model_size_gb: f64,
 ) -> Result<String, String> {
     let mut detector = state.hardware_detector.write().await;
     let hardware = detector.detect_hardware().map_err(|e| e.to_string())?;
@@ -430,23 +448,28 @@ async fn search_knowledge_base(
     limit: usize,
 ) -> Result<Vec<serde_json::Value>, String> {
     let detector = state.pii_detector.read().await;
-    let cleaned_query = detector.redact_pii(&query)
+    let cleaned_query = detector
+        .redact_pii(&query)
         .await
         .map_err(|e| e.to_string())?;
 
     let rag = state.rag_engine.read().await;
-    let results = rag.search(&cleaned_query, Some(limit))
+    let results = rag
+        .search(&cleaned_query, Some(limit))
         .await
         .map_err(|e| e.to_string())?;
 
     // Convert to JSON
-    let json_results = results.into_iter()
-        .map(|r| serde_json::json!({
-            "document_id": r.document_id,
-            "content": r.content,
-            "score": r.score,
-            "metadata": r.metadata
-        }))
+    let json_results = results
+        .into_iter()
+        .map(|r| {
+            serde_json::json!({
+                "document_id": r.document_id,
+                "content": r.content,
+                "score": r.score,
+                "metadata": r.metadata
+            })
+        })
         .collect();
 
     Ok(json_results)
@@ -473,9 +496,7 @@ async fn add_to_knowledge_base(
 
 // List models using new LLM manager
 #[tauri::command]
-async fn list_available_models(
-    state: State<'_, AppState>,
-) -> Result<Vec<String>, String> {
+async fn list_available_models(state: State<'_, AppState>) -> Result<Vec<String>, String> {
     let llm = state.llm_manager.read().await;
     let models = llm.list_models().await;
     Ok(models.into_iter().map(|(name, _, _)| name).collect())
@@ -483,10 +504,7 @@ async fn list_available_models(
 
 // Download model using new LLM manager
 #[tauri::command]
-async fn download_model(
-    state: State<'_, AppState>,
-    model_name: String,
-) -> Result<String, String> {
+async fn download_model(state: State<'_, AppState>, model_name: String) -> Result<String, String> {
     let llm = state.llm_manager.read().await;
     llm.ensure_model_ready(&model_name)
         .await
@@ -513,14 +531,16 @@ async fn rag_search(
     max_results: usize,
 ) -> Result<serde_json::Value, String> {
     let detector = state.pii_detector.read().await;
-    let cleaned_query = detector.redact_pii(&query)
+    let cleaned_query = detector
+        .redact_pii(&query)
         .await
         .map_err(|e| e.to_string())?;
 
     let rag = state.rag_engine.read().await;
 
     // Agentic search delegates to standard RAG search
-    let results = rag.search(&cleaned_query, Some(max_results))
+    let results = rag
+        .search(&cleaned_query, Some(max_results))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -550,22 +570,29 @@ async fn upload_document(
 
     // Process with PII detection
     let detector = state.pii_detector.read().await;
-    let cleaned_content = detector.redact_pii(&content_str)
+    let cleaned_content = detector
+        .redact_pii(&content_str)
         .await
         .map_err(|e| e.to_string())?;
 
     // Store in database
     let db = state.database_manager.read().await;
     let file_type = filename.split('.').last().unwrap_or("txt");
-    let doc_id = db.store_document(&filename, &cleaned_content, file_type)
+    let doc_id = db
+        .store_document(&filename, &cleaned_content, file_type)
         .map_err(|e| e.to_string())?;
 
     // Add to enhanced RAG engine
     let rag = state.rag_engine.write().await;
-    rag.add_document(&cleaned_content, serde_json::json!({
-        "filename": filename,
-        "document_id": doc_id
-    })).await.map_err(|e| e.to_string())?;
+    rag.add_document(
+        &cleaned_content,
+        serde_json::json!({
+            "filename": filename,
+            "document_id": doc_id
+        }),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     let chunk_count = (cleaned_content.len() / 512).max(1);
 
@@ -590,8 +617,12 @@ async fn analyze_document_pii(
         let temp_guard = TempFileGuard::create_with_content(&filename, &content)?;
 
         // Process the file - path is guaranteed to exist and be secure
-        let result = state.file_processor
-            .process_file(temp_guard.path().to_str().ok_or("Invalid temp path")?, file_type)
+        let result = state
+            .file_processor
+            .process_file(
+                temp_guard.path().to_str().ok_or("Invalid temp path")?,
+                file_type,
+            )
             .await
             .unwrap_or_else(|_| String::from_utf8_lossy(&content).to_string());
 
@@ -611,11 +642,13 @@ async fn analyze_document_pii(
     };
 
     let detector = state.pii_detector.read().await;
-    let detections = detector.detect_pii(&original_text)
+    let detections = detector
+        .detect_pii(&original_text)
         .await
         .map_err(|e| e.to_string())?;
 
-    let cleaned_text = detector.redact_pii(&original_text)
+    let cleaned_text = detector
+        .redact_pii(&original_text)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -640,9 +673,7 @@ async fn analyze_document_pii(
 }
 
 #[tauri::command]
-async fn get_database_stats(
-    state: State<'_, AppState>,
-) -> Result<serde_json::Value, String> {
+async fn get_database_stats(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let db = state.database_manager.read().await;
     db.get_document_statistics().map_err(|e| e.to_string())
 }
@@ -661,7 +692,9 @@ async fn check_first_run(state: State<'_, AppState>) -> Result<bool, String> {
     let presidio_available = pii_detector.is_presidio_available().await;
 
     if !presidio_available {
-        tracing::warn!("⚠️  User starting application without Presidio - privacy protection limited");
+        tracing::warn!(
+            "⚠️  User starting application without Presidio - privacy protection limited"
+        );
     }
 
     Ok(is_first)
@@ -677,9 +710,14 @@ async fn run_initial_setup(
 
     // Update config if provided
     if let Some(config_val) = config {
-        if let Ok(setup_config) = serde_json::from_value::<crate::setup_manager::SetupConfig>(config_val) {
+        if let Ok(setup_config) =
+            serde_json::from_value::<crate::setup_manager::SetupConfig>(config_val)
+        {
             let setup = state.setup_manager.read().await;
-            setup.update_config(setup_config).await.map_err(|e| e.to_string())?;
+            setup
+                .update_config(setup_config)
+                .await
+                .map_err(|e| e.to_string())?;
         }
     }
 
@@ -708,7 +746,10 @@ async fn run_initial_setup(
 #[tauri::command]
 async fn mark_setup_complete(state: State<'_, AppState>) -> Result<bool, String> {
     let setup = state.setup_manager.read().await;
-    setup.mark_setup_complete_only().await.map_err(|e| e.to_string())?;
+    setup
+        .mark_setup_complete_only()
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(true)
 }
 
@@ -722,7 +763,10 @@ async fn get_setup_status(state: State<'_, AppState>) -> Result<serde_json::Valu
     let presidio_available = pii_detector.is_presidio_available().await;
 
     if let Some(obj) = status.as_object_mut() {
-        obj.insert("presidio_installed".to_string(), serde_json::json!(presidio_available));
+        obj.insert(
+            "presidio_installed".to_string(),
+            serde_json::json!(presidio_available),
+        );
         if !presidio_available {
             obj.insert("warning".to_string(), serde_json::json!(
                 "⚠️ Presidio not installed - Using rudimentary PII detection. For enterprise-grade protection, install Microsoft Presidio."
@@ -745,7 +789,10 @@ async fn detect_pii_presidio(
     if !bridge.check_installation_status().await.unwrap_or(false) {
         // Fall back to built-in detector
         let detector = state.pii_detector.read().await;
-        let entities = detector.detect_pii(&text).await.map_err(|e| e.to_string())?;
+        let entities = detector
+            .detect_pii(&text)
+            .await
+            .map_err(|e| e.to_string())?;
 
         return Ok(serde_json::json!({
             "entities": entities,
@@ -764,7 +811,10 @@ async fn detect_pii_presidio(
         Err(e) => {
             // Fall back to built-in detector on error
             let detector = state.pii_detector.read().await;
-            let entities = detector.detect_pii(&text).await.map_err(|e| e.to_string())?;
+            let entities = detector
+                .detect_pii(&text)
+                .await
+                .map_err(|e| e.to_string())?;
 
             Ok(serde_json::json!({
                 "entities": entities,
@@ -786,7 +836,10 @@ async fn anonymize_pii_presidio(
     let entities = bridge.detect_pii(&text).await.map_err(|e| e.to_string())?;
 
     // Then anonymize
-    let anonymized = bridge.anonymize(&text, entities.clone()).await.map_err(|e| e.to_string())?;
+    let anonymized = bridge
+        .anonymize(&text, entities.clone())
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
         "original": text,
@@ -802,7 +855,10 @@ async fn configure_presidio(
     config: presidio_bridge::PresidioConfig,
 ) -> Result<bool, String> {
     let bridge = state.presidio_bridge.read().await;
-    bridge.update_config(config).await.map_err(|e| e.to_string())?;
+    bridge
+        .update_config(config)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(true)
 }
 
@@ -813,7 +869,8 @@ async fn detect_pii_advanced(
     text: String,
 ) -> Result<serde_json::Value, String> {
     let detector = state.pii_detector.read().await;
-    let entities = detector.detect_pii(&text)
+    let entities = detector
+        .detect_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -830,14 +887,9 @@ async fn detect_pii_advanced(
 }
 
 #[tauri::command]
-async fn redact_pii_advanced(
-    state: State<'_, AppState>,
-    text: String,
-) -> Result<String, String> {
+async fn redact_pii_advanced(state: State<'_, AppState>, text: String) -> Result<String, String> {
     let detector = state.pii_detector.read().await;
-    detector.redact_pii(&text)
-        .await
-        .map_err(|e| e.to_string())
+    detector.redact_pii(&text).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -846,7 +898,8 @@ async fn anonymize_pii_advanced(
     text: String,
 ) -> Result<serde_json::Value, String> {
     let detector = state.pii_detector.read().await;
-    let redacted = detector.redact_pii(&text)
+    let redacted = detector
+        .redact_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -885,7 +938,8 @@ async fn get_pii_statistics(
     text: String,
 ) -> Result<serde_json::Value, String> {
     let detector = state.pii_detector.read().await;
-    let entities = detector.detect_pii(&text)
+    let entities = detector
+        .detect_pii(&text)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -941,21 +995,22 @@ fn main() {
     // Initialize tracing subsystem
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| {
-            if cfg!(debug_assertions) {
-                EnvFilter::new("debug")
-            } else {
-                EnvFilter::new("info")
-            }
-        });
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        if cfg!(debug_assertions) {
+            EnvFilter::new("debug")
+        } else {
+            EnvFilter::new("info")
+        }
+    });
 
     tracing_subscriber::registry()
         .with(env_filter)
-        .with(tracing_subscriber::fmt::layer()
-            .with_target(true)
-            .with_thread_ids(true)
-            .with_line_number(true))
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(true)
+                .with_thread_ids(true)
+                .with_line_number(true),
+        )
         .init();
 
     tracing::info!("BEAR AI starting up...");
@@ -980,7 +1035,10 @@ fn main() {
 
     // Initialize Compliance Manager
     let app_data_dir = dirs::data_local_dir()
-        .map(|mut p| { p.push("bear-ai"); p })
+        .map(|mut p| {
+            p.push("bear-ai");
+            p
+        })
         .unwrap_or_else(|| PathBuf::from("."));
     let db_path = app_data_dir.join("bear_ai.db");
     let compliance_manager = Arc::new(ComplianceManager::new(db_path.clone()));
@@ -992,7 +1050,7 @@ fn main() {
     let consent_guard = Arc::new(
         ConsentGuardBuilder::new(db_path.clone())
             .strict_mode(true) // Enforce up-to-date consent
-            .build()
+            .build(),
     );
 
     // Initialize Retention Scheduler
@@ -1055,12 +1113,16 @@ fn main() {
                 // Check if Presidio is available
                 let presidio_available = pii_detector.is_presidio_available().await;
                 if !presidio_available {
-                    tracing::warn!("╔════════════════════════════════════════════════════════════╗");
+                    tracing::warn!(
+                        "╔════════════════════════════════════════════════════════════╗"
+                    );
                     tracing::warn!("║  WARNING: Presidio Not Installed                          ║");
                     tracing::warn!("║  Using basic PII detection - limited accuracy             ║");
                     tracing::warn!("║  Install Presidio for enterprise-grade protection:        ║");
                     tracing::warn!("║  pip install presidio-analyzer presidio-anonymizer        ║");
-                    tracing::warn!("╚════════════════════════════════════════════════════════════╝");
+                    tracing::warn!(
+                        "╚════════════════════════════════════════════════════════════╝"
+                    );
                 }
             }
             Err(e) => {
@@ -1143,12 +1205,10 @@ fn main() {
             get_resource_usage,
             get_resource_limits,
             check_resource_limits,
-
             // Document processing
             process_document,
             analyze_document_pii,
             upload_document,
-
             // LLM operations
             send_message,
             list_available_models,
@@ -1157,26 +1217,21 @@ fn main() {
             unload_model,
             emergency_stop,
             set_resource_limits,
-
             // Knowledge base
             search_knowledge_base,
             add_to_knowledge_base,
             rag_search,
-
             // Database
             execute_sql_query,
             get_database_stats,
-
             // Hardware detection
             detect_hardware,
             get_model_recommendations,
             get_system_summary,
             estimate_model_performance,
-
             // HuggingFace integration
             download_model_from_huggingface,
             search_huggingface_models,
-
             // Enhanced PII detection
             detect_pii_advanced,
             redact_pii_advanced,
@@ -1184,25 +1239,21 @@ fn main() {
             configure_pii_detection,
             add_custom_pii_recognizer,
             get_pii_statistics,
-
             // Presidio PII detection
             detect_pii_presidio,
             anonymize_pii_presidio,
             configure_presidio,
-
             // Setup management
             check_first_run,
             run_initial_setup,
             mark_setup_complete,
             get_setup_status,
-
             // RAG Model Management
             get_available_rag_models,
             get_active_rag_model,
             switch_rag_model,
             get_rag_config,
             update_rag_config,
-
             // GDPR Compliance
             compliance::commands::check_user_consent,
             compliance::commands::grant_user_consent,
@@ -1234,7 +1285,6 @@ fn main() {
             middleware::commands::grant_all_consents,
             middleware::commands::revoke_all_consents,
             middleware::commands::get_consent_statistics,
-
             // Retention Scheduler Commands
             commands::trigger_retention_cleanup,
             commands::get_scheduler_status,
@@ -1243,7 +1293,6 @@ fn main() {
             commands::apply_default_retention_policies,
             commands::get_last_cleanup_result,
             commands::set_automatic_cleanup,
-
             // AI Transparency
             commands::transparency_commands::get_startup_notice,
             commands::transparency_commands::get_onboarding_notice,
@@ -1260,7 +1309,6 @@ fn main() {
             commands::transparency_commands::acknowledge_disclaimers,
             commands::transparency_commands::get_all_notices,
             commands::transparency_commands::export_transparency_context,
-
             // Model Card Transparency
             commands::get_model_info,
             commands::add_model_mapping,
@@ -1273,7 +1321,6 @@ fn main() {
             commands::get_high_risk_disclaimer,
             commands::format_disclaimer_display,
             commands::format_generic_disclaimer_display,
-
             // PII Detection & Memory Management
             get_memory_info,
             can_use_pii_mode,

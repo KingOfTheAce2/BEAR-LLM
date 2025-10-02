@@ -3,9 +3,9 @@
 
 // FIXME: Consent commands disabled - requires middleware module
 // pub mod consent_commands;
-pub mod transparency_commands;
-pub mod scheduler_commands;
 pub mod model_transparency;
+pub mod scheduler_commands;
+pub mod transparency_commands;
 
 // FIXME: Consent command exports disabled
 // pub use consent_commands::{
@@ -26,8 +26,6 @@ pub mod model_transparency;
 
 // Model transparency commands exported directly from model_transparency module
 pub use model_transparency::{
-    get_high_risk_disclaimer,
-    format_disclaimer_display,
-    format_generic_disclaimer_display,
+    format_disclaimer_display, format_generic_disclaimer_display, get_high_risk_disclaimer,
     ModelTransparencyState,
 };

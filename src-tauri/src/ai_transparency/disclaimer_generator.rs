@@ -37,7 +37,9 @@ impl DisclaimerGenerator {
     /// Extract clean model name from model ID
     fn extract_model_name(model_id: &str) -> String {
         // Extract name after last slash
-        model_id.split('/').last()
+        model_id
+            .split('/')
+            .last()
             .unwrap_or(model_id)
             .replace('-', " ")
             .replace('_', " ")
@@ -70,7 +72,9 @@ impl DisclaimerGenerator {
 
         // Add specific limitations
         if model_card.limitations.is_empty() {
-            warnings.push("• May produce inaccurate or misleading information (hallucinations)".to_string());
+            warnings.push(
+                "• May produce inaccurate or misleading information (hallucinations)".to_string(),
+            );
             warnings.push("• Not suitable for medical, legal, or financial advice".to_string());
             warnings.push("• May have knowledge cutoff date limitations".to_string());
         } else {
@@ -213,7 +217,10 @@ impl DisclaimerGenerator {
         format!(
             "⚠️ {} - {} | Limitations apply. Not for critical decisions.",
             disclaimer.model_name,
-            disclaimer.capabilities.first().unwrap_or(&"AI Model".to_string())
+            disclaimer
+                .capabilities
+                .first()
+                .unwrap_or(&"AI Model".to_string())
         )
     }
 }

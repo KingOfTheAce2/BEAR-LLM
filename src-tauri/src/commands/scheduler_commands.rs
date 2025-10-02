@@ -1,9 +1,9 @@
-use tauri::State;
-use crate::scheduler::{SchedulerHandle, ScheduleConfig, SchedulerStatus, CleanupResult};
-use crate::scheduler::retention_tasks::{RetentionCleanupTask, CleanupPreview};
-use tokio::sync::RwLock;
-use std::sync::Arc;
+use crate::scheduler::retention_tasks::{CleanupPreview, RetentionCleanupTask};
+use crate::scheduler::{CleanupResult, ScheduleConfig, SchedulerHandle, SchedulerStatus};
 use std::path::PathBuf;
+use std::sync::Arc;
+use tauri::State;
+use tokio::sync::RwLock;
 
 /// Trigger manual retention cleanup
 #[tauri::command]
@@ -95,7 +95,10 @@ pub async fn set_automatic_cleanup(
             .update_config(config)
             .map(|_| {
                 if enabled {
-                    format!("Automatic cleanup enabled (every {} hours)", interval_hours.unwrap_or(24))
+                    format!(
+                        "Automatic cleanup enabled (every {} hours)",
+                        interval_hours.unwrap_or(24)
+                    )
                 } else {
                     "Automatic cleanup disabled".to_string()
                 }
@@ -105,4 +108,3 @@ pub async fn set_automatic_cleanup(
         Err("Scheduler not initialized".to_string())
     }
 }
-

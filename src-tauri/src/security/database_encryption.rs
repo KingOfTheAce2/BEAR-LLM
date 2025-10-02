@@ -91,10 +91,7 @@ pub struct EncryptedDatabase {
 
 impl EncryptedDatabase {
     /// Create a new encrypted database instance
-    pub fn new<P: AsRef<Path>>(
-        db_path: P,
-        config: EncryptionConfig,
-    ) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(db_path: P, config: EncryptionConfig) -> Result<Self> {
         let key_manager = Arc::new(KeyManager::new()?);
 
         Ok(Self {
@@ -142,17 +139,17 @@ impl EncryptedDatabase {
 
         // Configure cipher compatibility version
         conn.execute(
-            &format!("PRAGMA cipher_compatibility = {}", self.config.cipher_version),
+            &format!(
+                "PRAGMA cipher_compatibility = {}",
+                self.config.cipher_version
+            ),
             [],
         )
         .context("Failed to set cipher version")?;
 
         // Configure KDF iterations
-        conn.execute(
-            &format!("PRAGMA kdf_iter = {}", self.config.kdf_iter),
-            [],
-        )
-        .context("Failed to set KDF iterations")?;
+        conn.execute(&format!("PRAGMA kdf_iter = {}", self.config.kdf_iter), [])
+            .context("Failed to set KDF iterations")?;
 
         // Configure page size
         conn.execute(
@@ -163,8 +160,10 @@ impl EncryptedDatabase {
 
         // Configure HMAC algorithm
         conn.execute(
-            &format!("PRAGMA cipher_hmac_algorithm = {}",
-                self.config.hmac_algorithm.to_sqlcipher_value()),
+            &format!(
+                "PRAGMA cipher_hmac_algorithm = {}",
+                self.config.hmac_algorithm.to_sqlcipher_value()
+            ),
             [],
         )
         .context("Failed to set HMAC algorithm")?;
@@ -239,8 +238,10 @@ impl EncryptedDatabase {
 
         // Attach unencrypted database
         conn.execute(
-            &format!("ATTACH DATABASE '{}' AS plaintext KEY ''",
-                output_path.as_ref().display()),
+            &format!(
+                "ATTACH DATABASE '{}' AS plaintext KEY ''",
+                output_path.as_ref().display()
+            ),
             [],
         )?;
 
@@ -273,11 +274,7 @@ pub struct DatabaseMigration {
 
 impl DatabaseMigration {
     /// Create a new migration instance
-    pub fn new<P: AsRef<Path>>(
-        source_path: P,
-        target_path: P,
-        config: EncryptionConfig,
-    ) -> Self {
+    pub fn new<P: AsRef<Path>>(source_path: P, target_path: P, config: EncryptionConfig) -> Self {
         Self {
             source_path: source_path.as_ref().to_path_buf(),
             target_path: target_path.as_ref().to_path_buf(),
@@ -298,8 +295,8 @@ impl DatabaseMigration {
         }
 
         // Open source (unencrypted) database
-        let source_conn = Connection::open(&self.source_path)
-            .context("Failed to open source database")?;
+        let source_conn =
+            Connection::open(&self.source_path).context("Failed to open source database")?;
 
         // Create encrypted target database
         let encrypted_db = EncryptedDatabase::new(&self.target_path, self.config.clone())?;
@@ -307,8 +304,11 @@ impl DatabaseMigration {
 
         // Attach encrypted target database
         source_conn.execute(
-            &format!("ATTACH DATABASE '{}' AS encrypted KEY {}",
-                self.target_path.display(), key),
+            &format!(
+                "ATTACH DATABASE '{}' AS encrypted KEY {}",
+                self.target_path.display(),
+                key
+            ),
             [],
         )?;
 
@@ -316,7 +316,8 @@ impl DatabaseMigration {
         encrypted_db.configure_encryption(&source_conn, &key)?;
 
         // Export to encrypted database
-        source_conn.execute("SELECT sqlcipher_export('encrypted')", [])
+        source_conn
+            .execute("SELECT sqlcipher_export('encrypted')", [])
             .context("Failed to export data to encrypted database")?;
 
         // Detach
@@ -335,8 +336,7 @@ impl DatabaseMigration {
 
         // Create backup
         let backup_path = self.source_path.with_extension("db.backup");
-        fs::copy(&self.source_path, &backup_path)
-            .context("Failed to create backup")?;
+        fs::copy(&self.source_path, &backup_path).context("Failed to create backup")?;
 
         // Attempt migration
         match self.migrate() {
@@ -417,11 +417,9 @@ mod tests {
 
         // Query data
         let value: String = conn
-            .query_row(
-                "SELECT value FROM test_data WHERE id = 1",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM test_data WHERE id = 1", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(value, "sensitive data");
 
@@ -431,11 +429,9 @@ mod tests {
         // Reopen and verify data persists
         let conn2 = encrypted_db.connect().unwrap();
         let value2: String = conn2
-            .query_row(
-                "SELECT value FROM test_data WHERE id = 1",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM test_data WHERE id = 1", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(value2, "sensitive data");
     }
@@ -454,11 +450,15 @@ mod tests {
         let result = encrypted_db.connect_with_context(Some("wrong-context"));
 
         // Should fail to verify encryption or read data
-        assert!(result.is_err() || {
-            let conn = result.unwrap();
-            conn.query_row("SELECT COUNT(*) FROM _encryption_meta", [], |row| row.get::<_, i64>(0))
+        assert!(
+            result.is_err() || {
+                let conn = result.unwrap();
+                conn.query_row("SELECT COUNT(*) FROM _encryption_meta", [], |row| {
+                    row.get::<_, i64>(0)
+                })
                 .is_err()
-        });
+            }
+        );
     }
 
     #[test]
@@ -475,19 +475,13 @@ mod tests {
                 [],
             )
             .unwrap();
-            conn.execute(
-                "INSERT INTO test_data (value) VALUES ('test data')",
-                [],
-            )
-            .unwrap();
+            conn.execute("INSERT INTO test_data (value) VALUES ('test data')", [])
+                .unwrap();
         }
 
         // Migrate to encrypted database
-        let migration = DatabaseMigration::new(
-            &source_path,
-            &target_path,
-            EncryptionConfig::default(),
-        );
+        let migration =
+            DatabaseMigration::new(&source_path, &target_path, EncryptionConfig::default());
         migration.migrate().unwrap();
 
         // Verify encrypted database
@@ -495,11 +489,9 @@ mod tests {
         let conn = encrypted_db.connect().unwrap();
 
         let value: String = conn
-            .query_row(
-                "SELECT value FROM test_data WHERE id = 1",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM test_data WHERE id = 1", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(value, "test data");
     }
@@ -519,11 +511,8 @@ mod tests {
             [],
         )
         .unwrap();
-        conn.execute(
-            "INSERT INTO test_data (value) VALUES ('test')",
-            [],
-        )
-        .unwrap();
+        conn.execute("INSERT INTO test_data (value) VALUES ('test')", [])
+            .unwrap();
         drop(conn);
 
         // Export to unencrypted
@@ -532,11 +521,9 @@ mod tests {
         // Verify unencrypted database can be opened without key
         let plain_conn = Connection::open(&unencrypted_path).unwrap();
         let value: String = plain_conn
-            .query_row(
-                "SELECT value FROM test_data WHERE id = 1",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT value FROM test_data WHERE id = 1", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(value, "test");
     }
@@ -547,21 +534,15 @@ mod tests {
 
         // Test high security config
         let high_security_path = temp_dir.path().join("high_security.db");
-        let high_security_db = EncryptedDatabase::new(
-            &high_security_path,
-            EncryptionConfig::high_security(),
-        )
-        .unwrap();
+        let high_security_db =
+            EncryptedDatabase::new(&high_security_path, EncryptionConfig::high_security()).unwrap();
         let conn = high_security_db.create_new().unwrap();
         drop(conn);
 
         // Test performance config
         let performance_path = temp_dir.path().join("performance.db");
-        let performance_db = EncryptedDatabase::new(
-            &performance_path,
-            EncryptionConfig::performance(),
-        )
-        .unwrap();
+        let performance_db =
+            EncryptedDatabase::new(&performance_path, EncryptionConfig::performance()).unwrap();
         let conn = performance_db.create_new().unwrap();
         drop(conn);
 

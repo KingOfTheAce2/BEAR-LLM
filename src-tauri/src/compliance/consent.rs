@@ -1,7 +1,7 @@
-use anyhow::{Result, anyhow};
-use rusqlite::{Connection, params};
-use serde::{Deserialize, Serialize};
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
+use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Consent types for GDPR compliance
@@ -107,24 +107,22 @@ impl ConsentManager {
     pub fn has_consent(&self, user_id: &str, consent_type: &ConsentType) -> Result<bool> {
         let conn = Connection::open(&self.db_path)?;
 
-        let granted: Option<bool> = conn.query_row(
-            "SELECT granted FROM user_consent
+        let granted: Option<bool> = conn
+            .query_row(
+                "SELECT granted FROM user_consent
              WHERE user_id = ?1 AND consent_type = ?2
              AND revoked_at IS NULL
              ORDER BY version DESC LIMIT 1",
-            params![user_id, consent_type.as_str()],
-            |row| row.get(0),
-        ).ok();
+                params![user_id, consent_type.as_str()],
+                |row| row.get(0),
+            )
+            .ok();
 
         Ok(granted.unwrap_or(false))
     }
 
     /// Grant consent for a specific type
-    pub fn grant_consent(
-        &self,
-        user_id: &str,
-        consent_type: &ConsentType
-    ) -> Result<i64> {
+    pub fn grant_consent(&self, user_id: &str, consent_type: &ConsentType) -> Result<i64> {
         let conn = Connection::open(&self.db_path)?;
 
         // Get current version
@@ -132,12 +130,14 @@ impl ConsentManager {
         let consent_text = self.get_consent_text(consent_type, version)?;
 
         // Check if consent already exists
-        let existing: Option<i64> = conn.query_row(
-            "SELECT id FROM user_consent
+        let existing: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM user_consent
              WHERE user_id = ?1 AND consent_type = ?2 AND version = ?3",
-            params![user_id, consent_type.as_str(), version],
-            |row| row.get(0),
-        ).ok();
+                params![user_id, consent_type.as_str(), version],
+                |row| row.get(0),
+            )
+            .ok();
 
         if let Some(id) = existing {
             // Update existing consent
@@ -160,11 +160,7 @@ impl ConsentManager {
     }
 
     /// Revoke consent for a specific type
-    pub fn revoke_consent(
-        &self,
-        user_id: &str,
-        consent_type: &ConsentType
-    ) -> Result<()> {
+    pub fn revoke_consent(&self, user_id: &str, consent_type: &ConsentType) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
         conn.execute(
@@ -186,24 +182,25 @@ impl ConsentManager {
                     version, consent_text, created_at, updated_at
              FROM user_consent
              WHERE user_id = ?1
-             ORDER BY consent_type, version DESC"
+             ORDER BY consent_type, version DESC",
         )?;
 
-        let records = stmt.query_map(params![user_id], |row| {
-            Ok(ConsentRecord {
-                id: row.get(0)?,
-                user_id: row.get(1)?,
-                consent_type: ConsentType::from_str(&row.get::<_, String>(2)?).unwrap(),
-                granted: row.get(3)?,
-                granted_at: row.get::<_, Option<String>>(4)?.map(|s| s.parse().unwrap()),
-                revoked_at: row.get::<_, Option<String>>(5)?.map(|s| s.parse().unwrap()),
-                version: row.get(6)?,
-                consent_text: row.get(7)?,
-                created_at: row.get::<_, String>(8)?.parse().unwrap(),
-                updated_at: row.get::<_, String>(9)?.parse().unwrap(),
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let records = stmt
+            .query_map(params![user_id], |row| {
+                Ok(ConsentRecord {
+                    id: row.get(0)?,
+                    user_id: row.get(1)?,
+                    consent_type: ConsentType::from_str(&row.get::<_, String>(2)?).unwrap(),
+                    granted: row.get(3)?,
+                    granted_at: row.get::<_, Option<String>>(4)?.map(|s| s.parse().unwrap()),
+                    revoked_at: row.get::<_, Option<String>>(5)?.map(|s| s.parse().unwrap()),
+                    version: row.get(6)?,
+                    consent_text: row.get(7)?,
+                    created_at: row.get::<_, String>(8)?.parse().unwrap(),
+                    updated_at: row.get::<_, String>(9)?.parse().unwrap(),
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(records)
     }
@@ -216,20 +213,21 @@ impl ConsentManager {
             "SELECT consent_type, granted, granted_at, revoked_at, version, consent_text
              FROM user_consent
              WHERE user_id = ?1
-             ORDER BY updated_at DESC"
+             ORDER BY updated_at DESC",
         )?;
 
-        let trail: Vec<serde_json::Value> = stmt.query_map(params![user_id], |row| {
-            Ok(serde_json::json!({
-                "consent_type": row.get::<_, String>(1)?,
-                "granted": row.get::<_, bool>(2)?,
-                "granted_at": row.get::<_, Option<String>>(3)?,
-                "revoked_at": row.get::<_, Option<String>>(4)?,
-                "version": row.get::<_, i32>(5)?,
-                "consent_text": row.get::<_, String>(6)?
-            }))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let trail: Vec<serde_json::Value> = stmt
+            .query_map(params![user_id], |row| {
+                Ok(serde_json::json!({
+                    "consent_type": row.get::<_, String>(1)?,
+                    "granted": row.get::<_, bool>(2)?,
+                    "granted_at": row.get::<_, Option<String>>(3)?,
+                    "revoked_at": row.get::<_, Option<String>>(4)?,
+                    "version": row.get::<_, i32>(5)?,
+                    "consent_text": row.get::<_, String>(6)?
+                }))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(serde_json::json!({
             "user_id": user_id,
@@ -278,18 +276,19 @@ impl ConsentManager {
              ORDER BY consent_type, version DESC"
         )?;
 
-        let versions = stmt.query_map([], |row| {
-            Ok(ConsentVersion {
-                id: row.get(0)?,
-                consent_type: ConsentType::from_str(&row.get::<_, String>(1)?).unwrap(),
-                version: row.get(2)?,
-                consent_text: row.get(3)?,
-                effective_date: row.get::<_, String>(4)?.parse().unwrap(),
-                deprecated_date: row.get::<_, Option<String>>(5)?.map(|s| s.parse().unwrap()),
-                created_at: row.get::<_, String>(6)?.parse().unwrap(),
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let versions = stmt
+            .query_map([], |row| {
+                Ok(ConsentVersion {
+                    id: row.get(0)?,
+                    consent_type: ConsentType::from_str(&row.get::<_, String>(1)?).unwrap(),
+                    version: row.get(2)?,
+                    consent_text: row.get(3)?,
+                    effective_date: row.get::<_, String>(4)?.parse().unwrap(),
+                    deprecated_date: row.get::<_, Option<String>>(5)?.map(|s| s.parse().unwrap()),
+                    created_at: row.get::<_, String>(6)?.parse().unwrap(),
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(versions)
     }
@@ -299,13 +298,15 @@ impl ConsentManager {
         let current_version = self.get_current_version(consent_type)?;
 
         let conn = Connection::open(&self.db_path)?;
-        let user_version: Option<i32> = conn.query_row(
-            "SELECT version FROM user_consent
+        let user_version: Option<i32> = conn
+            .query_row(
+                "SELECT version FROM user_consent
              WHERE user_id = ?1 AND consent_type = ?2 AND granted = 1 AND revoked_at IS NULL
              ORDER BY version DESC LIMIT 1",
-            params![user_id, consent_type.as_str()],
-            |row| row.get(0),
-        ).ok();
+                params![user_id, consent_type.as_str()],
+                |row| row.get(0),
+            )
+            .ok();
 
         Ok(user_version.map(|v| v < current_version).unwrap_or(true))
     }
@@ -350,7 +351,8 @@ impl ConsentManager {
     ) -> Result<i64> {
         let conn = Connection::open(&self.db_path)?;
 
-        let consent_text = self.get_consent_text(consent_type, self.get_current_version(consent_type)?)?;
+        let consent_text =
+            self.get_consent_text(consent_type, self.get_current_version(consent_type)?)?;
 
         conn.execute(
             "INSERT INTO consent_log (user_id, consent_type, version, granted, ip_address, user_agent, consent_text, withdrawal_reason)
@@ -372,7 +374,11 @@ impl ConsentManager {
 
     /// Get granular consent log for a user
     /// Returns detailed history of all consent actions
-    pub fn get_granular_consent_log(&self, user_id: &str, limit: usize) -> Result<Vec<serde_json::Value>> {
+    pub fn get_granular_consent_log(
+        &self,
+        user_id: &str,
+        limit: usize,
+    ) -> Result<Vec<serde_json::Value>> {
         let conn = Connection::open(&self.db_path)?;
 
         let mut stmt = conn.prepare(
@@ -383,20 +389,21 @@ impl ConsentManager {
              LIMIT ?2"
         )?;
 
-        let logs: Vec<serde_json::Value> = stmt.query_map(params![user_id, limit], |row| {
-            Ok(serde_json::json!({
-                "id": row.get::<_, i64>(0)?,
-                "user_id": row.get::<_, String>(1)?,
-                "consent_type": row.get::<_, String>(2)?,
-                "version": row.get::<_, String>(3)?,
-                "granted": row.get::<_, bool>(4)?,
-                "timestamp": row.get::<_, String>(5)?,
-                "ip_address": row.get::<_, Option<String>>(6)?,
-                "user_agent": row.get::<_, Option<String>>(7)?,
-                "withdrawal_reason": row.get::<_, Option<String>>(8)?
-            }))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let logs: Vec<serde_json::Value> = stmt
+            .query_map(params![user_id, limit], |row| {
+                Ok(serde_json::json!({
+                    "id": row.get::<_, i64>(0)?,
+                    "user_id": row.get::<_, String>(1)?,
+                    "consent_type": row.get::<_, String>(2)?,
+                    "version": row.get::<_, String>(3)?,
+                    "granted": row.get::<_, bool>(4)?,
+                    "timestamp": row.get::<_, String>(5)?,
+                    "ip_address": row.get::<_, Option<String>>(6)?,
+                    "user_agent": row.get::<_, Option<String>>(7)?,
+                    "withdrawal_reason": row.get::<_, Option<String>>(8)?
+                }))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(logs)
     }
@@ -433,11 +440,8 @@ impl ConsentManager {
     pub fn get_consent_statistics(&self) -> Result<serde_json::Value> {
         let conn = Connection::open(&self.db_path)?;
 
-        let total_consents: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM consent_log",
-            [],
-            |row| row.get(0),
-        )?;
+        let total_consents: i64 =
+            conn.query_row("SELECT COUNT(*) FROM consent_log", [], |row| row.get(0))?;
 
         let granted_count: i64 = conn.query_row(
             "SELECT COUNT(*) FROM consent_log WHERE granted = 1",
@@ -456,17 +460,18 @@ impl ConsentManager {
             "SELECT consent_type, granted, COUNT(*) as count
              FROM consent_log
              GROUP BY consent_type, granted
-             ORDER BY consent_type"
+             ORDER BY consent_type",
         )?;
 
-        let distribution: Vec<serde_json::Value> = stmt.query_map([], |row| {
-            Ok(serde_json::json!({
-                "consent_type": row.get::<_, String>(0)?,
-                "granted": row.get::<_, bool>(1)?,
-                "count": row.get::<_, i64>(2)?
-            }))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let distribution: Vec<serde_json::Value> = stmt
+            .query_map([], |row| {
+                Ok(serde_json::json!({
+                    "consent_type": row.get::<_, String>(0)?,
+                    "granted": row.get::<_, bool>(1)?,
+                    "count": row.get::<_, i64>(2)?
+                }))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(serde_json::json!({
             "total_consent_actions": total_consents,

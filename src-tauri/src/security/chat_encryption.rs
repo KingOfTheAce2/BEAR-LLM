@@ -12,7 +12,9 @@
 // maximum security for sensitive legal conversations.
 
 use anyhow::{Context, Result};
-use ring::aead::{Aad, BoundKey, Nonce, NonceSequence, OpeningKey, SealingKey, UnboundKey, AES_256_GCM};
+use ring::aead::{
+    Aad, BoundKey, Nonce, NonceSequence, OpeningKey, SealingKey, UnboundKey, AES_256_GCM,
+};
 use ring::error::Unspecified;
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
@@ -103,11 +105,7 @@ impl ChatEncryptor {
     ///
     /// # Returns
     /// The decrypted plaintext message
-    pub fn decrypt(
-        &self,
-        encrypted_message: &EncryptedMessage,
-        user_key: &[u8],
-    ) -> Result<String> {
+    pub fn decrypt(&self, encrypted_message: &EncryptedMessage, user_key: &[u8]) -> Result<String> {
         if user_key.len() != 32 {
             anyhow::bail!("Invalid key length: expected 32 bytes for AES-256");
         }
@@ -137,8 +135,7 @@ impl ChatEncryptor {
             .map_err(|_| anyhow::anyhow!("Decryption failed - invalid key or corrupted data"))?;
 
         // Convert decrypted bytes to string
-        String::from_utf8(decrypted.to_vec())
-            .context("Decrypted data is not valid UTF-8")
+        String::from_utf8(decrypted.to_vec()).context("Decrypted data is not valid UTF-8")
     }
 
     /// Encrypt a message and serialize to JSON
@@ -149,14 +146,13 @@ impl ChatEncryptor {
         user_id: &str,
     ) -> Result<String> {
         let encrypted = self.encrypt(plaintext, user_key, user_id)?;
-        serde_json::to_string(&encrypted)
-            .context("Failed to serialize encrypted message")
+        serde_json::to_string(&encrypted).context("Failed to serialize encrypted message")
     }
 
     /// Decrypt a message from JSON
     pub fn decrypt_from_json(&self, json: &str, user_key: &[u8]) -> Result<String> {
-        let encrypted: EncryptedMessage = serde_json::from_str(json)
-            .context("Failed to deserialize encrypted message")?;
+        let encrypted: EncryptedMessage =
+            serde_json::from_str(json).context("Failed to deserialize encrypted message")?;
         self.decrypt(&encrypted, user_key)
     }
 }
@@ -238,11 +234,7 @@ impl UserKeyDerivation {
             .build()
             .map_err(|e| anyhow::anyhow!("Failed to build Argon2 parameters: {}", e))?;
 
-        let argon2 = Argon2::new(
-            argon2::Algorithm::Argon2id,
-            Version::V0x13,
-            params,
-        );
+        let argon2 = Argon2::new(argon2::Algorithm::Argon2id, Version::V0x13, params);
 
         let mut output_key = vec![0u8; 32];
         argon2
@@ -278,9 +270,7 @@ mod tests {
         let user_key = b"12345678901234567890123456789012"; // 32 bytes
         let plaintext = "This is a sensitive legal conversation about Case #12345";
 
-        let encrypted = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let encrypted = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
         let decrypted = encryptor.decrypt(&encrypted, user_key).unwrap();
 
         assert_eq!(plaintext, decrypted);
@@ -292,9 +282,7 @@ mod tests {
         let user_key = b"12345678901234567890123456789012";
         let plaintext = "Test message";
 
-        let encrypted = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let encrypted = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
 
         assert_eq!(encrypted.nonce.len(), 12);
         assert_eq!(encrypted.version, 1);
@@ -316,7 +304,10 @@ mod tests {
         // Decryption with wrong key should fail
         let result = encryptor.decrypt(&encrypted, wrong_key);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Decryption failed"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Decryption failed"));
     }
 
     #[test]
@@ -325,9 +316,7 @@ mod tests {
         let user_key = b"12345678901234567890123456789012";
         let plaintext = "Important message";
 
-        let mut encrypted = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let mut encrypted = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
 
         // Tamper with ciphertext
         if !encrypted.ciphertext.is_empty() {
@@ -390,26 +379,16 @@ mod tests {
         let user_key = b"12345678901234567890123456789012";
         let plaintext = "Same message";
 
-        let encrypted1 = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
-        let encrypted2 = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let encrypted1 = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
+        let encrypted2 = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
 
         // Same plaintext should produce different ciphertexts due to random nonces
         assert_ne!(encrypted1.nonce, encrypted2.nonce);
         assert_ne!(encrypted1.ciphertext, encrypted2.ciphertext);
 
         // Both should decrypt correctly
-        assert_eq!(
-            encryptor.decrypt(&encrypted1, user_key).unwrap(),
-            plaintext
-        );
-        assert_eq!(
-            encryptor.decrypt(&encrypted2, user_key).unwrap(),
-            plaintext
-        );
+        assert_eq!(encryptor.decrypt(&encrypted1, user_key).unwrap(), plaintext);
+        assert_eq!(encryptor.decrypt(&encrypted2, user_key).unwrap(), plaintext);
     }
 
     #[test]
@@ -418,9 +397,7 @@ mod tests {
         let user_key = b"12345678901234567890123456789012";
         let plaintext = "";
 
-        let encrypted = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let encrypted = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
         let decrypted = encryptor.decrypt(&encrypted, user_key).unwrap();
 
         assert_eq!(plaintext, decrypted);
@@ -432,9 +409,7 @@ mod tests {
         let user_key = b"12345678901234567890123456789012";
         let plaintext = "Legal case 法律案件 дело 🏛️⚖️";
 
-        let encrypted = encryptor
-            .encrypt(plaintext, user_key, "user123")
-            .unwrap();
+        let encrypted = encryptor.encrypt(plaintext, user_key, "user123").unwrap();
         let decrypted = encryptor.decrypt(&encrypted, user_key).unwrap();
 
         assert_eq!(plaintext, decrypted);

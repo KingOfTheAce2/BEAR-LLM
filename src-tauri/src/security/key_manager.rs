@@ -26,8 +26,7 @@ pub struct KeyManager {
 impl KeyManager {
     /// Create a new key manager instance
     pub fn new() -> Result<Self> {
-        let entry = Entry::new(SERVICE_NAME, KEY_NAME)
-            .context("Failed to create keyring entry")?;
+        let entry = Entry::new(SERVICE_NAME, KEY_NAME).context("Failed to create keyring entry")?;
 
         Ok(Self {
             entry,
@@ -54,8 +53,7 @@ impl KeyManager {
         // Try to retrieve from keychain
         match self.entry.get_password() {
             Ok(stored_key) => {
-                let key = hex::decode(&stored_key)
-                    .context("Failed to decode stored key")?;
+                let key = hex::decode(&stored_key).context("Failed to decode stored key")?;
 
                 if key.len() != KEY_LENGTH {
                     anyhow::bail!("Invalid key length in keychain");

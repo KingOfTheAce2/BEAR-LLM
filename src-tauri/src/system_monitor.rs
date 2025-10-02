@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use sysinfo::{System, Components};
 use nvml_wrapper::Nvml;
+use serde::{Deserialize, Serialize};
+use sysinfo::{Components, System};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SystemSpecs {
@@ -56,10 +56,10 @@ pub struct ModelCompatibility {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum CompatibilityLevel {
     Excellent,      // Runs perfectly, plenty of headroom
-    Good,          // Runs well with good performance
-    Borderline,    // Will run but may have issues
+    Good,           // Runs well with good performance
+    Borderline,     // Will run but may have issues
     NotRecommended, // Will likely crash or be unusable
-    Incompatible,  // Cannot run at all
+    Incompatible,   // Cannot run at all
 }
 
 pub struct SystemMonitor {
@@ -116,13 +116,12 @@ impl SystemMonitor {
                         });
 
                         let temperature = device
-                            .temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu)
+                            .temperature(
+                                nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu,
+                            )
                             .unwrap_or(0) as f32;
 
-                        let utilization = device
-                            .utilization_rates()
-                            .map(|u| u.gpu)
-                            .unwrap_or(0);
+                        let utilization = device.utilization_rates().map(|u| u.gpu).unwrap_or(0);
 
                         let compute_cap = device
                             .cuda_compute_capability()
@@ -177,16 +176,19 @@ impl SystemMonitor {
                                         if let Some(name) = &controller.name {
                                             // Check for AMD/Radeon GPUs (non-NVIDIA)
                                             if name.contains("AMD") || name.contains("Radeon") {
-                                                let vram_total_mb = controller.adapter_ram
+                                                let vram_total_mb = controller
+                                                    .adapter_ram
                                                     .map(|ram| ram / 1_048_576) // Convert bytes to MB
                                                     .unwrap_or(8192); // Fallback if AdapterRAM unavailable
 
-                                                let driver_version = controller.driver_version
+                                                let driver_version = controller
+                                                    .driver_version
                                                     .unwrap_or_else(|| "Unknown".to_string());
 
                                                 tracing::info!(
                                                     "Detected AMD GPU via WMI: {} with {}MB VRAM",
-                                                    name, vram_total_mb
+                                                    name,
+                                                    vram_total_mb
                                                 );
 
                                                 return GpuInfo {
@@ -196,20 +198,22 @@ impl SystemMonitor {
                                                     vram_used_mb: 0, // WMI doesn't provide real-time usage
                                                     vram_free_mb: vram_total_mb,
                                                     temperature: 0.0, // Would need AMD ADL for temperature
-                                                    utilization: 0,   // Would need AMD ADL for utilization
+                                                    utilization: 0, // Would need AMD ADL for utilization
                                                     cuda_available: false,
                                                     compute_capability: "ROCm".to_string(),
                                                     driver_version,
                                                 };
                                             } else if name.contains("Intel") {
                                                 // Also detect Intel integrated GPUs for completeness
-                                                let vram_total_mb = controller.adapter_ram
+                                                let vram_total_mb = controller
+                                                    .adapter_ram
                                                     .map(|ram| ram / 1_048_576)
                                                     .unwrap_or(2048);
 
                                                 tracing::debug!(
                                                     "Detected Intel GPU via WMI: {} with {}MB VRAM",
-                                                    name, vram_total_mb
+                                                    name,
+                                                    vram_total_mb
                                                 );
 
                                                 return GpuInfo {
@@ -222,7 +226,8 @@ impl SystemMonitor {
                                                     utilization: 0,
                                                     cuda_available: false,
                                                     compute_capability: "Intel".to_string(),
-                                                    driver_version: controller.driver_version
+                                                    driver_version: controller
+                                                        .driver_version
                                                         .unwrap_or_else(|| "Unknown".to_string()),
                                                 };
                                             }
@@ -340,7 +345,7 @@ impl SystemMonitor {
                 v if v >= 8192 => 25,  // 8GB+ - Decent
                 v if v >= 6144 => 20,  // 6GB+ - Minimum for most models
                 v if v >= 4096 => 15,  // 4GB+ - Limited
-                _ => 5,                 // Less than 4GB
+                _ => 5,                // Less than 4GB
             };
         }
 
@@ -365,11 +370,11 @@ impl SystemMonitor {
 
         // RAM scoring (0-25 points)
         score += match memory.total_mb {
-            m if m >= 65536 => 25,  // 64GB+ - Excellent
-            m if m >= 32768 => 20,  // 32GB+ - Very good
-            m if m >= 16384 => 15,  // 16GB+ - Good
-            m if m >= 8192 => 10,   // 8GB+ - Minimum
-            _ => 5,                  // Less than 8GB
+            m if m >= 65536 => 25, // 64GB+ - Excellent
+            m if m >= 32768 => 20, // 32GB+ - Very good
+            m if m >= 16384 => 15, // 16GB+ - Good
+            m if m >= 8192 => 10,  // 8GB+ - Minimum
+            _ => 5,                // Less than 8GB
         };
 
         score.min(100) // Cap at 100
@@ -387,7 +392,8 @@ impl SystemMonitor {
         // Check if system can run the model
         let compatibility = if !specs.gpu.available {
             if model_params.param_count > 3_000_000_000 {
-                recommendations.push("This model requires a GPU for acceptable performance".to_string());
+                recommendations
+                    .push("This model requires a GPU for acceptable performance".to_string());
                 CompatibilityLevel::NotRecommended
             } else {
                 warnings.push("Running on CPU only - expect slow performance".to_string());
@@ -406,7 +412,8 @@ impl SystemMonitor {
                     "GPU VRAM insufficient. Need {}MB but GPU only has {}MB total.",
                     vram_required_mb, specs.gpu.vram_total_mb
                 ));
-                recommendations.push("Consider using quantized version or smaller model".to_string());
+                recommendations
+                    .push("Consider using quantized version or smaller model".to_string());
                 CompatibilityLevel::NotRecommended
             }
         } else if specs.memory.available_mb < ram_required_mb {
@@ -427,7 +434,8 @@ impl SystemMonitor {
 
         // Add temperature warnings if running hot
         if specs.gpu.temperature > 80.0 {
-            warnings.push("GPU running hot. Ensure proper cooling before loading model.".to_string());
+            warnings
+                .push("GPU running hot. Ensure proper cooling before loading model.".to_string());
         }
 
         if specs.cpu.temperature > 85.0 {
@@ -472,7 +480,9 @@ impl SystemMonitor {
             timestamp: std::time::SystemTime::now(),
             gpu: gpu_snapshot,
             cpu_usage: self.system.global_cpu_usage(),
-            ram_usage_percent: (self.system.used_memory() as f32 / self.system.total_memory() as f32) * 100.0,
+            ram_usage_percent: (self.system.used_memory() as f32
+                / self.system.total_memory() as f32)
+                * 100.0,
         }
     }
 }
@@ -480,19 +490,19 @@ impl SystemMonitor {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModelParams {
     pub name: String,
-    pub param_count: u64,        // in millions (7B = 7000)
+    pub param_count: u64, // in millions (7B = 7000)
     pub quantization: Quantization,
     pub context_length: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Quantization {
-    F32,    // Full precision
-    F16,    // Half precision
-    Q8_0,   // 8-bit quantization
-    Q5KM,   // 5-bit quantization - Fixed naming
-    Q4KM,   // 4-bit quantization - Fixed naming
-    Q4_0,   // 4-bit quantization (older)
+    F32,  // Full precision
+    F16,  // Half precision
+    Q8_0, // 8-bit quantization
+    Q5KM, // 5-bit quantization - Fixed naming
+    Q4KM, // 4-bit quantization - Fixed naming
+    Q4_0, // 4-bit quantization (older)
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -513,14 +523,15 @@ pub struct ResourceSnapshot {
 
 fn calculate_vram_requirement(model: &ModelParams) -> u64 {
     // Calculate VRAM requirement in MB based on model size and quantization
-    let base_size = model.param_count * match model.quantization {
-        Quantization::F32 => 4,     // 4 bytes per parameter
-        Quantization::F16 => 2,     // 2 bytes per parameter
-        Quantization::Q8_0 => 1,    // ~1 byte per parameter
-        Quantization::Q5KM => 1,    // ~0.625 bytes per parameter (simplified to 1)
-        Quantization::Q4KM => 1,    // ~0.5 bytes per parameter (simplified to 1)
-        Quantization::Q4_0 => 1,    // ~0.5 bytes per parameter (simplified to 1)
-    };
+    let base_size = model.param_count
+        * match model.quantization {
+            Quantization::F32 => 4,  // 4 bytes per parameter
+            Quantization::F16 => 2,  // 2 bytes per parameter
+            Quantization::Q8_0 => 1, // ~1 byte per parameter
+            Quantization::Q5KM => 1, // ~0.625 bytes per parameter (simplified to 1)
+            Quantization::Q4KM => 1, // ~0.5 bytes per parameter (simplified to 1)
+            Quantization::Q4_0 => 1, // ~0.5 bytes per parameter (simplified to 1)
+        };
 
     // Add overhead for context, activations, etc (roughly 20%)
     let with_overhead = (base_size as f64 * 1.2) as u64;
@@ -541,18 +552,18 @@ fn estimate_inference_speed(specs: &SystemSpecs, model: &ModelParams) -> f32 {
     if !specs.gpu.available {
         // CPU only - very rough estimates
         match model.param_count {
-            p if p <= 3_000 => 5.0,   // 3B or less
-            p if p <= 7_000 => 2.0,   // 7B
-            p if p <= 13_000 => 0.5,  // 13B
-            _ => 0.1,                  // Larger models
+            p if p <= 3_000 => 5.0,  // 3B or less
+            p if p <= 7_000 => 2.0,  // 7B
+            p if p <= 13_000 => 0.5, // 13B
+            _ => 0.1,                // Larger models
         }
     } else {
         // GPU available - based on VRAM and model size
         let gpu_factor = match specs.gpu.vram_total_mb {
-            v if v >= 24576 => 3.0,  // High-end GPU
-            v if v >= 16384 => 2.5,  // Good GPU
-            v if v >= 12288 => 2.0,  // Decent GPU
-            v if v >= 8192 => 1.5,   // Entry-level GPU
+            v if v >= 24576 => 3.0, // High-end GPU
+            v if v >= 16384 => 2.5, // Good GPU
+            v if v >= 12288 => 2.0, // Decent GPU
+            v if v >= 8192 => 1.5,  // Entry-level GPU
             _ => 1.0,
         };
 

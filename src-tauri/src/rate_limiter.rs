@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Configuration for rate limiting
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,14 +45,14 @@ impl RequestRecord {
     /// Remove expired timestamps outside the window
     fn cleanup(&mut self, window: Duration) {
         let now = Instant::now();
-        self.timestamps.retain(|&ts| now.duration_since(ts) < window);
+        self.timestamps
+            .retain(|&ts| now.duration_since(ts) < window);
         self.last_cleanup = now;
     }
 
     /// Check if this record should be cleaned up (no requests in window)
     fn is_expired(&self, window: Duration) -> bool {
-        self.timestamps.is_empty() &&
-        Instant::now().duration_since(self.last_cleanup) > window
+        self.timestamps.is_empty() && Instant::now().duration_since(self.last_cleanup) > window
     }
 }
 
@@ -96,7 +96,8 @@ impl RateLimiter {
         let mut records = self.records.write().await;
 
         // Get or create record for this identifier
-        let record = records.entry(identifier.to_string())
+        let record = records
+            .entry(identifier.to_string())
             .or_insert_with(RequestRecord::new);
 
         // Clean up old timestamps
@@ -104,7 +105,9 @@ impl RateLimiter {
 
         // Check if limit exceeded
         if record.timestamps.len() >= max_requests {
-            let oldest = record.timestamps.first()
+            let oldest = record
+                .timestamps
+                .first()
                 .ok_or_else(|| "No timestamps found".to_string())?;
             let time_until_reset = window.saturating_sub(Instant::now().duration_since(*oldest));
 
@@ -152,7 +155,9 @@ impl RateLimiter {
         let record = records.get(identifier)?;
 
         let now = Instant::now();
-        let current_count = record.timestamps.iter()
+        let current_count = record
+            .timestamps
+            .iter()
             .filter(|&&ts| now.duration_since(ts) < window)
             .count();
 
@@ -245,7 +250,10 @@ mod tests {
 
         // Different users should have independent limits
         for i in 0..100 {
-            assert!(limiter.check_rate_limit(&format!("user{}", i)).await.is_ok());
+            assert!(limiter
+                .check_rate_limit(&format!("user{}", i))
+                .await
+                .is_ok());
         }
     }
 

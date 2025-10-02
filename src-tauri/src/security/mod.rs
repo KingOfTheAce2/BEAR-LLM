@@ -20,7 +20,9 @@ pub mod migration;
 
 // Re-export commonly used types
 pub use chat_encryption::{ChatEncryptor, EncryptedMessage, UserKeyDerivation};
-pub use database_encryption::{DatabaseMigration, EncryptedDatabase, EncryptionConfig, HmacAlgorithm};
+pub use database_encryption::{
+    DatabaseMigration, EncryptedDatabase, EncryptionConfig, HmacAlgorithm,
+};
 pub use encrypted_pool::{EncryptedPool, EncryptedPoolBuilder};
 pub use key_manager::KeyManager;
 pub use migration::{ChatMigrationManager, MigrationStats, ProgressCallback};

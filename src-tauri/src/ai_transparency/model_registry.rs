@@ -1,8 +1,8 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use regex::Regex;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelMapping {
@@ -151,8 +151,7 @@ impl ModelRegistry {
         let json = serde_json::to_string_pretty(&self.custom_mappings)
             .map_err(|e| format!("Failed to serialize config: {}", e))?;
 
-        fs::write(&config_path, json)
-            .map_err(|e| format!("Failed to write config: {}", e))
+        fs::write(&config_path, json).map_err(|e| format!("Failed to write config: {}", e))
     }
 
     /// Resolve GGUF filename to HuggingFace model ID
@@ -206,7 +205,8 @@ impl ModelRegistry {
 
     /// Get all mappings (built-in + custom)
     pub fn get_all_mappings(&self) -> Vec<(String, String)> {
-        let mut all_mappings: Vec<(String, String)> = self.mappings
+        let mut all_mappings: Vec<(String, String)> = self
+            .mappings
             .iter()
             .map(|m| (m.pattern.clone(), m.huggingface_id.clone()))
             .collect();
@@ -214,7 +214,7 @@ impl ModelRegistry {
         all_mappings.extend(
             self.custom_mappings
                 .iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
+                .map(|(k, v)| (k.clone(), v.clone())),
         );
 
         all_mappings
@@ -223,9 +223,7 @@ impl ModelRegistry {
     /// Extract model name from filename for display
     pub fn extract_model_name(&self, filename: &str) -> String {
         // Remove common suffixes and quantization info
-        let name = filename
-            .trim_end_matches(".gguf")
-            .trim_end_matches(".bin");
+        let name = filename.trim_end_matches(".gguf").trim_end_matches(".bin");
 
         // Remove quantization suffix (e.g., Q4_K_M, Q5_K_S)
         let re = Regex::new(r"\.(Q\d+_[KM](_[MS])?)$").unwrap();
@@ -283,7 +281,7 @@ mod tests {
 
         registry.add_custom_mapping(
             "my-custom-model.gguf".to_string(),
-            "user/custom-model".to_string()
+            "user/custom-model".to_string(),
         );
 
         assert_eq!(
@@ -311,9 +309,6 @@ mod tests {
     fn test_unknown_model() {
         let registry = ModelRegistry::new();
 
-        assert_eq!(
-            registry.resolve_model_id("unknown-model.gguf"),
-            None
-        );
+        assert_eq!(registry.resolve_model_id("unknown-model.gguf"), None);
     }
 }

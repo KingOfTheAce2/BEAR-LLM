@@ -1,6 +1,6 @@
 use anyhow::Result;
-use sysinfo::{System, ProcessesToUpdate, Components};
 use std::time::Duration;
+use sysinfo::{Components, ProcessesToUpdate, System};
 
 #[cfg(target_os = "windows")]
 use nvml_wrapper::Nvml;
@@ -186,7 +186,12 @@ impl HardwareMonitor {
     }
 
     /// Set and enforce resource limits for GPU, CPU, and RAM usage
-    pub fn set_resource_limits(&mut self, max_gpu_usage: f32, max_cpu_usage: f32, max_ram_usage: f32) -> Result<()> {
+    pub fn set_resource_limits(
+        &mut self,
+        max_gpu_usage: f32,
+        max_cpu_usage: f32,
+        max_ram_usage: f32,
+    ) -> Result<()> {
         // Validate limits
         if !(0.0..=100.0).contains(&max_gpu_usage) {
             return Err(anyhow::anyhow!("GPU usage limit must be between 0 and 100"));
@@ -316,7 +321,11 @@ impl HardwareMonitor {
         }
 
         // Sort by CPU usage, handling NaN values safely
-        processes.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap_or(std::cmp::Ordering::Equal));
+        processes.sort_by(|a, b| {
+            b.cpu_usage
+                .partial_cmp(&a.cpu_usage)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         processes.truncate(10);
         processes
     }
@@ -326,8 +335,8 @@ impl HardwareMonitor {
 
         #[cfg(target_os = "windows")]
         {
-            use std::process::Command;
             use std::os::windows::process::CommandExt;
+            use std::process::Command;
             const CREATE_NO_WINDOW: u32 = 0x08000000;
 
             Command::new("powercfg")

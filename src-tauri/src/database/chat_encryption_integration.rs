@@ -56,8 +56,8 @@ impl ChatEncryptionLayer {
 
         // Encrypt the message content
         let encrypted = self.encryptor.encrypt(content, &user_key, user_id)?;
-        let encrypted_json = serde_json::to_string(&encrypted)
-            .context("Failed to serialize encrypted message")?;
+        let encrypted_json =
+            serde_json::to_string(&encrypted).context("Failed to serialize encrypted message")?;
 
         // Encrypt metadata if provided
         let encrypted_metadata = if let Some(meta) = metadata {
@@ -160,7 +160,11 @@ impl ChatEncryptionLayer {
                 match self.encryptor.decrypt_from_json(&meta, &user_key) {
                     Ok(plaintext) => Some(plaintext),
                     Err(e) => {
-                        tracing::error!("Failed to decrypt metadata for message {}: {}", message_id, e);
+                        tracing::error!(
+                            "Failed to decrypt metadata for message {}: {}",
+                            message_id,
+                            e
+                        );
                         None
                     }
                 }
@@ -234,9 +238,7 @@ impl ChatEncryptionLayer {
                         .derive_default_key(&user_id)
                         .unwrap_or_else(|_| vec![0u8; 32]);
 
-                    self.encryptor
-                        .decrypt_from_json(&meta, &user_key)
-                        .ok()
+                    self.encryptor.decrypt_from_json(&meta, &user_key).ok()
                 } else {
                     Some(meta)
                 }
@@ -263,9 +265,7 @@ impl ChatEncryptionLayer {
         conn: &PooledConnection<SqliteConnectionManager>,
     ) -> Result<JsonValue> {
         let total: i64 = conn
-            .query_row("SELECT COUNT(*) FROM chat_messages", [], |row| {
-                row.get(0)
-            })
+            .query_row("SELECT COUNT(*) FROM chat_messages", [], |row| row.get(0))
             .unwrap_or(0);
 
         let encrypted: i64 = conn

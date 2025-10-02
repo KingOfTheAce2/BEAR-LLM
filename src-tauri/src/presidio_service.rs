@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use tokio::process::{Command as AsyncCommand, Child};
 use std::time::Duration;
+use tokio::process::{Child, Command as AsyncCommand};
+use tokio::sync::RwLock;
 
 /// Production-ready Presidio HTTP service manager
 ///
@@ -67,7 +67,10 @@ impl PresidioService {
             return Ok(());
         }
 
-        tracing::info!("🚀 Starting Presidio HTTP service on port {}...", self.service_port);
+        tracing::info!(
+            "🚀 Starting Presidio HTTP service on port {}...",
+            self.service_port
+        );
 
         // Save python path
         *self.python_path.write().await = Some(python_path.clone());
@@ -94,7 +97,10 @@ impl PresidioService {
 
         *self.is_running.write().await = true;
 
-        tracing::info!("✅ Presidio service started successfully at {}", self.service_url);
+        tracing::info!(
+            "✅ Presidio service started successfully at {}",
+            self.service_url
+        );
 
         Ok(())
     }
@@ -150,11 +156,16 @@ impl PresidioService {
             .map_err(|e| anyhow!("Failed to call Presidio service: {}", e))?;
 
         if !response.status().is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(anyhow!("Presidio service error: {}", error_text));
         }
 
-        let presidio_response: PresidioResponse = response.json().await
+        let presidio_response: PresidioResponse = response
+            .json()
+            .await
             .map_err(|e| anyhow!("Failed to parse Presidio response: {}", e))?;
 
         Ok(presidio_response)
@@ -184,7 +195,11 @@ impl PresidioService {
         let retry_delay = Duration::from_secs(1);
 
         for attempt in 1..=max_retries {
-            tracing::debug!("Waiting for Presidio service to be ready (attempt {}/{})", attempt, max_retries);
+            tracing::debug!(
+                "Waiting for Presidio service to be ready (attempt {}/{})",
+                attempt,
+                max_retries
+            );
 
             match self.health_check().await {
                 Ok(true) => {

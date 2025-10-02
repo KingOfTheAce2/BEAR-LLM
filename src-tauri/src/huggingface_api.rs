@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use reqwest;
-use anyhow::{Result, anyhow};
 use crate::utils::{estimate_model_size_mb, parse_model_params_from_id};
+use anyhow::{anyhow, Result};
+use reqwest;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HuggingFaceModel {
@@ -77,7 +77,10 @@ async fn search_hf_api(params: &ModelSearchParams) -> Result<Vec<HuggingFaceMode
         .await?;
 
     if !response.status().is_success() {
-        return Err(anyhow!("HuggingFace API returned error: {}", response.status()));
+        return Err(anyhow!(
+            "HuggingFace API returned error: {}",
+            response.status()
+        ));
     }
 
     let hf_models: Vec<HFApiModel> = response.json().await?;
@@ -86,9 +89,9 @@ async fn search_hf_api(params: &ModelSearchParams) -> Result<Vec<HuggingFaceMode
         .into_iter()
         .filter(|m| !m.private.unwrap_or(false))
         .map(|m| {
-            let author = m.author.unwrap_or_else(|| {
-                m.id.split('/').next().unwrap_or("unknown").to_string()
-            });
+            let author = m
+                .author
+                .unwrap_or_else(|| m.id.split('/').next().unwrap_or("unknown").to_string());
             let name = m.id.split('/').last().unwrap_or(&m.id).to_string();
 
             HuggingFaceModel {
@@ -161,7 +164,11 @@ fn get_curated_models(query: &str) -> Vec<HuggingFaceModel> {
             name: "Llama-2-7b-chat".to_string(),
             likes: 45234,
             downloads: 2145678,
-            tags: vec!["text-generation".to_string(), "llama".to_string(), "chat".to_string()],
+            tags: vec![
+                "text-generation".to_string(),
+                "llama".to_string(),
+                "chat".to_string(),
+            ],
             size: "13GB".to_string(),
             last_modified: "2024-01-15".to_string(),
             description: Some("Llama 2 7B Chat model for dialogue".to_string()),
@@ -222,10 +229,12 @@ fn get_curated_models(query: &str) -> Vec<HuggingFaceModel> {
     all_models
         .into_iter()
         .filter(|m| {
-            query.is_empty() ||
-            m.name.to_lowercase().contains(&query_lower) ||
-            m.author.to_lowercase().contains(&query_lower) ||
-            m.tags.iter().any(|t| t.to_lowercase().contains(&query_lower))
+            query.is_empty()
+                || m.name.to_lowercase().contains(&query_lower)
+                || m.author.to_lowercase().contains(&query_lower)
+                || m.tags
+                    .iter()
+                    .any(|t| t.to_lowercase().contains(&query_lower))
         })
         .collect()
 }

@@ -51,12 +51,14 @@ impl GenericDisclaimerGenerator {
         GenericDisclaimer {
             title: "⚠️ General AI System Disclaimer".to_string(),
             warning_level: DisclaimerLevel::Info,
-            message: "This is an artificial intelligence system with inherent limitations.".to_string(),
+            message: "This is an artificial intelligence system with inherent limitations."
+                .to_string(),
             limitations: vec![
                 "May generate inaccurate or false information (hallucinations)".to_string(),
                 "Outputs reflect patterns in training data, which may contain biases".to_string(),
                 "Cannot access real-time information or verify current facts".to_string(),
-                "Not suitable for medical, legal, financial, or other professional advice".to_string(),
+                "Not suitable for medical, legal, financial, or other professional advice"
+                    .to_string(),
                 "May produce inappropriate or harmful content despite safeguards".to_string(),
                 "Cannot understand context or nuance like humans do".to_string(),
             ],
@@ -98,7 +100,9 @@ impl GenericDisclaimerGenerator {
         GenericDisclaimer {
             title: "🚨 HIGH-RISK APPLICATION WARNING".to_string(),
             warning_level: DisclaimerLevel::Critical,
-            message: "AI systems should NOT be used for high-risk applications without human oversight.".to_string(),
+            message:
+                "AI systems should NOT be used for high-risk applications without human oversight."
+                    .to_string(),
             limitations: vec![
                 "AI cannot be held legally accountable for decisions".to_string(),
                 "May fail in unpredictable ways".to_string(),
@@ -106,7 +110,8 @@ impl GenericDisclaimerGenerator {
                 "Not validated for high-stakes decision-making".to_string(),
             ],
             recommendations: vec![
-                "NEVER use for medical diagnosis or treatment without doctor consultation".to_string(),
+                "NEVER use for medical diagnosis or treatment without doctor consultation"
+                    .to_string(),
                 "NEVER use for legal advice without lawyer review".to_string(),
                 "NEVER use for financial decisions without expert consultation".to_string(),
                 "NEVER use for safety-critical systems without human oversight".to_string(),
@@ -179,15 +184,24 @@ impl GenericDisclaimerGenerator {
             DisclaimerLevel::Critical => "🚨",
         };
 
-        format!("{} {} - Exercise caution with AI outputs", icon, disclaimer.title.trim_start_matches("⚠️ ").trim_start_matches("🚨 ").trim_start_matches("🇪🇺 ").trim_start_matches("ℹ️ "))
+        format!(
+            "{} {} - Exercise caution with AI outputs",
+            icon,
+            disclaimer
+                .title
+                .trim_start_matches("⚠️ ")
+                .trim_start_matches("🚨 ")
+                .trim_start_matches("🇪🇺 ")
+                .trim_start_matches("ℹ️ ")
+        )
     }
 
     /// Get disclaimer severity level
     pub fn get_severity_color(level: &DisclaimerLevel) -> &'static str {
         match level {
-            DisclaimerLevel::Info => "#3B82F6",      // Blue
-            DisclaimerLevel::Warning => "#F59E0B",   // Amber
-            DisclaimerLevel::Critical => "#EF4444",  // Red
+            DisclaimerLevel::Info => "#3B82F6",     // Blue
+            DisclaimerLevel::Warning => "#F59E0B",  // Amber
+            DisclaimerLevel::Critical => "#EF4444", // Red
         }
     }
 }
@@ -262,6 +276,9 @@ mod tests {
         let disclaimer = GenericDisclaimerGenerator::generate_ai_act_disclaimer();
 
         assert!(disclaimer.title.contains("EU AI Act"));
-        assert!(disclaimer.recommendations.iter().any(|r| r.contains("right")));
+        assert!(disclaimer
+            .recommendations
+            .iter()
+            .any(|r| r.contains("right")));
     }
 }

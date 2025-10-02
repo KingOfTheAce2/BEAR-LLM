@@ -20,7 +20,7 @@ pub mod system;
 pub mod utils;
 
 // Re-export commonly used types
-pub use ai_transparency::{TransparencyContext, TransparencyPreferences, RiskLevel};
+pub use ai_transparency::{RiskLevel, TransparencyContext, TransparencyPreferences};
 pub use database::export_integration::ExportIntegration;
 pub use export_engine::ExportEngine;
 pub use llm_manager::LLMManager;

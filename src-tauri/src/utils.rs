@@ -41,21 +41,12 @@ pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> f32 {
     }
 
     // Calculate dot product
-    let dot_product: f32 = vec1.iter()
-        .zip(vec2.iter())
-        .map(|(a, b)| a * b)
-        .sum();
+    let dot_product: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
 
     // Calculate magnitudes
-    let norm1: f32 = vec1.iter()
-        .map(|x| x * x)
-        .sum::<f32>()
-        .sqrt();
+    let norm1: f32 = vec1.iter().map(|x| x * x).sum::<f32>().sqrt();
 
-    let norm2: f32 = vec2.iter()
-        .map(|x| x * x)
-        .sum::<f32>()
-        .sqrt();
+    let norm2: f32 = vec2.iter().map(|x| x * x).sum::<f32>().sqrt();
 
     // Avoid division by zero
     if norm1 == 0.0 || norm2 == 0.0 {
@@ -105,10 +96,7 @@ pub fn estimate_model_size_mb(params_billions: f32, quantization: &str) -> u64 {
 
         // Default to Q4_K_M (most common)
         _ => {
-            tracing::warn!(
-                "Unknown quantization '{}', assuming Q4_K_M",
-                quantization
-            );
+            tracing::warn!("Unknown quantization '{}', assuming Q4_K_M", quantization);
             4.5
         }
     };

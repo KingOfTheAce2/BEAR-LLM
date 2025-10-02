@@ -2,7 +2,6 @@
 ///
 /// Implements confidence estimation for AI-generated responses
 /// to help users assess reliability of outputs.
-
 use serde::{Deserialize, Serialize};
 
 /// Confidence score for an AI response
@@ -85,11 +84,19 @@ impl ConfidenceLevel {
     /// Get recommendation text
     pub fn recommendation(&self) -> &'static str {
         match self {
-            ConfidenceLevel::VeryHigh => "Response appears highly reliable, but still verify important details.",
+            ConfidenceLevel::VeryHigh => {
+                "Response appears highly reliable, but still verify important details."
+            }
             ConfidenceLevel::High => "Response appears reliable, but verify critical information.",
-            ConfidenceLevel::Medium => "Response may be partially accurate. Verify all important details.",
-            ConfidenceLevel::Low => "Response has significant uncertainty. Thorough verification required.",
-            ConfidenceLevel::VeryLow => "Response has very low confidence. Use with extreme caution.",
+            ConfidenceLevel::Medium => {
+                "Response may be partially accurate. Verify all important details."
+            }
+            ConfidenceLevel::Low => {
+                "Response has significant uncertainty. Thorough verification required."
+            }
+            ConfidenceLevel::VeryLow => {
+                "Response has very low confidence. Use with extreme caution."
+            }
         }
     }
 }
@@ -269,10 +276,10 @@ impl Default for FactorWeights {
     fn default() -> Self {
         Self {
             completeness: 1.0,
-            context_understanding: 1.5,  // More important
-            factual_consistency: 2.0,    // Most important for legal
+            context_understanding: 1.5, // More important
+            factual_consistency: 2.0,   // Most important for legal
             coherence: 1.0,
-            source_reliability: 1.5,     // Very important
+            source_reliability: 1.5, // Very important
         }
     }
 }
@@ -318,9 +325,9 @@ mod confidence_tests {
     #[test]
     fn test_confidence_factors_from_metadata() {
         let factors = ConfidenceFactors::from_response_metadata(
-            150,    // token_count
-            true,   // has_citations
-            800,    // context_tokens
+            150,        // token_count
+            true,       // has_citations
+            800,        // context_tokens
             Some(0.75), // coherence
         );
 

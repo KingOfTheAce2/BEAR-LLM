@@ -1,7 +1,7 @@
+use crate::compliance::retention::RetentionManager;
 use anyhow::Result;
 use std::path::PathBuf;
 use tracing::{info, warn};
-use crate::compliance::retention::RetentionManager;
 
 /// Task for executing retention cleanup operations
 pub struct RetentionCleanupTask {
@@ -34,7 +34,12 @@ impl RetentionCleanupTask {
             total
         );
 
-        Ok((documents_deleted, sessions_deleted, messages_deleted, queries_deleted))
+        Ok((
+            documents_deleted,
+            sessions_deleted,
+            messages_deleted,
+            queries_deleted,
+        ))
     }
 
     /// Cleanup expired entities of a specific type
@@ -100,9 +105,9 @@ impl RetentionCleanupTask {
         info!("Default policies applied: {:?}", result);
 
         // Parse the result into structured data
-        let result_map = result.as_object().ok_or_else(|| {
-            anyhow::anyhow!("Invalid result format from apply_default_policies")
-        })?;
+        let result_map = result
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("Invalid result format from apply_default_policies"))?;
 
         let mut policies_applied = 0;
         for value in result_map.values() {
@@ -176,7 +181,8 @@ mod tests {
                     retention_until DATETIME
                 )",
                 [],
-            ).unwrap();
+            )
+            .unwrap();
             conn.execute(
                 "CREATE TABLE chat_sessions (
                     id INTEGER PRIMARY KEY,
@@ -184,7 +190,8 @@ mod tests {
                     retention_until DATETIME
                 )",
                 [],
-            ).unwrap();
+            )
+            .unwrap();
             conn.execute(
                 "CREATE TABLE chat_messages (
                     id INTEGER PRIMARY KEY,
@@ -193,7 +200,8 @@ mod tests {
                     retention_until DATETIME
                 )",
                 [],
-            ).unwrap();
+            )
+            .unwrap();
             conn.execute(
                 "CREATE TABLE query_history (
                     id INTEGER PRIMARY KEY,
@@ -201,7 +209,8 @@ mod tests {
                     retention_until DATETIME
                 )",
                 [],
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         let task = RetentionCleanupTask::new(db_path.clone());

@@ -1,8 +1,8 @@
 // Tauri Commands for GDPR Compliance Frontend Integration
 
-use tauri::State;
+use crate::compliance::{AuditAction, AuditQuery, ComplianceManager, ConsentType, EntityType};
 use serde_json::Value as JsonValue;
-use crate::compliance::{ComplianceManager, ConsentType, AuditAction, EntityType, AuditQuery};
+use tauri::State;
 
 /// Check if user has consent for an operation
 #[tauri::command]
@@ -21,7 +21,8 @@ pub async fn check_user_consent(
 
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    consent_mgr.has_consent(&user_id, &consent_type_enum)
+    consent_mgr
+        .has_consent(&user_id, &consent_type_enum)
         .map_err(|e| e.to_string())
 }
 
@@ -43,7 +44,8 @@ pub async fn grant_user_consent(
     let result = {
         let consent_lock = compliance.consent();
         let consent_mgr = consent_lock.write().await;
-        consent_mgr.grant_consent(&user_id, &consent_type_enum)
+        consent_mgr
+            .grant_consent(&user_id, &consent_type_enum)
             .map_err(|e| e.to_string())?
     };
 
@@ -82,7 +84,8 @@ pub async fn revoke_user_consent(
     {
         let consent_lock = compliance.consent();
         let consent_mgr = consent_lock.write().await;
-        consent_mgr.revoke_consent(&user_id, &consent_type_enum)
+        consent_mgr
+            .revoke_consent(&user_id, &consent_type_enum)
             .map_err(|e| e.to_string())?;
     }
 
@@ -111,7 +114,8 @@ pub async fn get_user_consents(
 ) -> Result<JsonValue, String> {
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    let consents = consent_mgr.get_user_consents(&user_id)
+    let consents = consent_mgr
+        .get_user_consents(&user_id)
         .map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_value(consents).unwrap())
@@ -125,7 +129,8 @@ pub async fn get_consent_audit_trail(
 ) -> Result<JsonValue, String> {
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    consent_mgr.get_consent_audit_trail(&user_id)
+    consent_mgr
+        .get_consent_audit_trail(&user_id)
         .map_err(|e| e.to_string())
 }
 
@@ -136,7 +141,8 @@ pub async fn get_consent_versions(
 ) -> Result<JsonValue, String> {
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    let versions = consent_mgr.get_consent_versions()
+    let versions = consent_mgr
+        .get_consent_versions()
         .map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_value(versions).unwrap())
@@ -152,7 +158,8 @@ pub async fn set_data_retention(
 ) -> Result<bool, String> {
     let retention_lock = compliance.retention();
     let retention_mgr = retention_lock.write().await;
-    retention_mgr.set_retention(&entity_type, entity_id, retention_days)
+    retention_mgr
+        .set_retention(&entity_type, entity_id, retention_days)
         .map_err(|e| e.to_string())?;
 
     Ok(true)
@@ -165,7 +172,8 @@ pub async fn get_retention_stats(
 ) -> Result<JsonValue, String> {
     let retention_lock = compliance.retention();
     let retention_mgr = retention_lock.read().await;
-    let stats = retention_mgr.get_retention_stats()
+    let stats = retention_mgr
+        .get_retention_stats()
         .map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_value(stats).unwrap())
@@ -178,7 +186,8 @@ pub async fn apply_default_retention_policies(
 ) -> Result<JsonValue, String> {
     let retention_lock = compliance.retention();
     let retention_mgr = retention_lock.write().await;
-    retention_mgr.apply_default_policies()
+    retention_mgr
+        .apply_default_policies()
         .map_err(|e| e.to_string())
 }
 
@@ -191,7 +200,8 @@ pub async fn delete_expired_data(
     let deleted = {
         let retention_lock = compliance.retention();
         let retention_mgr = retention_lock.write().await;
-        retention_mgr.delete_expired_entities(&entity_type)
+        retention_mgr
+            .delete_expired_entities(&entity_type)
             .map_err(|e| e.to_string())?
     };
 
@@ -235,8 +245,7 @@ pub async fn get_audit_logs(
         limit: limit.unwrap_or(100),
     };
 
-    let logs = audit.query_logs(&query)
-        .map_err(|e| e.to_string())?;
+    let logs = audit.query_logs(&query).map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_value(logs).unwrap())
 }
@@ -248,8 +257,7 @@ pub async fn get_audit_stats(
 ) -> Result<JsonValue, String> {
     let audit_lock = compliance.audit();
     let audit = audit_lock.read().await;
-    audit.get_audit_stats()
-        .map_err(|e| e.to_string())
+    audit.get_audit_stats().map_err(|e| e.to_string())
 }
 
 /// Export user data (GDPR Right to Data Portability)
@@ -258,7 +266,8 @@ pub async fn export_user_data(
     compliance: State<'_, ComplianceManager>,
     user_id: String,
 ) -> Result<JsonValue, String> {
-    compliance.export_user_data(&user_id)
+    compliance
+        .export_user_data(&user_id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -269,7 +278,8 @@ pub async fn delete_user_data(
     compliance: State<'_, ComplianceManager>,
     user_id: String,
 ) -> Result<JsonValue, String> {
-    compliance.delete_user_data(&user_id)
+    compliance
+        .delete_user_data(&user_id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -280,7 +290,8 @@ pub async fn generate_compliance_report(
     compliance: State<'_, ComplianceManager>,
     user_id: String,
 ) -> Result<JsonValue, String> {
-    compliance.generate_compliance_report(&user_id)
+    compliance
+        .generate_compliance_report(&user_id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -290,7 +301,8 @@ pub async fn generate_compliance_report(
 pub async fn run_compliance_maintenance(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
-    compliance.run_maintenance()
+    compliance
+        .run_maintenance()
         .await
         .map_err(|e| e.to_string())
 }
@@ -308,7 +320,10 @@ pub async fn update_user_data(
     // Validate data type
     let valid_types = vec!["chat", "document", "setting"];
     if !valid_types.contains(&data_type.as_str()) {
-        return Err(format!("Invalid data type. Must be one of: {:?}", valid_types));
+        return Err(format!(
+            "Invalid data type. Must be one of: {:?}",
+            valid_types
+        ));
     }
 
     // Validate content is not empty or malicious
@@ -323,22 +338,24 @@ pub async fn update_user_data(
     // Log the rectification action
     let audit_lock = compliance.audit();
     let audit = audit_lock.write().await;
-    let log_id = audit.log_success(
-        &user_id,
-        AuditAction::DataModified,
-        match data_type.as_str() {
-            "chat" => EntityType::ChatMessage,
-            "document" => EntityType::Document,
-            "setting" => EntityType::UserSetting,
-            _ => EntityType::UserSetting,
-        },
-        Some(&entity_id),
-        Some(serde_json::json!({
-            "action": "data_rectification",
-            "data_type": data_type,
-            "reason": "User exercised GDPR Article 16 - Right to Rectification"
-        })),
-    ).map_err(|e| e.to_string())?;
+    let log_id = audit
+        .log_success(
+            &user_id,
+            AuditAction::DataModified,
+            match data_type.as_str() {
+                "chat" => EntityType::ChatMessage,
+                "document" => EntityType::Document,
+                "setting" => EntityType::UserSetting,
+                _ => EntityType::UserSetting,
+            },
+            Some(&entity_id),
+            Some(serde_json::json!({
+                "action": "data_rectification",
+                "data_type": data_type,
+                "reason": "User exercised GDPR Article 16 - Right to Rectification"
+            })),
+        )
+        .map_err(|e| e.to_string())?;
     drop(audit);
 
     Ok(serde_json::json!({
@@ -361,7 +378,8 @@ pub async fn get_granular_consent_log(
 ) -> Result<JsonValue, String> {
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    let logs = consent_mgr.get_granular_consent_log(&user_id, limit.unwrap_or(100))
+    let logs = consent_mgr
+        .get_granular_consent_log(&user_id, limit.unwrap_or(100))
         .map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
@@ -393,13 +411,15 @@ pub async fn withdraw_consent_with_reason(
 
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.write().await;
-    consent_mgr.withdraw_consent_with_reason(
-        &user_id,
-        &consent_type_enum,
-        &reason,
-        ip_address.as_deref(),
-        user_agent.as_deref(),
-    ).map_err(|e| e.to_string())?;
+    consent_mgr
+        .withdraw_consent_with_reason(
+            &user_id,
+            &consent_type_enum,
+            &reason,
+            ip_address.as_deref(),
+            user_agent.as_deref(),
+        )
+        .map_err(|e| e.to_string())?;
     drop(consent_mgr);
 
     Ok(serde_json::json!({
@@ -420,6 +440,7 @@ pub async fn get_consent_statistics(
 ) -> Result<JsonValue, String> {
     let consent_lock = compliance.consent();
     let consent_mgr = consent_lock.read().await;
-    consent_mgr.get_consent_statistics()
+    consent_mgr
+        .get_consent_statistics()
         .map_err(|e| e.to_string())
 }

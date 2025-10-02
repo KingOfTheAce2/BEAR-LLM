@@ -1,7 +1,7 @@
 use anyhow::Result;
-use rusqlite::{Connection, params};
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use rusqlite::{params, Connection};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Audit action types for GDPR compliance
@@ -178,7 +178,15 @@ impl AuditLogger {
         entity_id: Option<&str>,
         error: &str,
     ) -> Result<i64> {
-        self.log(user_id, action, entity_type, entity_id, None, false, Some(error))
+        self.log(
+            user_id,
+            action,
+            entity_type,
+            entity_id,
+            None,
+            false,
+            Some(error),
+        )
     }
 
     /// Query audit logs with filters
@@ -188,7 +196,7 @@ impl AuditLogger {
         let mut sql = String::from(
             "SELECT id, timestamp, user_id, action_type, entity_type, entity_id,
                     details, ip_address, user_agent, success, error_message
-             FROM audit_log WHERE 1=1"
+             FROM audit_log WHERE 1=1",
         );
 
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -223,29 +231,33 @@ impl AuditLogger {
 
         let mut stmt = conn.prepare(&sql)?;
 
-        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter()
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params
+            .iter()
             .map(|p| p.as_ref() as &dyn rusqlite::ToSql)
             .collect();
 
-        let entries = stmt.query_map(&param_refs[..], |row| {
-            let details_str: Option<String> = row.get(6)?;
-            let details = details_str.and_then(|s| serde_json::from_str(&s).ok());
+        let entries = stmt
+            .query_map(&param_refs[..], |row| {
+                let details_str: Option<String> = row.get(6)?;
+                let details = details_str.and_then(|s| serde_json::from_str(&s).ok());
 
-            Ok(AuditLogEntry {
-                id: row.get(0)?,
-                timestamp: row.get::<_, String>(1)?.parse().unwrap(),
-                user_id: row.get(2)?,
-                action_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(3)?)).unwrap(),
-                entity_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(4)?)).unwrap(),
-                entity_id: row.get(5)?,
-                details,
-                ip_address: row.get(7)?,
-                user_agent: row.get(8)?,
-                success: row.get(9)?,
-                error_message: row.get(10)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+                Ok(AuditLogEntry {
+                    id: row.get(0)?,
+                    timestamp: row.get::<_, String>(1)?.parse().unwrap(),
+                    user_id: row.get(2)?,
+                    action_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(3)?))
+                        .unwrap(),
+                    entity_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(4)?))
+                        .unwrap(),
+                    entity_id: row.get(5)?,
+                    details,
+                    ip_address: row.get(7)?,
+                    user_agent: row.get(8)?,
+                    success: row.get(9)?,
+                    error_message: row.get(10)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(entries)
     }
@@ -264,7 +276,7 @@ impl AuditLogger {
         &self,
         entity_type: EntityType,
         _entity_id: &str,
-        limit: usize
+        limit: usize,
     ) -> Result<Vec<AuditLogEntry>> {
         self.query_logs(&AuditQuery {
             entity_type: Some(entity_type.as_str().to_string()),
@@ -289,11 +301,8 @@ impl AuditLogger {
     pub fn get_audit_stats(&self) -> Result<serde_json::Value> {
         let conn = Connection::open(&self.db_path)?;
 
-        let total_entries: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM audit_log",
-            [],
-            |row| row.get(0),
-        )?;
+        let total_entries: i64 =
+            conn.query_row("SELECT COUNT(*) FROM audit_log", [], |row| row.get(0))?;
 
         let success_count: i64 = conn.query_row(
             "SELECT COUNT(*) FROM audit_log WHERE success = 1",
@@ -312,16 +321,17 @@ impl AuditLogger {
             "SELECT action_type, COUNT(*) as count
              FROM audit_log
              GROUP BY action_type
-             ORDER BY count DESC"
+             ORDER BY count DESC",
         )?;
 
-        let action_distribution: Vec<serde_json::Value> = stmt.query_map([], |row| {
-            Ok(serde_json::json!({
-                "action": row.get::<_, String>(0)?,
-                "count": row.get::<_, i64>(1)?
-            }))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+        let action_distribution: Vec<serde_json::Value> = stmt
+            .query_map([], |row| {
+                Ok(serde_json::json!({
+                    "action": row.get::<_, String>(0)?,
+                    "count": row.get::<_, i64>(1)?
+                }))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(serde_json::json!({
             "total_entries": total_entries,
@@ -361,28 +371,31 @@ impl AuditLogger {
              FROM audit_log
              WHERE details LIKE ?1 OR error_message LIKE ?1
              ORDER BY timestamp DESC
-             LIMIT ?2"
+             LIMIT ?2",
         )?;
 
-        let entries = stmt.query_map(params![search_term, limit as i64], |row| {
-            let details_str: Option<String> = row.get(6)?;
-            let details = details_str.and_then(|s| serde_json::from_str(&s).ok());
+        let entries = stmt
+            .query_map(params![search_term, limit as i64], |row| {
+                let details_str: Option<String> = row.get(6)?;
+                let details = details_str.and_then(|s| serde_json::from_str(&s).ok());
 
-            Ok(AuditLogEntry {
-                id: row.get(0)?,
-                timestamp: row.get::<_, String>(1)?.parse().unwrap(),
-                user_id: row.get(2)?,
-                action_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(3)?)).unwrap(),
-                entity_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(4)?)).unwrap(),
-                entity_id: row.get(5)?,
-                details,
-                ip_address: row.get(7)?,
-                user_agent: row.get(8)?,
-                success: row.get(9)?,
-                error_message: row.get(10)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+                Ok(AuditLogEntry {
+                    id: row.get(0)?,
+                    timestamp: row.get::<_, String>(1)?.parse().unwrap(),
+                    user_id: row.get(2)?,
+                    action_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(3)?))
+                        .unwrap(),
+                    entity_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>(4)?))
+                        .unwrap(),
+                    entity_id: row.get(5)?,
+                    details,
+                    ip_address: row.get(7)?,
+                    user_agent: row.get(8)?,
+                    success: row.get(9)?,
+                    error_message: row.get(10)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(entries)
     }
@@ -406,22 +419,26 @@ mod tests {
         logger.initialize().unwrap();
 
         // Log successful action
-        logger.log_success(
-            "test_user",
-            AuditAction::ConsentGranted,
-            EntityType::Consent,
-            Some("consent_123"),
-            Some(serde_json::json!({"consent_type": "chat_storage"})),
-        ).unwrap();
+        logger
+            .log_success(
+                "test_user",
+                AuditAction::ConsentGranted,
+                EntityType::Consent,
+                Some("consent_123"),
+                Some(serde_json::json!({"consent_type": "chat_storage"})),
+            )
+            .unwrap();
 
         // Log failed action
-        logger.log_failure(
-            "test_user",
-            AuditAction::DataExported,
-            EntityType::Document,
-            Some("doc_456"),
-            "Export failed: disk full",
-        ).unwrap();
+        logger
+            .log_failure(
+                "test_user",
+                AuditAction::DataExported,
+                EntityType::Document,
+                Some("doc_456"),
+                "Export failed: disk full",
+            )
+            .unwrap();
 
         // Query logs
         let logs = logger.get_user_logs("test_user", 10).unwrap();

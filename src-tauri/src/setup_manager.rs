@@ -1,9 +1,9 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tokio::sync::{RwLock, mpsc, Mutex};
 use std::sync::Arc;
-use once_cell::sync::Lazy;
+use tokio::sync::{mpsc, Mutex, RwLock};
 
 // Global setup lock to prevent concurrent setup runs
 static SETUP_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -82,7 +82,8 @@ impl SetupManager {
         // Check if setup is already complete (another instance may have completed it)
         if *self.setup_complete.read().await {
             tracing::debug!("Setup already completed by another instance, skipping");
-            self.send_progress("Complete", 100.0, "Setup already completed").await?;
+            self.send_progress("Complete", 100.0, "Setup already completed")
+                .await?;
             return Ok(());
         }
 
@@ -93,7 +94,8 @@ impl SetupManager {
             tracing::info!("Setup marker file found after lock, marking as complete");
             let mut complete = self.setup_complete.write().await;
             *complete = true;
-            self.send_progress("Complete", 100.0, "Setup already completed").await?;
+            self.send_progress("Complete", 100.0, "Setup already completed")
+                .await?;
             return Ok(());
         }
 
@@ -104,7 +106,8 @@ impl SetupManager {
 
         // If nothing is selected, just mark as complete
         if !config.install_presidio && !config.install_models {
-            self.send_progress("Skipping", 100.0, "No components selected, setup skipped.").await?;
+            self.send_progress("Skipping", 100.0, "No components selected, setup skipped.")
+                .await?;
             self.mark_setup_complete(&config).await?;
             let mut complete = self.setup_complete.write().await;
             *complete = true;
@@ -112,38 +115,62 @@ impl SetupManager {
         }
 
         // Send initial progress
-        self.send_progress("Initializing", 0.0, "Starting BEAR AI setup...").await?;
+        self.send_progress("Initializing", 0.0, "Starting BEAR AI setup...")
+            .await?;
 
         // Step 1: Create directories
-        self.send_progress("Creating directories", 10.0, "Setting up application directories...").await?;
+        self.send_progress(
+            "Creating directories",
+            10.0,
+            "Setting up application directories...",
+        )
+        .await?;
         self.create_directories(&config).await?;
 
         // Step 2: Check system requirements
-        self.send_progress("Checking requirements", 20.0, "Verifying system requirements...").await?;
+        self.send_progress(
+            "Checking requirements",
+            20.0,
+            "Verifying system requirements...",
+        )
+        .await?;
         self.check_requirements().await?;
 
         // Step 3: Install Python dependencies
         if config.install_presidio {
-            self.send_progress("Installing Presidio", 30.0, "Installing Microsoft Presidio for state-of-the-art PII protection...").await?;
+            self.send_progress(
+                "Installing Presidio",
+                30.0,
+                "Installing Microsoft Presidio for state-of-the-art PII protection...",
+            )
+            .await?;
             self.install_presidio_components().await?;
         }
 
         // Step 4: Download models
         if config.install_models {
-            self.send_progress("Downloading models", 50.0, "Downloading AI models (this may take several minutes)...").await?;
+            self.send_progress(
+                "Downloading models",
+                50.0,
+                "Downloading AI models (this may take several minutes)...",
+            )
+            .await?;
             self.download_ai_models(&config).await?;
         }
 
         // Step 5: Verify installation
-        self.send_progress("Verifying", 80.0, "Verifying installation...").await?;
+        self.send_progress("Verifying", 80.0, "Verifying installation...")
+            .await?;
         self.verify_setup().await?;
 
         // Step 6: Mark setup complete
-        self.send_progress("Finalizing", 95.0, "Finalizing setup...").await?;
+        self.send_progress("Finalizing", 95.0, "Finalizing setup...")
+            .await?;
         self.mark_setup_complete(&config).await?;
 
         // Send completion
-        self.send_progress("Complete", 100.0, "Setup completed successfully!").await?;
+        self.send_progress("Complete", 100.0, "Setup completed successfully!")
+            .await?;
 
         let mut complete = self.setup_complete.write().await;
         *complete = true;
@@ -175,7 +202,9 @@ impl SetupManager {
                 has_error: false,
             };
 
-            sender.send(progress_msg).await
+            sender
+                .send(progress_msg)
+                .await
                 .map_err(|e| anyhow!("Failed to send progress: {}", e))?;
         }
         Ok(())
@@ -235,9 +264,7 @@ impl SetupManager {
         use sysinfo::Disks;
         let disks = Disks::new_with_refreshed_list();
 
-        if let Some(disk) = disks.iter().find(|d| {
-            data_dir.starts_with(d.mount_point())
-        }) {
+        if let Some(disk) = disks.iter().find(|d| data_dir.starts_with(d.mount_point())) {
             let available_mb = disk.available_space() / (1024 * 1024);
             if available_mb < required_space_mb {
                 return Err(anyhow!(
@@ -247,10 +274,14 @@ impl SetupManager {
             }
             tracing::info!(
                 "Disk space check passed: {}MB available, {}MB required",
-                available_mb, required_space_mb
+                available_mb,
+                required_space_mb
             );
         } else {
-            tracing::warn!("Could not determine disk space for {:?}, proceeding anyway", data_dir);
+            tracing::warn!(
+                "Could not determine disk space for {:?}, proceeding anyway",
+                data_dir
+            );
         }
 
         Ok(())
@@ -267,15 +298,28 @@ impl SetupManager {
 
     async fn download_ai_models(&self, config: &SetupConfig) -> Result<()> {
         // Step 1: Download RAG embeddings model (CRITICAL - required for document processing)
-        self.send_progress("Downloading models", 50.0, "Downloading RAG embeddings model (~150MB)...").await?;
+        self.send_progress(
+            "Downloading models",
+            50.0,
+            "Downloading RAG embeddings model (~150MB)...",
+        )
+        .await?;
 
         if let Err(e) = self.download_rag_embeddings().await {
-            tracing::warn!("Failed to download RAG embeddings during setup: {}. Will download on first use.", e);
+            tracing::warn!(
+                "Failed to download RAG embeddings during setup: {}. Will download on first use.",
+                e
+            );
             // Continue with LLM download even if RAG fails
         }
 
         // Step 2: Download LLM model based on corporate laptop compatibility
-        self.send_progress("Downloading models", 60.0, "Downloading LLM for text generation...").await?;
+        self.send_progress(
+            "Downloading models",
+            60.0,
+            "Downloading LLM for text generation...",
+        )
+        .await?;
 
         // Corporate laptop optimized models (determined by model_size selection)
         let (model_name, repo_id, file_name) = match config.model_size.as_str() {
@@ -305,11 +349,19 @@ impl SetupManager {
 
         // Actually download the LLM model
         if let Err(e) = self.download_llm_model(repo_id, file_name).await {
-            tracing::error!("Failed to download LLM model: {}. Application may not work properly.", e);
+            tracing::error!(
+                "Failed to download LLM model: {}. Application may not work properly.",
+                e
+            );
             return Err(anyhow!("Failed to download LLM model: {}", e));
         }
 
-        self.send_progress("Downloading models", 80.0, &format!("✅ {} downloaded successfully", model_name)).await?;
+        self.send_progress(
+            "Downloading models",
+            80.0,
+            &format!("✅ {} downloaded successfully", model_name),
+        )
+        .await?;
 
         Ok(())
     }
@@ -318,7 +370,10 @@ impl SetupManager {
         use hf_hub::api::tokio::Api;
 
         let config = self.config.read().await;
-        let models_dir = config.data_dir.join("models").join(repo_id.replace("/", "_"));
+        let models_dir = config
+            .data_dir
+            .join("models")
+            .join(repo_id.replace("/", "_"));
         drop(config);
 
         // Create models directory
@@ -331,12 +386,15 @@ impl SetupManager {
         let repo = api.model(repo_id.to_string());
 
         // Download the model file
-        let downloaded_path = repo.get(file_name).await
+        let downloaded_path = repo
+            .get(file_name)
+            .await
             .map_err(|e| anyhow!("Failed to download {}: {}", file_name, e))?;
 
         // Copy to models directory
         let dest_path = models_dir.join(file_name);
-        tokio::fs::copy(&downloaded_path, &dest_path).await
+        tokio::fs::copy(&downloaded_path, &dest_path)
+            .await
             .map_err(|e| anyhow!("Failed to copy model file: {}", e))?;
 
         tracing::info!("✅ LLM model downloaded to: {:?}", dest_path);
@@ -345,14 +403,13 @@ impl SetupManager {
     }
 
     async fn download_rag_embeddings(&self) -> Result<()> {
-        use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
+        use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 
         tracing::info!("📥 Downloading BGE embeddings model for RAG engine...");
 
         // This will download the model to .fastembed_cache if not present
         let _model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::BGESmallENV15)
-                .with_show_download_progress(true)
+            InitOptions::new(EmbeddingModel::BGESmallENV15).with_show_download_progress(true),
         )?;
 
         tracing::info!("✅ RAG embeddings model downloaded successfully");

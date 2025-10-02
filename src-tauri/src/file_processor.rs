@@ -1,11 +1,11 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use calamine::{open_workbook, Data, Reader, Xls, Xlsx};
+use docx_rs::*;
+use encoding_rs::{Encoding, UTF_8, WINDOWS_1252};
+use serde_json::Value as JsonValue;
+use std::io::Read;
 use std::path::PathBuf;
 use tokio::fs;
-use serde_json::Value as JsonValue;
-use calamine::{Reader, Xlsx, Xls, open_workbook, Data};
-use docx_rs::*;
-use encoding_rs::{Encoding, WINDOWS_1252, UTF_8};
-use std::io::Read;
 
 pub struct FileProcessor {
     max_file_size: usize,
@@ -60,12 +60,14 @@ impl FileProcessor {
         }
 
         // Now safe to canonicalize since we've verified it's not a symlink
-        let canonical = path.canonicalize()
+        let canonical = path
+            .canonicalize()
             .map_err(|e| anyhow!("Invalid or inaccessible file path: {}", e))?;
 
         // If base directory is set, ensure path is within it
         if let Some(ref base_dir) = self.allowed_base_dir {
-            let canonical_base = base_dir.canonicalize()
+            let canonical_base = base_dir
+                .canonicalize()
                 .map_err(|e| anyhow!("Invalid base directory: {}", e))?;
 
             if !canonical.starts_with(&canonical_base) {
@@ -94,7 +96,8 @@ impl FileProcessor {
             return Err(anyhow!("File size exceeds maximum limit of 50MB"));
         }
 
-        let extension = validated_path.extension()
+        let extension = validated_path
+            .extension()
             .and_then(|ext| ext.to_str())
             .ok_or_else(|| anyhow!("Could not determine file extension"))?;
 
@@ -103,7 +106,8 @@ impl FileProcessor {
         }
 
         // Use validated_path string for further processing
-        let validated_path_str = validated_path.to_str()
+        let validated_path_str = validated_path
+            .to_str()
             .ok_or_else(|| anyhow!("Invalid UTF-8 in file path"))?;
 
         match extension.to_lowercase().as_str() {
@@ -131,7 +135,10 @@ impl FileProcessor {
             Err(e) => {
                 // Fallback to basic text extraction
                 println!("PDF parsing failed, using fallback: {}", e);
-                Ok(format!("PDF content from: {} (Advanced PDF parsing requires additional dependencies)", file_path))
+                Ok(format!(
+                    "PDF content from: {} (Advanced PDF parsing requires additional dependencies)",
+                    file_path
+                ))
             }
         }
     }
@@ -145,7 +152,10 @@ impl FileProcessor {
                     // Fallback to basic ZIP extraction
                     match self.extract_docx_text(file_path).await {
                         Ok(text) => Ok(text),
-                        Err(_) => Ok(format!("Word document content from: {} (DOCX parsing error)", file_path))
+                        Err(_) => Ok(format!(
+                            "Word document content from: {} (DOCX parsing error)",
+                            file_path
+                        )),
                     }
                 }
             }
@@ -154,14 +164,20 @@ impl FileProcessor {
             match self.extract_doc_text(file_path).await {
                 Ok(text) => {
                     if text.is_empty() || text.trim().is_empty() {
-                        Ok(format!("Word document from: {} (No readable text content found)", file_path))
+                        Ok(format!(
+                            "Word document from: {} (No readable text content found)",
+                            file_path
+                        ))
                     } else {
                         Ok(text)
                     }
-                },
+                }
                 Err(e) => {
                     println!("DOC parsing failed: {}", e);
-                    Ok(format!("Word document from: {} (Legacy DOC format - text extraction error: {})", file_path, e))
+                    Ok(format!(
+                        "Word document from: {} (Legacy DOC format - text extraction error: {})",
+                        file_path, e
+                    ))
                 }
             }
         }
@@ -172,7 +188,10 @@ impl FileProcessor {
             Ok(text) => Ok(text),
             Err(e) => {
                 println!("Enhanced Excel parsing failed: {}", e);
-                Ok(format!("Excel spreadsheet content from: {} (Parsing error: {})", file_path, e))
+                Ok(format!(
+                    "Excel spreadsheet content from: {} (Parsing error: {})",
+                    file_path, e
+                ))
             }
         }
     }
@@ -188,7 +207,10 @@ impl FileProcessor {
                 Ok(text) => Ok(text),
                 Err(e) => {
                     println!("PPTX parsing failed: {}", e);
-                    Ok(format!("PowerPoint presentation content from: {} (PPTX parsing error: {})", file_path, e))
+                    Ok(format!(
+                        "PowerPoint presentation content from: {} (PPTX parsing error: {})",
+                        file_path, e
+                    ))
                 }
             }
         } else {
@@ -196,11 +218,14 @@ impl FileProcessor {
             match self.extract_ppt_text(file_path).await {
                 Ok(text) => {
                     if text.is_empty() || text.trim().is_empty() {
-                        Ok(format!("PowerPoint presentation from: {} (No readable text content found)", file_path))
+                        Ok(format!(
+                            "PowerPoint presentation from: {} (No readable text content found)",
+                            file_path
+                        ))
                     } else {
                         Ok(text)
                     }
-                },
+                }
                 Err(e) => {
                     println!("PPT parsing failed: {}", e);
                     Ok(format!("PowerPoint presentation from: {} (Legacy PPT format - text extraction error: {})", file_path, e))
@@ -229,7 +254,8 @@ impl FileProcessor {
         let mut text = script_regex.replace_all(html, "").to_string();
         text = style_regex.replace_all(&text, "").to_string();
         text = tag_regex.replace_all(&text, " ").to_string();
-        text = text.replace("&nbsp;", " ")
+        text = text
+            .replace("&nbsp;", " ")
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&amp;", "&")
@@ -240,7 +266,8 @@ impl FileProcessor {
     }
 
     pub fn is_supported(&self, file_extension: &str) -> bool {
-        self.supported_formats.contains(&file_extension.to_lowercase())
+        self.supported_formats
+            .contains(&file_extension.to_lowercase())
     }
 
     pub fn get_supported_formats(&self) -> Vec<String> {
@@ -384,8 +411,11 @@ impl FileProcessor {
                 // Extract text from slide XML
                 let slide_text = self.extract_pptx_slide_text(&xml_content);
                 if !slide_text.is_empty() {
-                    extracted_text.push(format!("Slide {}: {}",
-                        self.extract_slide_number(&name), slide_text));
+                    extracted_text.push(format!(
+                        "Slide {}: {}",
+                        self.extract_slide_number(&name),
+                        slide_text
+                    ));
                 }
             }
         }
@@ -605,7 +635,8 @@ impl FileProcessor {
                     // Only keep sequences of at least 3 characters
                     if let Ok(word) = String::from_utf8(current_word.clone()) {
                         let cleaned = word.trim();
-                        if !cleaned.is_empty() && !cleaned.chars().all(|c| c.is_ascii_punctuation()) {
+                        if !cleaned.is_empty() && !cleaned.chars().all(|c| c.is_ascii_punctuation())
+                        {
                             text.push(cleaned.to_string());
                         }
                     }
@@ -637,10 +668,7 @@ impl FileProcessor {
     // Generic binary text extraction with encoding detection
     fn extract_text_from_binary(&self, bytes: &[u8]) -> String {
         // Try different encodings
-        let encodings: Vec<&'static Encoding> = vec![
-            UTF_8,
-            WINDOWS_1252,
-        ];
+        let encodings: Vec<&'static Encoding> = vec![UTF_8, WINDOWS_1252];
 
         for encoding in encodings {
             if let Some(text) = self.try_decode_binary(bytes, encoding) {
@@ -689,9 +717,10 @@ impl FileProcessor {
                 if current_sequence.len() >= 4 {
                     if let Ok(s) = String::from_utf8(current_sequence.clone()) {
                         let cleaned = s.trim();
-                        if !cleaned.is_empty() &&
-                           !cleaned.chars().all(|c| c.is_ascii_punctuation()) &&
-                           cleaned.chars().any(|c| c.is_alphabetic()) {
+                        if !cleaned.is_empty()
+                            && !cleaned.chars().all(|c| c.is_ascii_punctuation())
+                            && cleaned.chars().any(|c| c.is_alphabetic())
+                        {
                             text.push(cleaned.to_string());
                         }
                     }
@@ -704,9 +733,10 @@ impl FileProcessor {
         if current_sequence.len() >= 4 {
             if let Ok(s) = String::from_utf8(current_sequence) {
                 let cleaned = s.trim();
-                if !cleaned.is_empty() &&
-                   !cleaned.chars().all(|c| c.is_ascii_punctuation()) &&
-                   cleaned.chars().any(|c| c.is_alphabetic()) {
+                if !cleaned.is_empty()
+                    && !cleaned.chars().all(|c| c.is_ascii_punctuation())
+                    && cleaned.chars().any(|c| c.is_alphabetic())
+                {
                     text.push(cleaned.to_string());
                 }
             }

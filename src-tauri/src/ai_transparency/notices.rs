@@ -1,7 +1,6 @@
 /// AI Transparency Notice Templates
 ///
 /// Provides standardized notices and disclaimers for AI Act compliance.
-
 use serde::{Deserialize, Serialize};
 
 /// Collection of transparency notices
@@ -330,7 +329,9 @@ mod notice_tests {
     #[test]
     fn test_limitations_severity() {
         let notice = LimitationsNotice::default();
-        let critical_count = notice.limitations.iter()
+        let critical_count = notice
+            .limitations
+            .iter()
             .filter(|l| l.severity == LimitationSeverity::Critical)
             .count();
         assert!(critical_count > 0);

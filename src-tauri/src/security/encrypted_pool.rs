@@ -73,13 +73,18 @@ impl r2d2::ManageConnection for EncryptedConnectionManager {
 
     fn connect(&self) -> Result<Self::Connection, Self::Error> {
         // Get encryption key
-        let key = self.key_manager.get_sqlcipher_key(
-            self.key_context.as_deref()
-        ).map_err(|e| PoolError(format!("Failed to get encryption key: {}", e)))?;
+        let key = self
+            .key_manager
+            .get_sqlcipher_key(self.key_context.as_deref())
+            .map_err(|e| PoolError(format!("Failed to get encryption key: {}", e)))?;
 
         // Open connection
-        let conn = Connection::open(&self.db_path)
-            .map_err(|e| PoolError(format!("Failed to open database at {:?}: {}", self.db_path, e)))?;
+        let conn = Connection::open(&self.db_path).map_err(|e| {
+            PoolError(format!(
+                "Failed to open database at {:?}: {}",
+                self.db_path, e
+            ))
+        })?;
 
         // Configure SQLCipher encryption
         self.configure_encryption(&conn, &key)
@@ -118,17 +123,17 @@ impl EncryptedConnectionManager {
 
         // Configure cipher compatibility version
         conn.execute(
-            &format!("PRAGMA cipher_compatibility = {}", self.config.cipher_version),
+            &format!(
+                "PRAGMA cipher_compatibility = {}",
+                self.config.cipher_version
+            ),
             [],
         )
         .context("Failed to set cipher version")?;
 
         // Configure KDF iterations
-        conn.execute(
-            &format!("PRAGMA kdf_iter = {}", self.config.kdf_iter),
-            [],
-        )
-        .context("Failed to set KDF iterations")?;
+        conn.execute(&format!("PRAGMA kdf_iter = {}", self.config.kdf_iter), [])
+            .context("Failed to set KDF iterations")?;
 
         // Configure page size
         conn.execute(
@@ -193,7 +198,9 @@ impl EncryptedPool {
 
     /// Get a connection from the pool
     pub fn get(&self) -> Result<PooledConnection<EncryptedConnectionManager>> {
-        self.pool.get().context("Failed to get connection from pool")
+        self.pool
+            .get()
+            .context("Failed to get connection from pool")
     }
 
     /// Get the current pool state
@@ -221,13 +228,11 @@ impl EncryptedPool {
         F: FnOnce(&rusqlite::Transaction) -> Result<T>,
     {
         let mut conn = self.get()?;
-        let tx = conn.transaction()
-            .context("Failed to start transaction")?;
+        let tx = conn.transaction().context("Failed to start transaction")?;
 
         let result = f(&tx)?;
 
-        tx.commit()
-            .context("Failed to commit transaction")?;
+        tx.commit().context("Failed to commit transaction")?;
 
         Ok(result)
     }
@@ -307,11 +312,7 @@ impl EncryptedPoolBuilder {
         }
 
         // Create connection manager
-        let manager = EncryptedConnectionManager::new(
-            &db_path,
-            self.config,
-            self.key_context,
-        )?;
+        let manager = EncryptedConnectionManager::new(&db_path, self.config, self.key_context)?;
 
         // Build pool with custom configuration
         let mut builder = Pool::builder()
@@ -348,12 +349,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
 
-        let pool = EncryptedPool::new(
-            &db_path,
-            EncryptionConfig::default(),
-            5,
-        )
-        .unwrap();
+        let pool = EncryptedPool::new(&db_path, EncryptionConfig::default(), 5).unwrap();
 
         // Verify we can get a connection
         let conn = pool.get().unwrap();
@@ -370,12 +366,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
 
-        let pool = EncryptedPool::new(
-            &db_path,
-            EncryptionConfig::default(),
-            5,
-        )
-        .unwrap();
+        let pool = EncryptedPool::new(&db_path, EncryptionConfig::default(), 5).unwrap();
 
         // Get multiple connections
         let conn1 = pool.get().unwrap();
@@ -384,9 +375,7 @@ mod tests {
 
         // Verify all connections work
         for conn in [&conn1, &conn2, &conn3] {
-            let result: i32 = conn
-                .query_row("SELECT 1", [], |row| row.get(0))
-                .unwrap();
+            let result: i32 = conn.query_row("SELECT 1", [], |row| row.get(0)).unwrap();
             assert_eq!(result, 1);
         }
     }
@@ -396,19 +385,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
 
-        let pool = EncryptedPool::new(
-            &db_path,
-            EncryptionConfig::default(),
-            5,
-        )
-        .unwrap();
+        let pool = EncryptedPool::new(&db_path, EncryptionConfig::default(), 5).unwrap();
 
         // Create table
         pool.with_connection(|conn| {
-            conn.execute(
-                "CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)",
-                [],
-            )?;
+            conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)", [])?;
             Ok(())
         })
         .unwrap();
@@ -423,8 +404,7 @@ mod tests {
 
         // Verify data
         pool.with_connection(|conn| {
-            let count: i64 = conn
-                .query_row("SELECT COUNT(*) FROM test", [], |row| row.get(0))?;
+            let count: i64 = conn.query_row("SELECT COUNT(*) FROM test", [], |row| row.get(0))?;
             assert_eq!(count, 2);
             Ok(())
         })
@@ -445,9 +425,7 @@ mod tests {
 
         let conn = pool.get().unwrap();
 
-        let result: i32 = conn
-            .query_row("SELECT 1", [], |row| row.get(0))
-            .unwrap();
+        let result: i32 = conn.query_row("SELECT 1", [], |row| row.get(0)).unwrap();
         assert_eq!(result, 1);
     }
 
@@ -456,12 +434,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.db");
 
-        let pool = EncryptedPool::new(
-            &db_path,
-            EncryptionConfig::default(),
-            5,
-        )
-        .unwrap();
+        let pool = EncryptedPool::new(&db_path, EncryptionConfig::default(), 5).unwrap();
 
         let state = pool.state();
         assert_eq!(state.connections, 0);

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelCard {
@@ -26,13 +26,25 @@ impl ModelCardParser {
         ModelCard {
             model_id: model_id.clone(),
             description: Self::extract_description(&sections, markdown),
-            intended_use: Self::extract_list_items(&sections, &["intended use", "uses", "use cases"]),
-            limitations: Self::extract_list_items(&sections, &["limitations", "known issues", "caveats"]),
+            intended_use: Self::extract_list_items(
+                &sections,
+                &["intended use", "uses", "use cases"],
+            ),
+            limitations: Self::extract_list_items(
+                &sections,
+                &["limitations", "known issues", "caveats"],
+            ),
             biases: Self::extract_list_items(&sections, &["bias", "biases", "fairness"]),
-            training_data: Self::extract_section_content(&sections, &["training data", "dataset", "data"]),
+            training_data: Self::extract_section_content(
+                &sections,
+                &["training data", "dataset", "data"],
+            ),
             license: Self::extract_license(&sections, markdown),
             paper_url: Self::extract_paper_url(markdown),
-            ethical_considerations: Self::extract_list_items(&sections, &["ethical", "ethics", "responsible use"]),
+            ethical_considerations: Self::extract_list_items(
+                &sections,
+                &["ethical", "ethics", "responsible use"],
+            ),
             safety_warnings: Self::extract_safety_warnings(markdown),
             performance_metrics: Self::extract_metrics(markdown),
         }
@@ -93,7 +105,8 @@ impl ModelCardParser {
                 && !trimmed.starts_with('#')
                 && !trimmed.starts_with('|')
                 && !trimmed.starts_with('-')
-                && trimmed.len() > 20 {
+                && trimmed.len() > 20
+            {
                 return trimmed.to_string();
             }
         }
@@ -232,7 +245,8 @@ impl ModelCardParser {
         }
 
         // Look for percentage/accuracy mentions
-        let metric_re = Regex::new(r"(?i)(accuracy|f1|bleu|rouge|perplexity)[:\s]+([0-9.]+%?)").unwrap();
+        let metric_re =
+            Regex::new(r"(?i)(accuracy|f1|bleu|rouge|perplexity)[:\s]+([0-9.]+%?)").unwrap();
         for cap in metric_re.captures_iter(markdown) {
             if let (Some(name), Some(value)) = (cap.get(1), cap.get(2)) {
                 metrics.push(format!("{}: {}", name.as_str(), value.as_str()));

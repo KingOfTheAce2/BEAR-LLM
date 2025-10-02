@@ -1,7 +1,7 @@
 use reqwest;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +81,8 @@ impl ModelCardFetcher {
     async fn fetch_from_api(&self, model_id: &str) -> Result<CachedModelCard, String> {
         // Fetch metadata
         let metadata_url = format!("https://huggingface.co/api/models/{}", model_id);
-        let metadata: ModelMetadata = self.http_client
+        let metadata: ModelMetadata = self
+            .http_client
             .get(&metadata_url)
             .send()
             .await
@@ -92,7 +93,8 @@ impl ModelCardFetcher {
 
         // Fetch README
         let readme_url = format!("https://huggingface.co/{}/raw/main/README.md", model_id);
-        let readme_content = self.http_client
+        let readme_content = self
+            .http_client
             .get(&readme_url)
             .send()
             .await
@@ -112,11 +114,10 @@ impl ModelCardFetcher {
     fn get_cached_model_card(&self, model_id: &str) -> Result<CachedModelCard, String> {
         let cache_path = self.get_cache_path(model_id);
 
-        let content = fs::read_to_string(&cache_path)
-            .map_err(|e| format!("Failed to read cache: {}", e))?;
+        let content =
+            fs::read_to_string(&cache_path).map_err(|e| format!("Failed to read cache: {}", e))?;
 
-        serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse cache: {}", e))
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse cache: {}", e))
     }
 
     /// Save model card to cache
@@ -126,8 +127,7 @@ impl ModelCardFetcher {
         let json = serde_json::to_string_pretty(card)
             .map_err(|e| format!("Failed to serialize cache: {}", e))?;
 
-        fs::write(&cache_path, json)
-            .map_err(|e| format!("Failed to write cache: {}", e))
+        fs::write(&cache_path, json).map_err(|e| format!("Failed to write cache: {}", e))
     }
 
     /// Get cache file path for a model
@@ -150,8 +150,7 @@ impl ModelCardFetcher {
     /// Clear cache for a specific model
     pub fn clear_cache(&self, model_id: &str) -> Result<(), String> {
         let cache_path = self.get_cache_path(model_id);
-        fs::remove_file(&cache_path)
-            .map_err(|e| format!("Failed to remove cache: {}", e))
+        fs::remove_file(&cache_path).map_err(|e| format!("Failed to remove cache: {}", e))
     }
 
     /// Clear all cached model cards
@@ -160,7 +159,9 @@ impl ModelCardFetcher {
             .map_err(|e| format!("Failed to read cache directory: {}", e))?
             .filter_map(|entry| entry.ok())
             .filter(|entry| {
-                entry.path().extension()
+                entry
+                    .path()
+                    .extension()
                     .and_then(|s| s.to_str())
                     .map(|s| s == "json")
                     .unwrap_or(false)
@@ -183,7 +184,10 @@ mod tests {
         let fetcher = ModelCardFetcher::new(temp_dir.path().to_path_buf());
 
         let path = fetcher.get_cache_path("meta-llama/Llama-2-7b-chat-hf");
-        assert!(path.to_str().unwrap().contains("meta-llama_Llama-2-7b-chat-hf.json"));
+        assert!(path
+            .to_str()
+            .unwrap()
+            .contains("meta-llama_Llama-2-7b-chat-hf.json"));
     }
 
     #[test]

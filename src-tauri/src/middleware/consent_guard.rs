@@ -1,12 +1,12 @@
 // Consent Guard Middleware - GDPR & AI Act Compliance
 // Enforces consent requirements before data processing operations
 
-use anyhow::{Result, anyhow};
+use crate::compliance::{ConsentManager, ConsentType};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use crate::compliance::{ConsentManager, ConsentType};
-use serde::{Deserialize, Serialize};
 
 /// Consent enforcement result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,12 +54,14 @@ impl ConsentGuard {
 
     /// Check consent before document processing
     pub async fn check_document_processing(&self, user_id: &str) -> Result<ConsentCheckResult> {
-        self.check_consent(user_id, &ConsentType::DocumentProcessing).await
+        self.check_consent(user_id, &ConsentType::DocumentProcessing)
+            .await
     }
 
     /// Check consent before PII detection
     pub async fn check_pii_detection(&self, user_id: &str) -> Result<ConsentCheckResult> {
-        self.check_consent(user_id, &ConsentType::PiiDetection).await
+        self.check_consent(user_id, &ConsentType::PiiDetection)
+            .await
     }
 
     /// Check consent before analytics/telemetry
@@ -69,16 +71,22 @@ impl ConsentGuard {
 
     /// Check consent before AI processing
     pub async fn check_ai_processing(&self, user_id: &str) -> Result<ConsentCheckResult> {
-        self.check_consent(user_id, &ConsentType::AiProcessing).await
+        self.check_consent(user_id, &ConsentType::AiProcessing)
+            .await
     }
 
     /// Check consent before data retention operations
     pub async fn check_data_retention(&self, user_id: &str) -> Result<ConsentCheckResult> {
-        self.check_consent(user_id, &ConsentType::DataRetention).await
+        self.check_consent(user_id, &ConsentType::DataRetention)
+            .await
     }
 
     /// Generic consent check with re-consent detection
-    async fn check_consent(&self, user_id: &str, consent_type: &ConsentType) -> Result<ConsentCheckResult> {
+    async fn check_consent(
+        &self,
+        user_id: &str,
+        consent_type: &ConsentType,
+    ) -> Result<ConsentCheckResult> {
         let manager = self.consent_manager.read().await;
 
         // Check if consent exists
@@ -120,7 +128,9 @@ impl ConsentGuard {
             return Err(anyhow!(
                 "Operation denied: {} - {}",
                 result.consent_type,
-                result.reason.unwrap_or_else(|| "Unknown reason".to_string())
+                result
+                    .reason
+                    .unwrap_or_else(|| "Unknown reason".to_string())
             ));
         }
 
@@ -158,15 +168,18 @@ impl ConsentGuard {
     ) -> Result<()> {
         let results = self.check_multiple_consents(user_id, consent_types).await?;
 
-        let denied: Vec<_> = results
-            .iter()
-            .filter(|r| !r.allowed)
-            .collect();
+        let denied: Vec<_> = results.iter().filter(|r| !r.allowed).collect();
 
         if !denied.is_empty() {
             let reasons = denied
                 .iter()
-                .map(|r| format!("{}: {}", r.consent_type, r.reason.as_ref().unwrap_or(&"Unknown".to_string())))
+                .map(|r| {
+                    format!(
+                        "{}: {}",
+                        r.consent_type,
+                        r.reason.as_ref().unwrap_or(&"Unknown".to_string())
+                    )
+                })
                 .collect::<Vec<_>>()
                 .join(", ");
 
@@ -225,7 +238,8 @@ impl ConsentGuard {
         let consent_id = manager.grant_consent(user_id, consent_type)?;
 
         // Log granular consent
-        let version = manager.has_consent(user_id, consent_type)?
+        let version = manager
+            .has_consent(user_id, consent_type)?
             .then(|| "current".to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
@@ -253,13 +267,7 @@ impl ConsentGuard {
     ) -> Result<()> {
         let manager = self.consent_manager.write().await;
 
-        manager.withdraw_consent_with_reason(
-            user_id,
-            consent_type,
-            reason,
-            ip_address,
-            user_agent,
-        )
+        manager.withdraw_consent_with_reason(user_id, consent_type, reason, ip_address, user_agent)
     }
 }
 
@@ -331,7 +339,9 @@ mod tests {
 
         // Grant consent
         let manager = guard.consent_manager.write().await;
-        manager.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
+        manager
+            .grant_consent(user_id, &ConsentType::ChatStorage)
+            .unwrap();
         drop(manager);
 
         // Now consent should be granted
@@ -354,16 +364,21 @@ mod tests {
         let user_id = "test_user";
 
         // Should fail without consent
-        let result = guard.enforce_consent(user_id, &ConsentType::PiiDetection).await;
+        let result = guard
+            .enforce_consent(user_id, &ConsentType::PiiDetection)
+            .await;
         assert!(result.is_err());
 
         // Grant consent
-        guard.grant_consent_with_audit(user_id, &ConsentType::PiiDetection, None, None)
+        guard
+            .grant_consent_with_audit(user_id, &ConsentType::PiiDetection, None, None)
             .await
             .unwrap();
 
         // Should succeed with consent
-        let result = guard.enforce_consent(user_id, &ConsentType::PiiDetection).await;
+        let result = guard
+            .enforce_consent(user_id, &ConsentType::PiiDetection)
+            .await;
         assert!(result.is_ok());
 
         // Cleanup
@@ -383,19 +398,26 @@ mod tests {
 
         // Grant some consents
         let manager = guard.consent_manager.write().await;
-        manager.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
-        manager.grant_consent(user_id, &ConsentType::DocumentProcessing).unwrap();
+        manager
+            .grant_consent(user_id, &ConsentType::ChatStorage)
+            .unwrap();
+        manager
+            .grant_consent(user_id, &ConsentType::DocumentProcessing)
+            .unwrap();
         drop(manager);
 
         // Check multiple
-        let results = guard.check_multiple_consents(
-            user_id,
-            &[
-                ConsentType::ChatStorage,
-                ConsentType::DocumentProcessing,
-                ConsentType::Analytics,
-            ],
-        ).await.unwrap();
+        let results = guard
+            .check_multiple_consents(
+                user_id,
+                &[
+                    ConsentType::ChatStorage,
+                    ConsentType::DocumentProcessing,
+                    ConsentType::Analytics,
+                ],
+            )
+            .await
+            .unwrap();
 
         assert_eq!(results.len(), 3);
         assert!(results[0].allowed);
@@ -420,7 +442,9 @@ mod tests {
 
         // Grant consent
         let manager = strict_guard.consent_manager.write().await;
-        manager.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
+        manager
+            .grant_consent(user_id, &ConsentType::ChatStorage)
+            .unwrap();
         drop(manager);
 
         // Check with strict mode
@@ -443,20 +467,24 @@ mod tests {
         let user_id = "test_user";
 
         // Grant then revoke
-        guard.grant_consent_with_audit(user_id, &ConsentType::Analytics, None, None)
+        guard
+            .grant_consent_with_audit(user_id, &ConsentType::Analytics, None, None)
             .await
             .unwrap();
 
         let result = guard.check_analytics(user_id).await.unwrap();
         assert!(result.allowed);
 
-        guard.revoke_consent_with_audit(
-            user_id,
-            &ConsentType::Analytics,
-            "User requested withdrawal",
-            None,
-            None,
-        ).await.unwrap();
+        guard
+            .revoke_consent_with_audit(
+                user_id,
+                &ConsentType::Analytics,
+                "User requested withdrawal",
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         let result = guard.check_analytics(user_id).await.unwrap();
         assert!(!result.allowed);

@@ -2,25 +2,24 @@
 ///
 /// Implements AI Act Article 13 transparency requirements for AI systems.
 /// Provides user-facing notices, disclaimers, and confidence indicators.
-
 pub mod confidence;
 pub mod notices;
 
 // Model card fetching and transparency
-pub mod model_card_fetcher;
-pub mod model_registry;
-pub mod model_card_parser;
 pub mod disclaimer_generator;
 pub mod generic_disclaimer;
+pub mod model_card_fetcher;
+pub mod model_card_parser;
+pub mod model_registry;
 
-pub use model_card_fetcher::ModelCardFetcher;
-pub use model_registry::ModelRegistry;
-pub use model_card_parser::ModelCardParser;
-pub use disclaimer_generator::{ModelDisclaimer, DisclaimerGenerator};
+pub use disclaimer_generator::{DisclaimerGenerator, ModelDisclaimer};
 pub use generic_disclaimer::{GenericDisclaimer, GenericDisclaimerGenerator};
+pub use model_card_fetcher::ModelCardFetcher;
+pub use model_card_parser::ModelCardParser;
+pub use model_registry::ModelRegistry;
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 /// Represents the transparency status of an AI interaction
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,7 +147,10 @@ impl TransparencyContext {
         }
 
         // Timestamp
-        notice.push_str(&format!("\nGenerated: {}\n", self.timestamp.format("%Y-%m-%d %H:%M:%S UTC")));
+        notice.push_str(&format!(
+            "\nGenerated: {}\n",
+            self.timestamp.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
 
         notice
     }
@@ -227,24 +229,14 @@ mod transparency_tests {
 
     #[test]
     fn test_risk_level_from_context() {
-        assert_eq!(
-            RiskLevel::from_context(true, true),
-            RiskLevel::High
-        );
-        assert_eq!(
-            RiskLevel::from_context(true, false),
-            RiskLevel::Limited
-        );
-        assert_eq!(
-            RiskLevel::from_context(false, false),
-            RiskLevel::Minimal
-        );
+        assert_eq!(RiskLevel::from_context(true, true), RiskLevel::High);
+        assert_eq!(RiskLevel::from_context(true, false), RiskLevel::Limited);
+        assert_eq!(RiskLevel::from_context(false, false), RiskLevel::Minimal);
     }
 
     #[test]
     fn test_transparency_context_creation() {
-        let ctx = TransparencyContext::new("test-model", RiskLevel::High)
-            .with_confidence(0.85);
+        let ctx = TransparencyContext::new("test-model", RiskLevel::High).with_confidence(0.85);
 
         assert_eq!(ctx.model_name, "test-model");
         assert_eq!(ctx.risk_level, RiskLevel::High);
@@ -254,13 +246,11 @@ mod transparency_tests {
 
     #[test]
     fn test_confidence_clamping() {
-        let ctx = TransparencyContext::new("test", RiskLevel::Minimal)
-            .with_confidence(1.5);
+        let ctx = TransparencyContext::new("test", RiskLevel::Minimal).with_confidence(1.5);
 
         assert_eq!(ctx.confidence, 1.0);
 
-        let ctx2 = TransparencyContext::new("test", RiskLevel::Minimal)
-            .with_confidence(-0.5);
+        let ctx2 = TransparencyContext::new("test", RiskLevel::Minimal).with_confidence(-0.5);
 
         assert_eq!(ctx2.confidence, 0.0);
     }

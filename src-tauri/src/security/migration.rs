@@ -99,10 +99,7 @@ impl ChatMigrationManager {
             .unwrap_or(0);
 
         stats.total_messages = total;
-        tracing::info!(
-            "Starting migration of {} plaintext messages",
-            total
-        );
+        tracing::info!("Starting migration of {} plaintext messages", total);
 
         if let Some(ref cb) = progress_callback {
             cb(0, total);
@@ -130,22 +127,12 @@ impl ChatMigrationManager {
                     &chat_id
                 };
 
-                match self.encrypt_and_update_message(
-                    &tx,
-                    id,
-                    &content,
-                    user_id,
-                    &key_derivation,
-                ) {
+                match self.encrypt_and_update_message(&tx, id, &content, user_id, &key_derivation) {
                     Ok(_) => {
                         stats.encrypted_messages += 1;
                     }
                     Err(e) => {
-                        tracing::error!(
-                            "Failed to encrypt message {}: {}",
-                            id,
-                            e
-                        );
+                        tracing::error!("Failed to encrypt message {}: {}", id, e);
                         stats.failed_messages += 1;
                     }
                 }
@@ -266,8 +253,8 @@ impl ChatMigrationManager {
         let encrypted = self.encryptor.encrypt(content, &user_key, user_id)?;
 
         // Serialize encrypted message to JSON
-        let encrypted_json = serde_json::to_string(&encrypted)
-            .context("Failed to serialize encrypted message")?;
+        let encrypted_json =
+            serde_json::to_string(&encrypted).context("Failed to serialize encrypted message")?;
 
         // Update database with encrypted content
         tx.execute(
@@ -331,22 +318,13 @@ impl ChatMigrationManager {
             }
 
             for (id, content, user_id) in messages {
-                match self.decrypt_and_update_message(
-                    &tx,
-                    id,
-                    &content,
-                    &user_id,
-                    &key_derivation,
-                ) {
+                match self.decrypt_and_update_message(&tx, id, &content, &user_id, &key_derivation)
+                {
                     Ok(_) => {
                         stats.encrypted_messages += 1;
                     }
                     Err(e) => {
-                        tracing::error!(
-                            "Failed to decrypt message {} during rollback: {}",
-                            id,
-                            e
-                        );
+                        tracing::error!("Failed to decrypt message {} during rollback: {}", id, e);
                         stats.failed_messages += 1;
                     }
                 }
@@ -431,9 +409,7 @@ impl ChatMigrationManager {
     /// Generate migration report
     pub fn generate_migration_report(&self, conn: &Connection) -> Result<JsonValue> {
         let total_messages: i64 = conn
-            .query_row("SELECT COUNT(*) FROM chat_messages", [], |row| {
-                row.get(0)
-            })
+            .query_row("SELECT COUNT(*) FROM chat_messages", [], |row| row.get(0))
             .unwrap_or(0);
 
         let encrypted_messages: i64 = conn
@@ -585,10 +561,7 @@ mod tests {
         let progress_calls_clone = Arc::clone(&progress_calls);
 
         let callback: ProgressCallback = Arc::new(move |current, total| {
-            progress_calls_clone
-                .lock()
-                .unwrap()
-                .push((current, total));
+            progress_calls_clone.lock().unwrap().push((current, total));
         });
 
         migrator
