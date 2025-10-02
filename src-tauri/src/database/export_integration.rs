@@ -7,7 +7,7 @@ use chrono::Utc;
 use std::path::PathBuf;
 use serde_json;
 
-use bear_ai_llm::export_engine::{
+use crate::export_engine::{
     UserDataExport, ChatExport, MessageExport, DocumentExport, PIIDetection,
     SettingsExport, ExportMetadata, ComplianceInfo
 };

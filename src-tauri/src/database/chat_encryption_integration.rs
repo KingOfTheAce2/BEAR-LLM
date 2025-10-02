@@ -14,7 +14,7 @@ use serde_json::Value as JsonValue;
 use std::sync::Arc;
 use tracing;
 
-use bear_ai_llm::security::{ChatEncryptor, KeyManager, UserKeyDerivation};
+use crate::security::{ChatEncryptor, KeyManager, UserKeyDerivation};
 
 /// Chat message encryption wrapper for database operations
 pub struct ChatEncryptionLayer {
