@@ -109,8 +109,4 @@ pub async fn set_automatic_cleanup(
     }
 }
 
-/// Apply default retention policies (stub for compilation)
-#[tauri::command]
-pub async fn apply_default_retention_policies() -> Result<String, String> {
-    Ok("Default retention policies applied".to_string())
-}
+// Removed: Duplicate command - use compliance::commands::apply_default_retention_policies instead

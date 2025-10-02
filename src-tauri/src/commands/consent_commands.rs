@@ -3,8 +3,7 @@
 
 use tauri::State;
 use serde_json::Value as JsonValue;
-// FIXME: Middleware module not available - commented out for build
-// use crate::middleware::ConsentGuard;
+use crate::middleware::ConsentGuard;
 use crate::compliance::ConsentType;
 
 /// Check consent status for a specific operation
