@@ -24,7 +24,7 @@ use rusqlite::{params, Connection};
 use serde_json;
 use std::path::PathBuf;
 
-use bear_ai_llm::export_engine::{
+use crate::export_engine::{
     ChatExport, ComplianceInfo, DocumentExport, ExportMetadata, MessageExport, PIIDetection,
     SettingsExport, UserDataExport,
 };
@@ -62,7 +62,7 @@ impl ExportIntegration {
 
         Ok(UserDataExport {
             export_date: Utc::now(),
-            version: "1.0.40".to_string(),
+            version: "1.0.41".to_string(),
             user_id: "default_user".to_string(), // Single-user desktop app
             chats,
             documents,
@@ -285,7 +285,7 @@ impl ExportIntegration {
 
         Ok(ExportMetadata {
             format_version: "1.0.0".to_string(),
-            application_version: "1.0.40".to_string(),
+            application_version: "1.0.41".to_string(),
             export_hash: hash,
             compliance_info: ComplianceInfo {
                 gdpr_article_20: true,
