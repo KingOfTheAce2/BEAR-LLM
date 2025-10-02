@@ -89,11 +89,19 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Run clippy check
+      - name: Check Rust compilation
         run: |
           cd src-tauri
+          echo "🔍 Checking if code compiles..."
+          cargo check --release --lib
+          echo "✅ Compilation check passed"
+
+      - name: Run Clippy (code quality check)
+        run: |
+          cd src-tauri
+          echo "🔍 Running Clippy to catch code issues..."
           cargo clippy --release --lib -- -D warnings
-        continue-on-error: true
+          echo "✅ Clippy check passed - no warnings found"
 
       - name: Build Tauri application
         uses: tauri-apps/tauri-action@v0
