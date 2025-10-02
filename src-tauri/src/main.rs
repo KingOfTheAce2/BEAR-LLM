@@ -987,8 +987,8 @@ async fn switch_rag_model(
     state: State<'_, AppState>,
     model_name: String,
 ) -> Result<String, String> {
-    let mut rag = state.rag_engine.write().await;
-    rag.switch_rag_model(model_name)
+    let rag = state.rag_engine.write().await;
+    rag.switch_rag_model(model_name.clone())
         .await
         .map_err(|e| e.to_string())?;
 
