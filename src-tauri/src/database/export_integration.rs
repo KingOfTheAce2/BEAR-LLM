@@ -1,30 +1,22 @@
 // Database Export Integration for GDPR Article 20 Data Portability
 // Maps database records to UserDataExport structure for export engine
 //
-// 🔒 SECURITY STATUS: CRITICAL VULNERABILITIES FIXED (v1.0.38)
+// 🖥️ ARCHITECTURE: Single-User Desktop Application
 //
-// Previous versions (≤1.0.37) had SEVERE privacy violations:
-// - All queries fetched data for ALL users regardless of user_id
-// - Users could see other users' chat messages, documents, and settings
-// - Violated GDPR Article 15 (Right of Access)
-// - Created attorney-client privilege breach risk
+// This is a local desktop application with a single user per installation.
+// No multi-tenant isolation is required - all data belongs to the local user.
 //
-// ✅ FIXED in v1.0.38:
-// 1. All queries now filter by user_id parameter
-// 2. Database migration added (migrations/add_user_id_columns.sql)
-// 3. User data isolation enforced at database layer
-// 4. Each function properly uses user_id in WHERE clauses
+// Key architectural decisions:
+// - No user_id filtering in queries (single user system)
+// - user_id hardcoded to 'default_user' for consistency
+// - Database stores all data for the single local user
+// - Export functions fetch all data without filtering
 //
-// ⚠️ MIGRATION REQUIRED:
-// Before using this module, run the migration:
-// - migrations/add_user_id_columns.sql
-// This adds user_id columns and indexes to all tables
-//
-// 🔐 Security guarantees (after migration):
-// - fetch_chat_history() - Only returns user's own chats
-// - fetch_documents() - Only returns user's own documents
-// - fetch_user_settings() - Only returns user's own settings
-// - No cross-user data leakage possible
+// 🔐 Security model:
+// - Physical access control (desktop app on user's machine)
+// - OS-level user account isolation
+// - Encryption at rest via SQLCipher
+// - No network-based multi-tenancy concerns
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
@@ -37,12 +29,12 @@ use crate::export_engine::{
     SettingsExport, UserDataExport,
 };
 
-/// Database Export Manager - fetches user-specific data for GDPR export
+/// Database Export Manager - fetches all data for single-user desktop app
 ///
-/// ✅ SECURITY: Now properly filters by user_id (fixed in v1.0.38)
-/// Each user can only access their own data - no cross-user data leakage
-///
-/// Requires database migration: migrations/add_user_id_columns.sql
+/// Architecture: Single-user local application
+/// - Fetches all data from local database
+/// - No user filtering needed (one user per installation)
+/// - user_id hardcoded to 'default_user'
 pub struct ExportIntegration {
     db_path: PathBuf,
 }
@@ -58,19 +50,20 @@ impl ExportIntegration {
     }
 
     /// Fetch all user data from database and convert to export format
-    pub fn fetch_user_data(&self, user_id: &str) -> Result<UserDataExport> {
+    /// Single-user app: user_id is always 'default_user'
+    pub fn fetch_user_data(&self) -> Result<UserDataExport> {
         // Fetch all components
-        let chats = self.fetch_chat_history(user_id)?;
-        let documents = self.fetch_documents(user_id)?;
-        let settings = self.fetch_user_settings(user_id)?;
+        let chats = self.fetch_chat_history()?;
+        let documents = self.fetch_documents()?;
+        let settings = self.fetch_user_settings()?;
 
         // Generate export metadata
-        let metadata = self.generate_export_metadata(user_id, &chats, &documents)?;
+        let metadata = self.generate_export_metadata(&chats, &documents)?;
 
         Ok(UserDataExport {
             export_date: Utc::now(),
-            version: "1.0.25".to_string(), // BEAR AI version
-            user_id: user_id.to_string(),
+            version: "1.0.39".to_string(),
+            user_id: "default_user".to_string(), // Single-user desktop app
             chats,
             documents,
             settings,
@@ -78,22 +71,19 @@ impl ExportIntegration {
         })
     }
 
-    /// Fetch all chat sessions and messages for a user
-    /// 🔒 SECURITY FIX: Now properly filters by user_id to prevent data leakage
-    fn fetch_chat_history(&self, user_id: &str) -> Result<Vec<ChatExport>> {
+    /// Fetch all chat sessions and messages
+    /// Single-user app: fetches all chats without filtering
+    fn fetch_chat_history(&self) -> Result<Vec<ChatExport>> {
         let conn = self.get_connection()?;
 
-        // CRITICAL FIX: Filter by user_id to ensure data isolation
-        // Previous version fetched ALL users' data - now fixed
         let mut stmt = conn.prepare(
             "SELECT id, title, created_at, updated_at, model_used, tags
              FROM chat_sessions
-             WHERE user_id = ?1
              ORDER BY created_at DESC",
         )?;
 
         let chat_sessions: Vec<(String, String, String, String, String, String)> = stmt
-            .query_map(params![user_id], |row| {
+            .query_map([], |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,
@@ -159,22 +149,19 @@ impl ExportIntegration {
         Ok(messages)
     }
 
-    /// Fetch all documents with PII detections for a user
-    /// 🔒 SECURITY FIX: Now properly filters by user_id to prevent data leakage
-    fn fetch_documents(&self, user_id: &str) -> Result<Vec<DocumentExport>> {
+    /// Fetch all documents with PII detections
+    /// Single-user app: fetches all documents without filtering
+    fn fetch_documents(&self) -> Result<Vec<DocumentExport>> {
         let conn = self.get_connection()?;
 
-        // CRITICAL FIX: Filter by user_id to ensure data isolation
-        // Previous version fetched ALL users' documents - now fixed
         let mut stmt = conn.prepare(
             "SELECT id, filename, file_type, upload_date, chunk_count
              FROM documents
-             WHERE user_id = ?1
              ORDER BY upload_date DESC",
         )?;
 
         let docs: Vec<(i64, String, String, String, i64)> = stmt
-            .query_map(params![user_id], |row| {
+            .query_map([], |row| {
                 Ok((
                     row.get(0)?,
                     row.get(1)?,
@@ -231,21 +218,18 @@ impl ExportIntegration {
     }
 
     /// Fetch user settings and preferences
-    /// 🔒 SECURITY FIX: Now properly filters by user_id to prevent data leakage
-    fn fetch_user_settings(&self, user_id: &str) -> Result<SettingsExport> {
+    /// Single-user app: fetches all settings without filtering
+    fn fetch_user_settings(&self) -> Result<SettingsExport> {
         let conn = self.get_connection()?;
 
-        // CRITICAL FIX: Filter by user_id to ensure data isolation
-        // Previous version fetched ALL users' settings - now fixed
         let mut stmt = conn.prepare(
             "SELECT setting_key, setting_value
              FROM user_settings
-             WHERE user_id = ?1
              ORDER BY setting_key",
         )?;
 
         let mut preferences = serde_json::Map::new();
-        let rows = stmt.query_map(params![user_id], |row| {
+        let rows = stmt.query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })?;
 
@@ -258,7 +242,7 @@ impl ExportIntegration {
         }
 
         // Get retention policy from processing records if available
-        let retention_policy = self.fetch_retention_policy(user_id)?;
+        let retention_policy = self.fetch_retention_policy()?;
 
         Ok(SettingsExport {
             preferences: serde_json::Value::Object(preferences),
@@ -267,15 +251,15 @@ impl ExportIntegration {
     }
 
     /// Fetch user's retention policy
-    fn fetch_retention_policy(&self, user_id: &str) -> Result<Option<String>> {
+    /// Single-user app: fetches latest retention policy
+    fn fetch_retention_policy(&self) -> Result<Option<String>> {
         let conn = self.get_connection()?;
 
         let policy: Option<String> = conn
             .query_row(
                 "SELECT retention_period FROM processing_records
-                 WHERE user_id = ?1
                  ORDER BY timestamp DESC LIMIT 1",
-                params![user_id],
+                [],
                 |row| row.get(0),
             )
             .ok();
@@ -286,14 +270,12 @@ impl ExportIntegration {
     /// Generate export metadata with hash and compliance info
     fn generate_export_metadata(
         &self,
-        user_id: &str,
         chats: &[ChatExport],
         documents: &[DocumentExport],
     ) -> Result<ExportMetadata> {
         // Generate hash from data for integrity verification
         let data_for_hash = format!(
-            "{}:chats={}:docs={}:timestamp={}",
-            user_id,
+            "default_user:chats={}:docs={}:timestamp={}",
             chats.len(),
             documents.len(),
             Utc::now().to_rfc3339()
@@ -303,7 +285,7 @@ impl ExportIntegration {
 
         Ok(ExportMetadata {
             format_version: "1.0.0".to_string(),
-            application_version: "1.0.25".to_string(), // BEAR AI version
+            application_version: "1.0.39".to_string(),
             export_hash: hash,
             compliance_info: ComplianceInfo {
                 gdpr_article_20: true,
@@ -322,19 +304,19 @@ impl ExportIntegration {
     }
 
     /// Export consent data from compliance module
-    pub fn fetch_consent_data(&self, user_id: &str) -> Result<serde_json::Value> {
+    /// Single-user app: fetches all consent records
+    pub fn fetch_consent_data(&self) -> Result<serde_json::Value> {
         let conn = self.get_connection()?;
 
         // Fetch consent records
         let mut stmt = conn.prepare(
             "SELECT id, consent_type, granted, granted_at, revoked_at, version, consent_text, created_at, updated_at
              FROM user_consent
-             WHERE user_id = ?1
              ORDER BY consent_type, version DESC"
         )?;
 
         let consents: Vec<serde_json::Value> = stmt
-            .query_map(params![user_id], |row| {
+            .query_map([], |row| {
                 Ok(serde_json::json!({
                     "id": row.get::<_, i64>(0)?,
                     "consent_type": row.get::<_, String>(1)?,
@@ -350,27 +332,27 @@ impl ExportIntegration {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(serde_json::json!({
-            "user_id": user_id,
+            "user_id": "default_user",
             "consents": consents,
             "total_count": consents.len()
         }))
     }
 
     /// Export audit logs from compliance module
-    pub fn fetch_audit_logs(&self, user_id: &str, limit: usize) -> Result<serde_json::Value> {
+    /// Single-user app: fetches audit logs with limit
+    pub fn fetch_audit_logs(&self, limit: usize) -> Result<serde_json::Value> {
         let conn = self.get_connection()?;
 
         // Fetch audit log entries
         let mut stmt = conn.prepare(
             "SELECT id, timestamp, action_type, entity_type, entity_id, details, success, error_message
              FROM audit_log
-             WHERE user_id = ?1
              ORDER BY timestamp DESC
-             LIMIT ?2"
+             LIMIT ?1"
         )?;
 
         let logs: Vec<serde_json::Value> = stmt
-            .query_map(params![user_id, limit as i64], |row| {
+            .query_map(params![limit as i64], |row| {
                 let details_str: Option<String> = row.get(5)?;
                 let details: Option<serde_json::Value> =
                     details_str.and_then(|s| serde_json::from_str(&s).ok());
@@ -389,17 +371,18 @@ impl ExportIntegration {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(serde_json::json!({
-            "user_id": user_id,
+            "user_id": "default_user",
             "audit_trail": logs,
             "total_count": logs.len()
         }))
     }
 
     /// Get comprehensive export including compliance data
-    pub fn fetch_complete_user_data(&self, user_id: &str) -> Result<serde_json::Value> {
-        let user_data = self.fetch_user_data(user_id)?;
-        let consent_data = self.fetch_consent_data(user_id)?;
-        let audit_logs = self.fetch_audit_logs(user_id, 1000)?;
+    /// Single-user app: fetches all data for the local user
+    pub fn fetch_complete_user_data(&self) -> Result<serde_json::Value> {
+        let user_data = self.fetch_user_data()?;
+        let consent_data = self.fetch_consent_data()?;
+        let audit_logs = self.fetch_audit_logs(1000)?;
 
         Ok(serde_json::json!({
             "export_metadata": {
@@ -583,10 +566,11 @@ mod tests {
 
         drop(conn);
 
-        // Test export
+        // Test export - no user_id parameter needed
         let exporter = ExportIntegration::new(db_path.clone());
-        let user_data = exporter.fetch_user_data("test_user").unwrap();
+        let user_data = exporter.fetch_user_data().unwrap();
 
+        assert_eq!(user_data.user_id, "default_user");
         assert_eq!(user_data.chats.len(), 1);
         assert_eq!(user_data.chats[0].messages.len(), 1);
         assert_eq!(user_data.documents.len(), 1);
@@ -606,7 +590,7 @@ mod tests {
 
         conn.execute(
             "INSERT INTO user_consent (user_id, consent_type, granted, version, consent_text)
-             VALUES ('test_user', 'chat_storage', 1, 1, 'Test consent text')",
+             VALUES ('default_user', 'chat_storage', 1, 1, 'Test consent text')",
             [],
         )
         .unwrap();
@@ -614,8 +598,9 @@ mod tests {
         drop(conn);
 
         let exporter = ExportIntegration::new(db_path.clone());
-        let consent_data = exporter.fetch_consent_data("test_user").unwrap();
+        let consent_data = exporter.fetch_consent_data().unwrap();
 
+        assert_eq!(consent_data["user_id"], "default_user");
         assert_eq!(consent_data["total_count"], 1);
         assert!(consent_data["consents"].is_array());
 
@@ -638,14 +623,14 @@ mod tests {
 
         conn.execute(
             "INSERT INTO user_consent (user_id, consent_type, granted, version, consent_text)
-             VALUES ('test_user', 'chat_storage', 1, 1, 'Consent')",
+             VALUES ('default_user', 'chat_storage', 1, 1, 'Consent')",
             [],
         )
         .unwrap();
 
         conn.execute(
             "INSERT INTO audit_log (user_id, action_type, entity_type, success)
-             VALUES ('test_user', 'data_accessed', 'document', 1)",
+             VALUES ('default_user', 'data_accessed', 'document', 1)",
             [],
         )
         .unwrap();
@@ -653,8 +638,9 @@ mod tests {
         drop(conn);
 
         let exporter = ExportIntegration::new(db_path.clone());
-        let complete_data = exporter.fetch_complete_user_data("test_user").unwrap();
+        let complete_data = exporter.fetch_complete_user_data().unwrap();
 
+        assert_eq!(complete_data["export_metadata"]["user_id"], "default_user");
         assert!(complete_data["export_metadata"].is_object());
         assert!(complete_data["user_data"].is_object());
         assert!(complete_data["compliance_data"].is_object());

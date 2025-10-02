@@ -1,5 +1,7 @@
 // Tauri Commands for GDPR Data Export
 // Provides frontend interface to trigger data exports
+//
+// Single-user desktop app: No user_id parameters needed
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -12,7 +14,6 @@ use crate::database::export_integration::ExportIntegration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportRequest {
-    pub user_id: String,
     pub formats: Vec<String>, // ["docx", "pdf", "markdown", "json"]
     pub include_compliance_data: bool,
 }
@@ -27,6 +28,7 @@ pub struct ExportResponse {
 }
 
 /// Export user data to specified formats
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
 pub async fn export_user_data(request: ExportRequest) -> Result<ExportResponse, String> {
     // Get database path
@@ -38,9 +40,9 @@ pub async fn export_user_data(request: ExportRequest) -> Result<ExportResponse, 
     // Create export integration
     let export_integration = ExportIntegration::new(db_path);
 
-    // Fetch user data from database
+    // Fetch user data from database (single-user, no user_id parameter)
     let user_data = export_integration
-        .fetch_user_data(&request.user_id)
+        .fetch_user_data()
         .map_err(|e| format!("Failed to fetch user data: {}", e))?;
 
     // Create export engine
@@ -64,7 +66,7 @@ pub async fn export_user_data(request: ExportRequest) -> Result<ExportResponse, 
     let mut all_files = exported_files.clone();
     let metadata = if request.include_compliance_data {
         let complete_data = export_integration
-            .fetch_complete_user_data(&request.user_id)
+            .fetch_complete_user_data()
             .map_err(|e| format!("Failed to fetch compliance data: {}", e))?;
 
         // Write complete JSON export
@@ -92,8 +94,9 @@ pub async fn export_user_data(request: ExportRequest) -> Result<ExportResponse, 
 }
 
 /// Export user data to JSON only (lightweight)
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
-pub async fn export_user_data_json(user_id: String) -> Result<String, String> {
+pub async fn export_user_data_json() -> Result<String, String> {
     let mut db_path = dirs::data_local_dir()
         .ok_or_else(|| "Could not find local data directory".to_string())?;
     db_path.push("bear-ai");
@@ -101,7 +104,7 @@ pub async fn export_user_data_json(user_id: String) -> Result<String, String> {
 
     let export_integration = ExportIntegration::new(db_path);
     let user_data = export_integration
-        .fetch_user_data(&user_id)
+        .fetch_user_data()
         .map_err(|e| format!("Failed to fetch user data: {}", e))?;
 
     serde_json::to_string_pretty(&user_data)
@@ -109,8 +112,9 @@ pub async fn export_user_data_json(user_id: String) -> Result<String, String> {
 }
 
 /// Export consent data only
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
-pub async fn export_consent_data(user_id: String) -> Result<String, String> {
+pub async fn export_consent_data() -> Result<String, String> {
     let mut db_path = dirs::data_local_dir()
         .ok_or_else(|| "Could not find local data directory".to_string())?;
     db_path.push("bear-ai");
@@ -118,7 +122,7 @@ pub async fn export_consent_data(user_id: String) -> Result<String, String> {
 
     let export_integration = ExportIntegration::new(db_path);
     let consent_data = export_integration
-        .fetch_consent_data(&user_id)
+        .fetch_consent_data()
         .map_err(|e| format!("Failed to fetch consent data: {}", e))?;
 
     serde_json::to_string_pretty(&consent_data)
@@ -126,8 +130,9 @@ pub async fn export_consent_data(user_id: String) -> Result<String, String> {
 }
 
 /// Export audit logs only
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
-pub async fn export_audit_logs(user_id: String, limit: Option<usize>) -> Result<String, String> {
+pub async fn export_audit_logs(limit: Option<usize>) -> Result<String, String> {
     let mut db_path = dirs::data_local_dir()
         .ok_or_else(|| "Could not find local data directory".to_string())?;
     db_path.push("bear-ai");
@@ -135,7 +140,7 @@ pub async fn export_audit_logs(user_id: String, limit: Option<usize>) -> Result<
 
     let export_integration = ExportIntegration::new(db_path);
     let audit_logs = export_integration
-        .fetch_audit_logs(&user_id, limit.unwrap_or(1000))
+        .fetch_audit_logs(limit.unwrap_or(1000))
         .map_err(|e| format!("Failed to fetch audit logs: {}", e))?;
 
     serde_json::to_string_pretty(&audit_logs)
@@ -143,8 +148,9 @@ pub async fn export_audit_logs(user_id: String, limit: Option<usize>) -> Result<
 }
 
 /// Get export preview (metadata only, no actual export)
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
-pub async fn get_export_preview(user_id: String) -> Result<serde_json::Value, String> {
+pub async fn get_export_preview() -> Result<serde_json::Value, String> {
     let mut db_path = dirs::data_local_dir()
         .ok_or_else(|| "Could not find local data directory".to_string())?;
     db_path.push("bear-ai");
@@ -152,7 +158,7 @@ pub async fn get_export_preview(user_id: String) -> Result<serde_json::Value, St
 
     let export_integration = ExportIntegration::new(db_path);
     let user_data = export_integration
-        .fetch_user_data(&user_id)
+        .fetch_user_data()
         .map_err(|e| format!("Failed to fetch user data: {}", e))?;
 
     // Return summary without full content
@@ -176,11 +182,9 @@ pub async fn get_export_preview(user_id: String) -> Result<serde_json::Value, St
 }
 
 /// Verify export integrity by comparing hash
+/// Single-user app: No user_id parameter needed
 #[tauri::command]
-pub async fn verify_export_integrity(
-    user_id: String,
-    export_hash: String,
-) -> Result<bool, String> {
+pub async fn verify_export_integrity(export_hash: String) -> Result<bool, String> {
     let mut db_path = dirs::data_local_dir()
         .ok_or_else(|| "Could not find local data directory".to_string())?;
     db_path.push("bear-ai");
@@ -188,7 +192,7 @@ pub async fn verify_export_integrity(
 
     let export_integration = ExportIntegration::new(db_path);
     let user_data = export_integration
-        .fetch_user_data(&user_id)
+        .fetch_user_data()
         .map_err(|e| format!("Failed to fetch user data: {}", e))?;
 
     Ok(user_data.metadata.export_hash == export_hash)
@@ -201,13 +205,11 @@ mod tests {
     #[tokio::test]
     async fn test_export_request_serialization() {
         let request = ExportRequest {
-            user_id: "test_user".to_string(),
             formats: vec!["docx".to_string(), "pdf".to_string()],
             include_compliance_data: true,
         };
 
         let json = serde_json::to_string(&request).unwrap();
-        assert!(json.contains("test_user"));
         assert!(json.contains("docx"));
     }
 
