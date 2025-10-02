@@ -80,8 +80,7 @@ pub struct PIIEntity {
     pub engine: String, // "presidio", "transformer", or "regex"
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum PresidioMode {
     /// Presidio disabled - use built-in detection only
     #[default]
@@ -91,7 +90,6 @@ pub enum PresidioMode {
     /// Presidio Full - spaCy + transformer models (~2GB overhead)
     FullML,
 }
-
 
 impl PresidioMode {
     pub fn to_string(&self) -> String {

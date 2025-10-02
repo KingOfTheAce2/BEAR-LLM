@@ -159,12 +159,14 @@ impl DisclaimerGenerator {
 
     /// Generate not-recommended use statement
     fn generate_not_recommended_use(_model_card: &ModelCard) -> String {
-        let restricted_uses = ["Medical diagnosis or treatment decisions",
+        let restricted_uses = [
+            "Medical diagnosis or treatment decisions",
             "Legal advice or court proceedings",
             "Financial investment decisions",
             "Critical safety systems",
             "Military or surveillance applications",
-            "Automated decision-making affecting human rights"];
+            "Automated decision-making affecting human rights",
+        ];
 
         restricted_uses.join(", ")
     }

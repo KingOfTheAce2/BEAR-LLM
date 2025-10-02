@@ -605,7 +605,7 @@ impl RAGEngine {
 
         // Convert to proximity score (closer = higher score)
         let max_distance = 100; // Maximum considered distance
-        
+
         1.0 - (min_span.min(max_distance) as f32 / max_distance as f32)
     }
 
@@ -689,10 +689,7 @@ impl RAGEngine {
             .collect();
 
         for token in tokens {
-            index
-                .entry(token)
-                .or_default()
-                .push(doc_id.to_string());
+            index.entry(token).or_default().push(doc_id.to_string());
         }
     }
 
@@ -918,9 +915,7 @@ impl RAGEngine {
             let metadata_str = if let Some(obj) = result.metadata.as_object() {
                 let meta_items: Vec<String> = obj
                     .iter()
-                    .filter_map(|(k, v)| {
-                        v.as_str().map(|s| format!("{}: {}", k, s))
-                    })
+                    .filter_map(|(k, v)| v.as_str().map(|s| format!("{}: {}", k, s)))
                     .collect();
 
                 if !meta_items.is_empty() {
