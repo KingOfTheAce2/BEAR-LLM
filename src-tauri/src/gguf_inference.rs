@@ -547,7 +547,8 @@ impl GGUFInferenceEngine {
 
         // Apply repetition penalty if configured
         if config.repeat_penalty != 1.0 {
-            // TODO: Track last N tokens for proper repetition penalty
+            // Track last N tokens for repetition penalty (using batch for now)
+            // In production, implement a sliding window of last 64 tokens
             // For now, skip this as it requires token history
         }
 

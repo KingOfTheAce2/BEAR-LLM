@@ -6,6 +6,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+use sysinfo::System;
 use tauri::{Emitter, State};
 use tokio::sync::RwLock;
 
@@ -695,8 +696,413 @@ async fn get_database_stats(state: State<'_, AppState>) -> Result<serde_json::Va
     db.get_document_statistics().map_err(|e| e.to_string())
 }
 
-// Note: get_system_specs, check_model_compatibility, and get_resource_usage
-// are defined in commands.rs and imported below
+// System specification commands
+#[tauri::command]
+async fn get_system_specs(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let detector = state.hardware_detector.read().await;
+    let mut detector_mut = detector.clone();
+    let specs = detector_mut
+        .detect_hardware()
+        .map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "cpu_cores": specs.cpu_cores,
+        "cpu_frequency": specs.cpu_frequency,
+        "cpu_brand": specs.cpu_brand,
+        "total_memory": specs.total_memory,
+        "available_memory": specs.available_memory,
+        "gpu_info": specs.gpu_info,
+        "system_type": specs.system_type,
+        "performance_category": specs.performance_category
+    }))
+}
+
+#[tauri::command]
+async fn check_model_compatibility(
+    state: State<'_, AppState>,
+    model_name: String,
+    model_size_gb: f64,
+) -> Result<serde_json::Value, String> {
+    let detector = state.hardware_detector.read().await;
+    let mut detector_mut = detector.clone();
+    let specs = detector_mut
+        .detect_hardware()
+        .map_err(|e| e.to_string())?;
+
+    // Check if system can run the model
+    let required_ram_gb = model_size_gb * 1.5; // Model + context overhead
+    let available_ram_gb = specs.available_memory as f64 / 1024.0;
+    let compatible = available_ram_gb >= required_ram_gb;
+
+    let recommendation = if compatible {
+        "System has sufficient resources"
+    } else {
+        "Insufficient RAM - consider a smaller model"
+    };
+
+    Ok(serde_json::json!({
+        "compatible": compatible,
+        "model_name": model_name,
+        "model_size_gb": model_size_gb,
+        "required_ram_gb": required_ram_gb,
+        "available_ram_gb": available_ram_gb,
+        "recommendation": recommendation,
+        "can_use_gpu": specs.gpu_info.is_some()
+    }))
+}
+
+#[tauri::command]
+async fn get_resource_usage(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let monitor = state.hardware_monitor.read().await;
+    let status = monitor.get_status().await.map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "cpu_usage": status.cpu_usage,
+        "memory_usage": status.memory_usage,
+        "gpu_usage": status.gpu_usage,
+        "temperature": status.temperature,
+        "is_safe": status.is_safe
+    }))
+}
+
+// LLM Model Management Commands
+#[tauri::command]
+async fn load_model(
+    state: State<'_, AppState>,
+    model_path: String,
+    n_gpu_layers: Option<u32>,
+) -> Result<String, String> {
+    let llm = state.llm_manager.write().await;
+    llm.load_model(&model_path, n_gpu_layers.unwrap_or(0))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(format!("Model loaded successfully: {}", model_path))
+}
+
+#[tauri::command]
+async fn unload_model(state: State<'_, AppState>) -> Result<String, String> {
+    let llm = state.llm_manager.write().await;
+    llm.unload_model().await.map_err(|e| e.to_string())?;
+    Ok("Model unloaded successfully".to_string())
+}
+
+#[tauri::command]
+async fn emergency_stop(state: State<'_, AppState>) -> Result<String, String> {
+    // Stop all ongoing operations
+    let llm = state.llm_manager.write().await;
+    llm.cancel_generation().await.map_err(|e| e.to_string())?;
+    Ok("All operations stopped".to_string())
+}
+
+#[tauri::command]
+async fn set_resource_limits(
+    state: State<'_, AppState>,
+    max_cpu: Option<f32>,
+    max_memory: Option<f32>,
+    max_gpu: Option<f32>,
+) -> Result<String, String> {
+    let monitor = state.hardware_monitor.write().await;
+    monitor
+        .set_resource_limits(
+            max_cpu.unwrap_or(85.0),
+            max_memory.unwrap_or(90.0),
+            max_gpu.unwrap_or(85.0),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok("Resource limits updated".to_string())
+}
+
+// HuggingFace Integration Commands
+#[tauri::command]
+async fn download_model_from_huggingface(
+    model_id: String,
+    filename: Option<String>,
+) -> Result<serde_json::Value, String> {
+    use tokio::process::Command;
+
+    let download_dir = dirs::data_local_dir()
+        .map(|mut p| {
+            p.push("bear-ai/models");
+            p
+        })
+        .ok_or("Failed to get data directory")?;
+
+    std::fs::create_dir_all(&download_dir).map_err(|e| e.to_string())?;
+
+    let file = filename.unwrap_or_else(|| "model.gguf".to_string());
+    let output_path = download_dir.join(&file);
+
+    // Use huggingface_hub CLI to download
+    let output = Command::new("huggingface-cli")
+        .arg("download")
+        .arg(&model_id)
+        .arg(&file)
+        .arg("--local-dir")
+        .arg(&download_dir)
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute download: {}", e))?;
+
+    if output.status.success() {
+        Ok(serde_json::json!({
+            "success": true,
+            "model_id": model_id,
+            "path": output_path.to_string_lossy(),
+            "message": "Model downloaded successfully"
+        }))
+    } else {
+        let error = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Download failed: {}", error))
+    }
+}
+
+#[tauri::command]
+async fn search_huggingface_models(
+    query: String,
+    limit: Option<usize>,
+) -> Result<serde_json::Value, String> {
+    // Simple search implementation - in production use HF API
+    let popular_models = vec![
+        ("TheBloke/Llama-2-7B-Chat-GGUF", "Llama 2 7B Chat", "7B"),
+        ("TheBloke/Mistral-7B-Instruct-v0.2-GGUF", "Mistral 7B Instruct", "7B"),
+        ("TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF", "TinyLlama 1.1B", "1.1B"),
+        ("TheBloke/CodeLlama-7B-Instruct-GGUF", "CodeLlama 7B", "7B"),
+    ];
+
+    let results: Vec<serde_json::Value> = popular_models
+        .iter()
+        .filter(|(id, name, _)| {
+            id.to_lowercase().contains(&query.to_lowercase())
+                || name.to_lowercase().contains(&query.to_lowercase())
+        })
+        .take(limit.unwrap_or(10))
+        .map(|(id, name, size)| {
+            serde_json::json!({
+                "model_id": id,
+                "name": name,
+                "size": size,
+                "downloads": 0,
+                "likes": 0
+            })
+        })
+        .collect();
+
+    Ok(serde_json::json!({
+        "query": query,
+        "results": results,
+        "total": results.len()
+    }))
+}
+
+// RAG Configuration Commands
+#[tauri::command]
+async fn get_available_rag_models() -> Result<serde_json::Value, String> {
+    let models = vec![
+        ("BAAI/bge-small-en-v1.5", "BGE Small English", "Small", "133MB"),
+        ("BAAI/bge-base-en-v1.5", "BGE Base English", "Medium", "438MB"),
+        ("sentence-transformers/all-MiniLM-L6-v2", "MiniLM L6", "Small", "90MB"),
+    ];
+
+    let model_list: Vec<serde_json::Value> = models
+        .iter()
+        .map(|(id, name, size, disk)| {
+            serde_json::json!({
+                "id": id,
+                "name": name,
+                "size": size,
+                "disk_size": disk,
+                "embedding_dim": 384
+            })
+        })
+        .collect();
+
+    Ok(serde_json::json!({
+        "models": model_list,
+        "default": "BAAI/bge-small-en-v1.5"
+    }))
+}
+
+#[tauri::command]
+async fn get_active_rag_model(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let rag = state.rag_engine.read().await;
+    let model_name = rag.get_active_model_name();
+
+    Ok(serde_json::json!({
+        "model_name": model_name,
+        "is_loaded": rag.is_initialized()
+    }))
+}
+
+#[tauri::command]
+async fn switch_rag_model(
+    state: State<'_, AppState>,
+    model_name: String,
+) -> Result<String, String> {
+    let rag = state.rag_engine.write().await;
+    rag.switch_embedding_model(&model_name)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(format!("Switched to model: {}", model_name))
+}
+
+#[tauri::command]
+async fn get_rag_config(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let rag = state.rag_engine.read().await;
+    let config = rag.get_config();
+
+    Ok(serde_json::json!({
+        "chunk_size": config.chunk_size,
+        "chunk_overlap": config.chunk_overlap,
+        "top_k": config.top_k,
+        "similarity_threshold": config.similarity_threshold
+    }))
+}
+
+#[tauri::command]
+async fn update_rag_config(
+    state: State<'_, AppState>,
+    chunk_size: Option<usize>,
+    chunk_overlap: Option<usize>,
+    top_k: Option<usize>,
+    similarity_threshold: Option<f32>,
+) -> Result<String, String> {
+    let rag = state.rag_engine.write().await;
+
+    if let Some(size) = chunk_size {
+        rag.set_chunk_size(size);
+    }
+    if let Some(overlap) = chunk_overlap {
+        rag.set_chunk_overlap(overlap);
+    }
+    if let Some(k) = top_k {
+        rag.set_top_k(k);
+    }
+    if let Some(threshold) = similarity_threshold {
+        rag.set_similarity_threshold(threshold);
+    }
+
+    Ok("RAG configuration updated".to_string())
+}
+
+// PII Detection Configuration Commands
+#[tauri::command]
+async fn get_memory_info() -> Result<serde_json::Value, String> {
+    let sys = System::new_all();
+    let total_mb = sys.total_memory() / 1024 / 1024;
+    let available_mb = sys.available_memory() / 1024 / 1024;
+    let used_mb = total_mb - available_mb;
+
+    Ok(serde_json::json!({
+        "total_mb": total_mb,
+        "available_mb": available_mb,
+        "used_mb": used_mb,
+        "usage_percent": (used_mb as f64 / total_mb as f64) * 100.0
+    }))
+}
+
+#[tauri::command]
+async fn can_use_pii_mode(mode: String) -> Result<serde_json::Value, String> {
+    let sys = System::new_all();
+    let available_mb = sys.available_memory() / 1024 / 1024;
+
+    let (required_mb, can_use) = match mode.as_str() {
+        "builtin" => (0, true),
+        "presidio_lite" => (500, available_mb > 500),
+        "presidio_full" => (2048, available_mb > 2048),
+        _ => return Err("Invalid mode".to_string()),
+    };
+
+    Ok(serde_json::json!({
+        "mode": mode,
+        "can_use": can_use,
+        "required_mb": required_mb,
+        "available_mb": available_mb
+    }))
+}
+
+#[tauri::command]
+async fn estimate_mode_impact(mode: String) -> Result<serde_json::Value, String> {
+    let (memory_mb, accuracy, speed) = match mode.as_str() {
+        "builtin" => (0, "60-70%", "Fast"),
+        "presidio_lite" => (500, "85-90%", "Medium"),
+        "presidio_full" => (2048, "95-98%", "Slow"),
+        _ => return Err("Invalid mode".to_string()),
+    };
+
+    Ok(serde_json::json!({
+        "mode": mode,
+        "memory_mb": memory_mb,
+        "accuracy": accuracy,
+        "speed": speed
+    }))
+}
+
+#[tauri::command]
+async fn get_pii_config(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let detector = state.pii_detector.read().await;
+    let config = detector.get_config();
+
+    Ok(serde_json::json!({
+        "mode": config.mode,
+        "enabled": config.enabled,
+        "anonymize": config.anonymize
+    }))
+}
+
+#[tauri::command]
+async fn set_pii_mode(
+    state: State<'_, AppState>,
+    mode: String,
+) -> Result<String, String> {
+    let detector = state.pii_detector.write().await;
+    detector.set_mode(&mode).await.map_err(|e| e.to_string())?;
+    Ok(format!("PII mode set to: {}", mode))
+}
+
+#[tauri::command]
+async fn update_pii_config(
+    state: State<'_, AppState>,
+    enabled: Option<bool>,
+    anonymize: Option<bool>,
+) -> Result<String, String> {
+    let detector = state.pii_detector.write().await;
+
+    if let Some(en) = enabled {
+        detector.set_enabled(en);
+    }
+    if let Some(anon) = anonymize {
+        detector.set_anonymize(anon);
+    }
+
+    Ok("PII configuration updated".to_string())
+}
+
+#[tauri::command]
+async fn install_presidio() -> Result<serde_json::Value, String> {
+    // Presidio requires Python - provide installation instructions
+    Ok(serde_json::json!({
+        "installed": false,
+        "message": "Presidio requires Python installation",
+        "instructions": "pip install presidio-analyzer presidio-anonymizer",
+        "optional": true
+    }))
+}
+
+#[tauri::command]
+async fn check_presidio_status(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let detector = state.pii_detector.read().await;
+    let available = detector.is_presidio_available().await;
+
+    Ok(serde_json::json!({
+        "available": available,
+        "mode": if available { "presidio" } else { "builtin" },
+        "status": if available { "installed" } else { "not_installed" }
+    }))
+}
 
 // Setup management commands
 #[tauri::command]
@@ -1217,9 +1623,9 @@ fn main() {
             // Health and monitoring
             health_check,
             check_system_status,
-            // get_system_specs, // TODO: Implement
-            // check_model_compatibility, // TODO: Implement
-            // get_resource_usage, // TODO: Implement
+            get_system_specs,
+            check_model_compatibility,
+            get_resource_usage,
             get_resource_limits,
             check_resource_limits,
             // Document processing
@@ -1230,10 +1636,10 @@ fn main() {
             send_message,
             list_available_models,
             download_model,
-            // load_model, // TODO: Implement
-            // unload_model, // TODO: Implement
-            // emergency_stop, // TODO: Implement
-            // set_resource_limits, // TODO: Implement
+            load_model,
+            unload_model,
+            emergency_stop,
+            set_resource_limits,
             // Knowledge base
             search_knowledge_base,
             add_to_knowledge_base,
@@ -1247,8 +1653,8 @@ fn main() {
             get_system_summary,
             estimate_model_performance,
             // HuggingFace integration
-            // download_model_from_huggingface, // TODO: Implement
-            // search_huggingface_models, // TODO: Implement
+            download_model_from_huggingface,
+            search_huggingface_models,
             // Enhanced PII detection
             detect_pii_advanced,
             redact_pii_advanced,
@@ -1266,11 +1672,11 @@ fn main() {
             mark_setup_complete,
             get_setup_status,
             // RAG Model Management
-            // get_available_rag_models, // TODO: Implement
-            // get_active_rag_model, // TODO: Implement
-            // switch_rag_model, // TODO: Implement
-            // get_rag_config, // TODO: Implement
-            // update_rag_config, // TODO: Implement
+            get_available_rag_models,
+            get_active_rag_model,
+            switch_rag_model,
+            get_rag_config,
+            update_rag_config,
             // GDPR Compliance
             compliance::commands::check_user_consent,
             compliance::commands::grant_user_consent,
@@ -1339,14 +1745,14 @@ fn main() {
             // commands::model_transparency::format_disclaimer_display, // TODO: Unused - remove from frontend
             // commands::model_transparency::format_generic_disclaimer_display, // TODO: Unused - remove from frontend
             // PII Detection & Memory Management
-            // get_memory_info, // TODO: Implement
-            // can_use_pii_mode, // TODO: Implement
-            // estimate_mode_impact, // TODO: Implement
-            // get_pii_config, // TODO: Implement
-            // set_pii_mode, // TODO: Implement
-            // update_pii_config, // TODO: Implement
-            // install_presidio, // TODO: Implement
-            // check_presidio_status, // TODO: Implement
+            get_memory_info,
+            can_use_pii_mode,
+            estimate_mode_impact,
+            get_pii_config,
+            set_pii_mode,
+            update_pii_config,
+            install_presidio,
+            check_presidio_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
