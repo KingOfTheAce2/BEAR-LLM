@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Collection of transparency notices
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct NoticeTemplates {
     pub startup: StartupNotice,
     pub onboarding: OnboardingNotice,
@@ -13,17 +14,6 @@ pub struct NoticeTemplates {
     pub legal_disclaimer: LegalDisclaimers,
 }
 
-impl Default for NoticeTemplates {
-    fn default() -> Self {
-        Self {
-            startup: StartupNotice::default(),
-            onboarding: OnboardingNotice::default(),
-            limitations: LimitationsNotice::default(),
-            data_processing: DataProcessingNotice::default(),
-            legal_disclaimer: LegalDisclaimers::default(),
-        }
-    }
-}
 
 // Derive Default is preferable to manual implementation
 impl NoticeTemplates {

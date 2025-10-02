@@ -127,6 +127,12 @@ pub struct RAGEngine {
     inverted_index: Arc<RwLock<HashMap<String, Vec<String>>>>, // For keyword search
 }
 
+impl Default for RAGEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RAGEngine {
     pub fn new() -> Self {
         let index_path = dirs::data_local_dir()
@@ -599,8 +605,8 @@ impl RAGEngine {
 
         // Convert to proximity score (closer = higher score)
         let max_distance = 100; // Maximum considered distance
-        let proximity = 1.0 - (min_span.min(max_distance) as f32 / max_distance as f32);
-        proximity
+        
+        1.0 - (min_span.min(max_distance) as f32 / max_distance as f32)
     }
 
     fn generate_highlight(&self, content: &str, query_tokens: &[String]) -> Option<String> {
@@ -685,7 +691,7 @@ impl RAGEngine {
         for token in tokens {
             index
                 .entry(token)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(doc_id.to_string());
         }
     }
@@ -913,11 +919,7 @@ impl RAGEngine {
                 let meta_items: Vec<String> = obj
                     .iter()
                     .filter_map(|(k, v)| {
-                        if let Some(s) = v.as_str() {
-                            Some(format!("{}: {}", k, s))
-                        } else {
-                            None
-                        }
+                        v.as_str().map(|s| format!("{}: {}", k, s))
                     })
                     .collect();
 

@@ -129,11 +129,14 @@ impl ModelCardParser {
     fn extract_list_items(sections: &[(String, String)], keywords: &[&str]) -> Vec<String> {
         let mut items = Vec::new();
 
+        // Compile regex patterns once outside the loop
+        let bullet_re = Regex::new(r"(?m)^[\s-]*[-*•]\s+(.+)$").unwrap();
+        let num_re = Regex::new(r"(?m)^\s*\d+\.\s+(.+)$").unwrap();
+
         for (title, content) in sections {
             for keyword in keywords {
                 if title.contains(keyword) {
                     // Extract bullet points
-                    let bullet_re = Regex::new(r"(?m)^[\s-]*[-*•]\s+(.+)$").unwrap();
                     for cap in bullet_re.captures_iter(content) {
                         if let Some(item) = cap.get(1) {
                             items.push(item.as_str().trim().to_string());
@@ -142,7 +145,6 @@ impl ModelCardParser {
 
                     // If no bullet points, try numbered lists
                     if items.is_empty() {
-                        let num_re = Regex::new(r"(?m)^\s*\d+\.\s+(.+)$").unwrap();
                         for cap in num_re.captures_iter(content) {
                             if let Some(item) = cap.get(1) {
                                 items.push(item.as_str().trim().to_string());

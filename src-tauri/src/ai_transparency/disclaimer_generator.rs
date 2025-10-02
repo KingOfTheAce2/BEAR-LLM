@@ -39,10 +39,9 @@ impl DisclaimerGenerator {
         // Extract name after last slash
         model_id
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or(model_id)
-            .replace('-', " ")
-            .replace('_', " ")
+            .replace(['-', '_'], " ")
     }
 
     /// Generate human-readable summary
@@ -160,14 +159,12 @@ impl DisclaimerGenerator {
 
     /// Generate not-recommended use statement
     fn generate_not_recommended_use(_model_card: &ModelCard) -> String {
-        let restricted_uses = vec![
-            "Medical diagnosis or treatment decisions",
+        let restricted_uses = ["Medical diagnosis or treatment decisions",
             "Legal advice or court proceedings",
             "Financial investment decisions",
             "Critical safety systems",
             "Military or surveillance applications",
-            "Automated decision-making affecting human rights",
-        ];
+            "Automated decision-making affecting human rights"];
 
         restricted_uses.join(", ")
     }

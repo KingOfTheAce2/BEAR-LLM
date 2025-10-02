@@ -81,8 +81,10 @@ pub struct PIIEntity {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Default)]
 pub enum PresidioMode {
     /// Presidio disabled - use built-in detection only
+    #[default]
     Disabled,
     /// Presidio Lite - spaCy only (~500MB overhead)
     SpacyOnly,
@@ -90,11 +92,6 @@ pub enum PresidioMode {
     FullML,
 }
 
-impl Default for PresidioMode {
-    fn default() -> Self {
-        PresidioMode::Disabled // Default to built-in for safety
-    }
-}
 
 impl PresidioMode {
     pub fn to_string(&self) -> String {
@@ -230,6 +227,12 @@ pub struct PIIDetector {
     python_path: Arc<RwLock<Option<PathBuf>>>,
     presidio_available: Arc<RwLock<bool>>,
     custom_patterns: Arc<RwLock<HashMap<String, Regex>>>,
+}
+
+impl Default for PIIDetector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PIIDetector {

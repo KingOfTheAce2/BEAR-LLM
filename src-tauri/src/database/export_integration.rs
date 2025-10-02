@@ -219,7 +219,7 @@ impl ExportIntegration {
             let (key, value) = row?;
             // Try to parse as JSON, fallback to string
             let parsed_value =
-                serde_json::from_str(&value).unwrap_or_else(|_| serde_json::Value::String(value));
+                serde_json::from_str(&value).unwrap_or(serde_json::Value::String(value));
             preferences.insert(key, parsed_value);
         }
 

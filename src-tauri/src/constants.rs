@@ -5,7 +5,6 @@
 // ============================================================================
 // Hardware Monitoring Thresholds
 // ============================================================================
-
 /// Minimum VRAM required for GPU acceleration (in MB)
 pub const MIN_VRAM_MB: u64 = 2048;
 

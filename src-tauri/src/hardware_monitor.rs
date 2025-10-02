@@ -39,6 +39,12 @@ pub struct HardwareMonitor {
 }
 
 #[allow(dead_code)]
+impl Default for HardwareMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HardwareMonitor {
     pub fn new() -> Self {
         let mut system = System::new_all();

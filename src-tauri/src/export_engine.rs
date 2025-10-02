@@ -80,6 +80,12 @@ pub struct ComplianceInfo {
 
 pub struct ExportEngine;
 
+impl Default for ExportEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExportEngine {
     pub fn new() -> Self {
         Self
@@ -113,7 +119,7 @@ impl ExportEngine {
             Paragraph::new()
                 .add_run(
                     Run::new()
-                        .add_text(&format!(
+                        .add_text(format!(
                             "Export Date: {}",
                             data.export_date.format("%Y-%m-%d %H:%M:%S UTC")
                         ))
@@ -152,7 +158,7 @@ impl ExportEngine {
         docx = docx.add_paragraph(
             Paragraph::new().add_run(
                 Run::new()
-                    .add_text(&format!("Version: {}", data.version))
+                    .add_text(format!("Version: {}", data.version))
                     .size(22),
             ),
         );
@@ -160,7 +166,7 @@ impl ExportEngine {
         docx = docx.add_paragraph(
             Paragraph::new().add_run(
                 Run::new()
-                    .add_text(&format!("User ID: {}", data.user_id))
+                    .add_text(format!("User ID: {}", data.user_id))
                     .size(22),
             ),
         );
@@ -168,7 +174,7 @@ impl ExportEngine {
         docx = docx.add_paragraph(
             Paragraph::new().add_run(
                 Run::new()
-                    .add_text(&format!("Integrity Hash: {}", data.metadata.export_hash))
+                    .add_text(format!("Integrity Hash: {}", data.metadata.export_hash))
                     .size(22),
             ),
         );
@@ -183,7 +189,7 @@ impl ExportEngine {
             docx = docx.add_paragraph(
                 Paragraph::new().add_run(
                     Run::new()
-                        .add_text(&format!("{}. {}", idx + 1, chat.title))
+                        .add_text(format!("{}. {}", idx + 1, chat.title))
                         .size(24)
                         .bold(),
                 ),
@@ -192,7 +198,7 @@ impl ExportEngine {
             docx = docx.add_paragraph(
                 Paragraph::new().add_run(
                     Run::new()
-                        .add_text(&format!(
+                        .add_text(format!(
                             "Created: {} | Model: {}",
                             chat.created_at.format("%Y-%m-%d %H:%M:%S"),
                             chat.model_used
@@ -213,7 +219,7 @@ impl ExportEngine {
                     Paragraph::new()
                         .add_run(
                             Run::new()
-                                .add_text(&format!("[{}] ", role_label))
+                                .add_text(format!("[{}] ", role_label))
                                 .size(22)
                                 .bold(),
                         )
@@ -233,7 +239,7 @@ impl ExportEngine {
             docx = docx.add_paragraph(
                 Paragraph::new().add_run(
                     Run::new()
-                        .add_text(&format!("• {}", doc.filename))
+                        .add_text(format!("• {}", doc.filename))
                         .size(22)
                         .bold(),
                 ),
@@ -242,7 +248,7 @@ impl ExportEngine {
             docx = docx.add_paragraph(
                 Paragraph::new().add_run(
                     Run::new()
-                        .add_text(&format!(
+                        .add_text(format!(
                             "  Type: {} | Upload Date: {} | Chunks: {} | PII Detections: {}",
                             doc.file_type,
                             doc.upload_date.format("%Y-%m-%d"),
@@ -374,7 +380,7 @@ impl ExportEngine {
                         pii.replacement_text
                     ));
                 }
-                markdown.push_str("\n");
+                markdown.push('\n');
             }
         }
 
@@ -406,7 +412,7 @@ impl ExportEngine {
             &font_bold,
         );
         current_layer.use_text(
-            &format!(
+            format!(
                 "Export Date: {}",
                 data.export_date.format("%Y-%m-%d %H:%M:%S UTC")
             ),
@@ -435,21 +441,21 @@ impl ExportEngine {
         // Export Metadata
         current_layer.use_text("Export Metadata", 14.0, Mm(20.0), Mm(210.0), &font_bold);
         current_layer.use_text(
-            &format!("Version: {}", data.version),
+            format!("Version: {}", data.version),
             10.0,
             Mm(20.0),
             Mm(200.0),
             &font,
         );
         current_layer.use_text(
-            &format!("User ID: {}", data.user_id),
+            format!("User ID: {}", data.user_id),
             10.0,
             Mm(20.0),
             Mm(195.0),
             &font,
         );
         current_layer.use_text(
-            &format!("Hash: {}", &data.metadata.export_hash[..16]),
+            format!("Hash: {}", &data.metadata.export_hash[..16]),
             10.0,
             Mm(20.0),
             Mm(190.0),
@@ -472,7 +478,7 @@ impl ExportEngine {
                 break; // Avoid running off page (proper pagination would be more complex)
             }
             current_layer.use_text(
-                &format!(
+                format!(
                     "{}. {} ({} messages)",
                     idx + 1,
                     chat.title,
@@ -498,7 +504,7 @@ impl ExportEngine {
 
         // Header
         text.push_str("=".repeat(80).as_str());
-        text.push_str("\n");
+        text.push('\n');
         text.push_str("BEAR AI - DATA EXPORT REPORT\n");
         text.push_str(&format!(
             "Export Date: {}\n",
@@ -510,7 +516,7 @@ impl ExportEngine {
         // Compliance Statement
         text.push_str("GDPR ARTICLE 20 COMPLIANCE STATEMENT\n");
         text.push_str("-".repeat(80).as_str());
-        text.push_str("\n");
+        text.push('\n');
         text.push_str(
             "This export has been generated in accordance with the General Data Protection\n",
         );
@@ -521,7 +527,7 @@ impl ExportEngine {
         // Metadata
         text.push_str("EXPORT METADATA\n");
         text.push_str("-".repeat(80).as_str());
-        text.push_str("\n");
+        text.push('\n');
         text.push_str(&format!("Version: {}\n", data.version));
         text.push_str(&format!("User ID: {}\n", data.user_id));
         text.push_str(&format!("Integrity Hash: {}\n", data.metadata.export_hash));
@@ -541,7 +547,7 @@ impl ExportEngine {
                 "No"
             }
         ));
-        text.push_str("\n");
+        text.push('\n');
 
         // Chat History
         text.push_str("CHAT HISTORY\n");
@@ -556,7 +562,7 @@ impl ExportEngine {
                 chat.model_used
             ));
             text.push_str("-".repeat(80).as_str());
-            text.push_str("\n");
+            text.push('\n');
 
             for msg in &chat.messages {
                 let role_label = match msg.role.as_str() {
@@ -572,7 +578,7 @@ impl ExportEngine {
                 ));
                 text.push_str(&format!("{}\n\n", msg.content));
             }
-            text.push_str("\n");
+            text.push('\n');
         }
 
         // Documents
@@ -589,11 +595,11 @@ impl ExportEngine {
             ));
             text.push_str(&format!("  Chunks: {}\n", doc.chunk_count));
             text.push_str(&format!("  PII Detections: {}\n", doc.pii_detections.len()));
-            text.push_str("\n");
+            text.push('\n');
         }
 
         text.push_str("=".repeat(80).as_str());
-        text.push_str("\n");
+        text.push('\n');
         text.push_str("End of Export Report\n");
 
         std::fs::write(output_path, text)?;

@@ -231,8 +231,7 @@ impl ModelRegistry {
 
         // Convert to title case
         cleaned
-            .replace('_', " ")
-            .replace('-', " ")
+            .replace(['_', '-'], " ")
             .split_whitespace()
             .map(|word| {
                 let mut chars = word.chars();

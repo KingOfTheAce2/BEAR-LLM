@@ -145,9 +145,9 @@ impl GenericDisclaimerGenerator {
         let mut text = String::new();
 
         // Header
-        text.push_str(&format!("═══════════════════════════════════════════\n"));
+        text.push_str("═══════════════════════════════════════════\n");
         text.push_str(&format!("  {}\n", disclaimer.title));
-        text.push_str(&format!("═══════════════════════════════════════════\n\n"));
+        text.push_str("═══════════════════════════════════════════\n\n");
 
         // Message
         text.push_str(&disclaimer.message);
@@ -159,7 +159,7 @@ impl GenericDisclaimerGenerator {
             for limitation in &disclaimer.limitations {
                 text.push_str(&format!("  • {}\n", limitation));
             }
-            text.push_str("\n");
+            text.push('\n');
         }
 
         // Recommendations
@@ -168,7 +168,7 @@ impl GenericDisclaimerGenerator {
             for recommendation in &disclaimer.recommendations {
                 text.push_str(&format!("  • {}\n", recommendation));
             }
-            text.push_str("\n");
+            text.push('\n');
         }
 
         text.push_str("═══════════════════════════════════════════\n");

@@ -223,9 +223,7 @@ impl MemoryDetector {
             } else {
                 (
                     PIIMode::Builtin.to_string(),
-                    Some(format!(
-                        "High memory usage detected. Built-in detection recommended.",
-                    )),
+                    Some("High memory usage detected. Built-in detection recommended.".to_string()),
                 )
             }
         };
@@ -237,7 +235,7 @@ impl MemoryDetector {
     pub fn can_use_mode(&mut self, mode: &PIIMode) -> Result<(bool, Option<String>)> {
         let info = self.get_memory_info()?;
         let required_mb = mode.memory_overhead_mb();
-        let available_mb = (info.available_memory / (1024 * 1024)) as u64;
+        let available_mb = info.available_memory / (1024 * 1024);
 
         // Keep 2GB buffer for system stability
         let safe_buffer_mb = 2 * 1024;
@@ -285,7 +283,7 @@ impl MemoryDetector {
                 -delta
             )
         } else {
-            format!("No memory change.")
+            "No memory change.".to_string()
         };
 
         Ok(message)

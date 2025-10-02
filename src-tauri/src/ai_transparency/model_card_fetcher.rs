@@ -133,7 +133,7 @@ impl ModelCardFetcher {
     /// Get cache file path for a model
     fn get_cache_path(&self, model_id: &str) -> PathBuf {
         // Sanitize model_id for filesystem
-        let safe_name = model_id.replace('/', "_").replace('\\', "_");
+        let safe_name = model_id.replace(['/', '\\'], "_");
         self.cache_dir.join(format!("{}.json", safe_name))
     }
 

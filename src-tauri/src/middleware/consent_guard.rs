@@ -214,11 +214,10 @@ impl ConsentGuard {
         ];
 
         for consent_type in all_types {
-            if manager.has_consent(user_id, &consent_type)? {
-                if manager.needs_reconsent(user_id, &consent_type)? {
+            if manager.has_consent(user_id, &consent_type)?
+                && manager.needs_reconsent(user_id, &consent_type)? {
                     needs_reconsent.push(consent_type);
                 }
-            }
         }
 
         Ok(needs_reconsent)
@@ -238,10 +237,8 @@ impl ConsentGuard {
         let consent_id = manager.grant_consent(user_id, consent_type)?;
 
         // Log granular consent
-        let version = manager
-            .has_consent(user_id, consent_type)?
-            .then(|| "current".to_string())
-            .unwrap_or_else(|| "unknown".to_string());
+        let version = if manager
+            .has_consent(user_id, consent_type)? { "current".to_string() } else { "unknown".to_string() };
 
         manager.log_granular_consent(
             user_id,
