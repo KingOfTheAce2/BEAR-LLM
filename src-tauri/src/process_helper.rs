@@ -23,6 +23,7 @@ impl ProcessCommandExt for std::process::Command {
 #[cfg(target_os = "windows")]
 impl ProcessCommandExt for tokio::process::Command {
     fn no_window(&mut self) -> &mut Self {
+        #[allow(unused_imports)]
         use std::os::windows::process::CommandExt as _;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         self.creation_flags(CREATE_NO_WINDOW)

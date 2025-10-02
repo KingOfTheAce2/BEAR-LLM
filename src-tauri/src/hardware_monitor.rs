@@ -346,7 +346,7 @@ impl HardwareMonitor {
             const CREATE_NO_WINDOW: u32 = 0x08000000;
 
             Command::new("powercfg")
-                .args(&["/setactive", "a1841308-3541-4fab-bc81-f71556f20b4a"])
+                .args(["/setactive", "a1841308-3541-4fab-bc81-f71556f20b4a"])
                 .creation_flags(CREATE_NO_WINDOW)
                 .output()?;
         }
