@@ -2,7 +2,7 @@
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-![Version](https://img.shields.io/badge/version-1.0.29-blue)
+![Version](https://img.shields.io/badge/version-1.0.31-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Author](https://img.shields.io/badge/author-Ernst%20van%20Gassen-green)
@@ -59,7 +59,7 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 
 ### For End Users (Pre-built Installer)
 
-1. **Download** the latest release (v1.0.13) from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/tag/v1.0.13)
+1. **Download** the latest release from [GitHub Releases](https://github.com/KingOfTheAce2/BEAR-LLM/releases/latest)
 2. **Run** the MSI or NSIS (.exe) installer - both work identically
 3. **Launch** BEAR AI - the setup wizard will guide you through first-time configuration
 4. **(Optional)** The setup wizard will offer to install Microsoft Presidio for enhanced PII protection
@@ -397,4 +397,15 @@ This software is proprietary and provided for transparency and security auditing
 
 ---
 
-**Version 1.0.5** - Production Ready - Enhanced UI, Complete Documentation, Full Implementations.
+## 📖 Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+- **[Documentation Index](docs/INDEX.md)** - Complete guide to all documentation
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design and components
+- **[Installation Guide](docs/INSTALLATION.md)** - Detailed installation instructions
+- **[Compliance Guide](docs/compliance/QUICK_REFERENCE.md)** - GDPR & AI Act compliance
+
+---
+
+**Version 1.0.31** - Production Ready - All clippy errors fixed, enhanced async performance, complete GDPR/AI Act compliance.
