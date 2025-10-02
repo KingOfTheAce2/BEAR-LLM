@@ -6,9 +6,9 @@ pub mod retention;
 pub mod audit;
 pub mod commands;
 
-pub use consent::{ConsentManager, ConsentType, ConsentRecord, ConsentVersion};
-pub use retention::{RetentionManager, RetentionPolicy, RetentionStats};
-pub use audit::{AuditLogger, AuditAction, EntityType, AuditLogEntry, AuditQuery};
+pub use consent::{ConsentManager, ConsentType};
+pub use retention::RetentionManager;
+pub use audit::{AuditLogger, AuditAction, EntityType, AuditQuery};
 
 use anyhow::Result;
 use std::path::PathBuf;

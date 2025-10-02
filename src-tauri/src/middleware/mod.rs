@@ -6,4 +6,4 @@ pub mod consent_guard;
 #[cfg(test)]
 mod tests;
 
-pub use consent_guard::{ConsentGuard, ConsentGuardBuilder, ConsentCheckResult};
+pub use consent_guard::{ConsentGuard, ConsentGuardBuilder};

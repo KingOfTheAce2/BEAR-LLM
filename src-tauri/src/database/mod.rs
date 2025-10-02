@@ -7,5 +7,4 @@ pub mod export_integration;
 #[cfg(test)]
 mod tests;
 
-pub use chat_encryption_integration::ChatEncryptionLayer;
-pub use export_integration::ExportIntegration;
+// ChatEncryptionLayer and ExportIntegration are internal to database module

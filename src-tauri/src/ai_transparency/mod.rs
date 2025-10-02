@@ -13,11 +13,11 @@ pub mod model_card_parser;
 pub mod disclaimer_generator;
 pub mod generic_disclaimer;
 
-pub use model_card_fetcher::{ModelCardFetcher, ModelMetadata, CachedModelCard};
+pub use model_card_fetcher::ModelCardFetcher;
 pub use model_registry::ModelRegistry;
-pub use model_card_parser::{ModelCard, ModelCardParser};
+pub use model_card_parser::ModelCardParser;
 pub use disclaimer_generator::{ModelDisclaimer, DisclaimerGenerator};
-pub use generic_disclaimer::{GenericDisclaimer, GenericDisclaimerGenerator, DisclaimerLevel};
+pub use generic_disclaimer::{GenericDisclaimer, GenericDisclaimerGenerator};
 
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};

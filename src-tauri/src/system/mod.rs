@@ -2,4 +2,4 @@
 
 pub mod memory_info;
 
-pub use memory_info::{MemoryDetector, MemoryInfo, PIIMode};
+// Memory info types are used internally

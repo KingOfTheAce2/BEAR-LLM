@@ -46,32 +46,7 @@ mod middleware;
 // Scheduler for automated tasks
 mod scheduler;
 
-// Import commands that are defined in commands.rs
-use commands::{
-    get_system_specs,
-    check_model_compatibility,
-    get_resource_usage,
-    download_model_from_huggingface,
-    search_huggingface_models,
-    load_model,
-    unload_model,
-    emergency_stop,
-    set_resource_limits,
-    get_available_rag_models,
-    get_active_rag_model,
-    switch_rag_model,
-    get_rag_config,
-    update_rag_config,
-    // PII and Memory commands
-    get_memory_info,
-    can_use_pii_mode,
-    estimate_mode_impact,
-    get_pii_config,
-    set_pii_mode,
-    update_pii_config,
-    install_presidio,
-    check_presidio_status,
-};
+// Import commands - removed non-existent commands
 
 // Use core AI modules
 use pii_detector::PIIDetector;
@@ -83,14 +58,14 @@ use presidio_bridge::PresidioBridge;
 use setup_manager::SetupManager;
 use hardware_monitor::HardwareMonitor;
 use file_processor::FileProcessor;
-use bear_ai_llm::database::DatabaseManager;
+// DatabaseManager is internal to the database module
 use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 use compliance::ComplianceManager;
 use rate_limiter::RateLimiter;
 use middleware::{ConsentGuard, ConsentGuardBuilder};
 use scheduler::{RetentionScheduler, SchedulerHandle};
-use ai_transparency::TransparencyState;
+use bear_ai_llm::commands::transparency_commands::TransparencyState;
 
 // SECURITY FIX: Use tempfile crate for atomic temporary file creation
 // This prevents race conditions where file creation happens after validation
@@ -946,7 +921,7 @@ fn main() {
                         // Filter out PII from crash reports
                         if let Some(ref mut request) = event.request {
                             request.cookies = None;
-                            request.headers = None;
+                            request.headers = std::collections::BTreeMap::new();
                         }
                         // Remove environment variables that might contain secrets
                         event.contexts.remove("os");
@@ -1258,7 +1233,7 @@ fn main() {
             middleware::commands::check_reconsent_needed,
             middleware::commands::grant_all_consents,
             middleware::commands::revoke_all_consents,
-            middleware::commands::get_consent_statistics as get_middleware_consent_stats,
+            middleware::commands::get_consent_statistics,
 
             // Retention Scheduler Commands
             commands::trigger_retention_cleanup,
