@@ -39,21 +39,24 @@ pub async fn grant_user_consent(
         _ => return Err(format!("Unknown consent type: {}", consent_type)),
     };
 
-    let consent_mgr = compliance.consent().write().await;
-    let result = consent_mgr.grant_consent(&user_id, &consent_type_enum)
-        .map_err(|e| e.to_string())?;
-
-    drop(consent_mgr);
+    let result = {
+        let consent_mgr = compliance.consent().write().await;
+        consent_mgr.grant_consent(&user_id, &consent_type_enum)
+            .map_err(|e| e.to_string())?
+    };
 
     // Log consent grant
-    let audit = compliance.audit().write().await;
-    let _ = audit.log_success(
-        &user_id,
-        AuditAction::ConsentGranted,
-        EntityType::Consent,
-        Some(&consent_type),
-        Some(serde_json::json!({"consent_type": consent_type})),
-    );
+    let consent_type_clone = consent_type.clone();
+    {
+        let audit = compliance.audit().write().await;
+        let _ = audit.log_success(
+            &user_id,
+            AuditAction::ConsentGranted,
+            EntityType::Consent,
+            Some(&consent_type_clone),
+            Some(serde_json::json!({"consent_type": consent_type_clone})),
+        );
+    }
 
     Ok(result)
 }
@@ -73,21 +76,24 @@ pub async fn revoke_user_consent(
         _ => return Err(format!("Unknown consent type: {}", consent_type)),
     };
 
-    let consent_mgr = compliance.consent().write().await;
-    consent_mgr.revoke_consent(&user_id, &consent_type_enum)
-        .map_err(|e| e.to_string())?;
-
-    drop(consent_mgr);
+    {
+        let consent_mgr = compliance.consent().write().await;
+        consent_mgr.revoke_consent(&user_id, &consent_type_enum)
+            .map_err(|e| e.to_string())?;
+    }
 
     // Log consent revocation
-    let audit = compliance.audit().write().await;
-    let _ = audit.log_success(
-        &user_id,
-        AuditAction::ConsentRevoked,
-        EntityType::Consent,
-        Some(&consent_type),
-        Some(serde_json::json!({"consent_type": consent_type})),
-    );
+    let consent_type_clone = consent_type.clone();
+    {
+        let audit = compliance.audit().write().await;
+        let _ = audit.log_success(
+            &user_id,
+            AuditAction::ConsentRevoked,
+            EntityType::Consent,
+            Some(&consent_type_clone),
+            Some(serde_json::json!({"consent_type": consent_type_clone})),
+        );
+    }
 
     Ok(true)
 }
@@ -171,24 +177,27 @@ pub async fn delete_expired_data(
     compliance: State<'_, ComplianceManager>,
     entity_type: String,
 ) -> Result<usize, String> {
-    let retention_mgr = compliance.retention().write().await;
-    let deleted = retention_mgr.delete_expired_entities(&entity_type)
-        .map_err(|e| e.to_string())?;
-
-    drop(retention_mgr);
+    let deleted = {
+        let retention_mgr = compliance.retention().write().await;
+        retention_mgr.delete_expired_entities(&entity_type)
+            .map_err(|e| e.to_string())?
+    };
 
     // Log deletion
-    let audit = compliance.audit().write().await;
-    let _ = audit.log_success(
-        "system",
-        AuditAction::DataDeleted,
-        EntityType::Document, // Generic, should match entity_type
-        None,
-        Some(serde_json::json!({
-            "entity_type": entity_type,
-            "deleted_count": deleted
-        })),
-    );
+    let entity_type_clone = entity_type.clone();
+    {
+        let audit = compliance.audit().write().await;
+        let _ = audit.log_success(
+            "system",
+            AuditAction::DataDeleted,
+            EntityType::Document, // Generic, should match entity_type
+            None,
+            Some(serde_json::json!({
+                "entity_type": entity_type_clone,
+                "deleted_count": deleted
+            })),
+        );
+    }
 
     Ok(deleted)
 }

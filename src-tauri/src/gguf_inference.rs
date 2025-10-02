@@ -123,7 +123,7 @@ impl GGUFInferenceEngine {
     pub async fn unload_model(&self) -> Result<()> {
         let mut model_lock = self.model.write().await;
         *model_lock = None;
-        tracing::info("Model unloaded");
+        tracing::info!("Model unloaded");
         Ok(())
     }
 
@@ -142,11 +142,10 @@ impl GGUFInferenceEngine {
 
         // Create context parameters
         let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(Some(config.n_ctx))
+            .with_n_ctx(std::num::NonZero::new(config.n_ctx))
             .with_n_batch(config.n_batch)
-            .with_n_threads(config.n_threads)
-            .with_n_threads_batch(config.n_threads)
-            .with_seed(config.seed);
+            .with_n_threads(config.n_threads as i32)
+            .with_n_threads_batch(config.n_threads as i32);
 
         // Create context
         let mut ctx = model.new_context(&self.backend, ctx_params)
@@ -234,7 +233,7 @@ impl GGUFInferenceEngine {
             }
 
             // Convert token to text
-            let piece = model.token_to_str(next_token)
+            let piece = model.token_to_str(next_token, llama_cpp_2::model::Special::Tokenize)
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
@@ -305,11 +304,10 @@ impl GGUFInferenceEngine {
 
         // Create context
         let ctx_params = LlamaContextParams::default()
-            .with_n_ctx(Some(config.n_ctx))
+            .with_n_ctx(std::num::NonZero::new(config.n_ctx))
             .with_n_batch(config.n_batch)
-            .with_n_threads(config.n_threads)
-            .with_n_threads_batch(config.n_threads)
-            .with_seed(config.seed);
+            .with_n_threads(config.n_threads as i32)
+            .with_n_threads_batch(config.n_threads as i32);
 
         let mut ctx = model.new_context(&self.backend, ctx_params)
             .map_err(|e| anyhow!("Failed to create context: {}", e))?;
@@ -389,7 +387,7 @@ impl GGUFInferenceEngine {
                 break;
             }
 
-            let piece = model.token_to_str(next_token)
+            let piece = model.token_to_str(next_token, llama_cpp_2::model::Special::Tokenize)
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
@@ -456,13 +454,13 @@ impl GGUFInferenceEngine {
     /// Uses greedy sampling when temperature is 0.
     fn sample_token(
         &self,
-        ctx: &mut LlamaContext,
+        _ctx: &mut LlamaContext,
         candidates_array: &mut LlamaTokenDataArray,
         config: &GGUFInferenceConfig,
     ) -> i32 {
         // If temperature is 0 or very low, use greedy sampling
         if config.temperature < 0.01 {
-            return ctx.sample_token_greedy(candidates_array);
+            return candidates_array.sample_token_greedy().0;
         }
 
         // Apply repetition penalty if configured
@@ -472,20 +470,20 @@ impl GGUFInferenceEngine {
         }
 
         // Apply temperature scaling
-        ctx.sample_temp(candidates_array, config.temperature);
+        candidates_array.sample_temp(config.temperature);
 
         // Apply top-k sampling
         if config.top_k > 0 {
-            ctx.sample_top_k(candidates_array, config.top_k, 1);
+            candidates_array.sample_top_k(config.top_k as usize, 1);
         }
 
         // Apply top-p (nucleus) sampling
         if config.top_p < 1.0 {
-            ctx.sample_top_p(candidates_array, config.top_p, 1);
+            candidates_array.sample_top_p(config.top_p, 1);
         }
 
         // Sample token from the filtered distribution
-        ctx.sample_token(candidates_array)
+        candidates_array.sample_token().0
     }
 
     /// Find stop sequence in generated text, prioritizing longest match at the end

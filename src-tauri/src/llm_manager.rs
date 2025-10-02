@@ -180,9 +180,9 @@ impl LLMManager {
                 repo_id: "TheBloke/Mistral-7B-Instruct-v0.2-GGUF".to_string(),
                 model_file: "mistral-7b-instruct-v0.2.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("mistralai/Mistral-7B-Instruct-v0.2".to_string()),
-                max_tokens: DEFAULT_MAX_TOKENS as u32,
+                max_tokens: DEFAULT_MAX_TOKENS,
                 temperature: DEFAULT_TEMPERATURE,
-                context_length: DEFAULT_N_CTX,
+                context_length: DEFAULT_N_CTX as usize,
                 size_mb: 4370,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: true,
@@ -195,9 +195,9 @@ impl LLMManager {
                 repo_id: "TheBloke/Llama-2-7B-Chat-GGUF".to_string(),
                 model_file: "llama-2-7b-chat.Q4_K_M.gguf".to_string(),
                 tokenizer_repo: Some("meta-llama/Llama-2-7b-chat-hf".to_string()),
-                max_tokens: DEFAULT_MAX_TOKENS as u32,
+                max_tokens: DEFAULT_MAX_TOKENS,
                 temperature: DEFAULT_TEMPERATURE,
-                context_length: DEFAULT_N_CTX,
+                context_length: DEFAULT_N_CTX as usize,
                 size_mb: 3830,
                 quantization: "Q4_K_M".to_string(),
                 requires_gpu: true,
@@ -648,7 +648,7 @@ impl LLMManager {
     /// Calculate optimal number of GPU layers to offload based on available VRAM
     async fn calculate_optimal_gpu_layers(&self, model_config: &ModelConfig) -> u32 {
         // If no GPU available, return 0
-        if self.device == Device::Cpu {
+        if self.device.is_cpu() {
             tracing::info!("CPU mode: No GPU layers will be offloaded");
             return 0;
         }

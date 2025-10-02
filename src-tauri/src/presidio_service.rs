@@ -168,7 +168,11 @@ impl PresidioService {
 
         let url = format!("{}/health", self.service_url);
 
-        match reqwest::get(&url).timeout(Duration::from_secs(5)).await {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()?;
+
+        match client.get(&url).send().await {
             Ok(response) => Ok(response.status().is_success()),
             Err(_) => Ok(false),
         }
