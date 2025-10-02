@@ -179,9 +179,9 @@ pub async fn get_retention_stats(
     Ok(serde_json::to_value(stats).unwrap())
 }
 
-/// Apply default retention policies
+/// Apply default compliance retention policies
 #[tauri::command]
-pub async fn apply_default_retention_policies(
+pub async fn apply_compliance_retention_policies(
     compliance: State<'_, ComplianceManager>,
 ) -> Result<JsonValue, String> {
     let retention_lock = compliance.retention();

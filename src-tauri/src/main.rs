@@ -1713,7 +1713,7 @@ fn main() {
             compliance::commands::get_consent_versions,
             compliance::commands::set_data_retention,
             compliance::commands::get_retention_stats,
-            compliance::commands::apply_default_retention_policies,
+            compliance::commands::apply_compliance_retention_policies,
             compliance::commands::delete_expired_data,
             compliance::commands::get_audit_logs,
             compliance::commands::get_audit_stats,
