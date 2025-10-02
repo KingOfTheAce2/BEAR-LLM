@@ -13,7 +13,7 @@ pub async fn check_consent_status(
     user_id: String,
     consent_type: String,
 ) -> Result<JsonValue, String> {
-    let consent_type_enum = parse_consent_type(&consent_type)?;
+    let _consent_type_enum = parse_consent_type(&consent_type)?;
 
     let result = match consent_type.as_str() {
         "chat_storage" => consent_guard.check_chat_storage(&user_id).await,
@@ -229,8 +229,8 @@ pub async fn revoke_all_consents(
     consent_guard: State<'_, ConsentGuard>,
     user_id: String,
     reason: String,
-    ip_address: Option<String>,
-    user_agent: Option<String>,
+    _ip_address: Option<String>,
+    _user_agent: Option<String>,
 ) -> Result<JsonValue, String> {
     let manager = consent_guard.consent_manager();
     let manager_lock = manager.write().await;
