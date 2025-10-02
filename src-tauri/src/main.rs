@@ -51,7 +51,7 @@ mod scheduler;
 
 // Use core AI modules
 use llm_manager::LLMManager;
-use pii_detector::PIIDetector;
+use pii_detector::{PIIDetector, PresidioMode};
 use rag_engine::RAGEngine;
 
 // Use other modules
@@ -974,7 +974,7 @@ async fn get_available_rag_models() -> Result<serde_json::Value, String> {
 #[tauri::command]
 async fn get_active_rag_model(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let rag = state.rag_engine.read().await;
-    let model_name = rag.get_active_model();
+    let model_name = rag.get_active_model().await;
 
     Ok(serde_json::json!({
         "model_name": model_name,
@@ -988,7 +988,7 @@ async fn switch_rag_model(
     model_name: String,
 ) -> Result<String, String> {
     let mut rag = state.rag_engine.write().await;
-    rag.switch_rag_model(&model_name)
+    rag.switch_rag_model(model_name)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1003,8 +1003,11 @@ async fn get_rag_config(state: State<'_, AppState>) -> Result<serde_json::Value,
     Ok(serde_json::json!({
         "chunk_size": config.chunk_size,
         "chunk_overlap": config.chunk_overlap,
-        "top_k": config.top_k,
-        "similarity_threshold": config.similarity_threshold
+        "max_results": config.max_results,
+        "similarity_threshold": config.similarity_threshold,
+        "embedding_model": config.embedding_model,
+        "enable_reranking": config.enable_reranking,
+        "enable_hybrid_search": config.enable_hybrid_search
     }))
 }
 
@@ -1013,12 +1016,27 @@ async fn update_rag_config(
     state: State<'_, AppState>,
     chunk_size: Option<usize>,
     chunk_overlap: Option<usize>,
-    top_k: Option<usize>,
+    max_results: Option<usize>,
     similarity_threshold: Option<f32>,
 ) -> Result<String, String> {
-    let mut rag = state.rag_engine.write().await;
+    let rag = state.rag_engine.write().await;
+    let mut config = rag.get_config().await;
 
-    rag.update_config(chunk_size, chunk_overlap, top_k, similarity_threshold)
+    // Update only provided fields
+    if let Some(size) = chunk_size {
+        config.chunk_size = size;
+    }
+    if let Some(overlap) = chunk_overlap {
+        config.chunk_overlap = overlap;
+    }
+    if let Some(max) = max_results {
+        config.max_results = max;
+    }
+    if let Some(threshold) = similarity_threshold {
+        config.similarity_threshold = threshold;
+    }
+
+    rag.update_config(config)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1084,16 +1102,32 @@ async fn get_pii_config(state: State<'_, AppState>) -> Result<serde_json::Value,
     let config = detector.get_config().await;
 
     Ok(serde_json::json!({
-        "mode": config.mode,
-        "enabled": config.enabled,
-        "anonymize": config.anonymize
+        "presidio_mode": config.presidio_mode,
+        "use_presidio": config.use_presidio,
+        "confidence_threshold": config.confidence_threshold,
+        "detect_names": config.detect_names,
+        "detect_organizations": config.detect_organizations,
+        "detect_locations": config.detect_locations,
+        "detect_emails": config.detect_emails,
+        "detect_phones": config.detect_phones,
+        "detect_ssn": config.detect_ssn,
+        "detect_credit_cards": config.detect_credit_cards,
+        "detect_medical": config.detect_medical,
+        "detect_legal": config.detect_legal,
+        "use_context_enhancement": config.use_context_enhancement
     }))
 }
 
 #[tauri::command]
 async fn set_pii_mode(state: State<'_, AppState>, mode: String) -> Result<String, String> {
-    let mut detector = state.pii_detector.write().await;
-    detector.set_mode(&mode).map_err(|e| e.to_string())?;
+    let detector = state.pii_detector.write().await;
+    let presidio_mode = match mode.as_str() {
+        "disabled" => PresidioMode::Disabled,
+        "spacy" => PresidioMode::SpacyOnly,
+        "full" => PresidioMode::FullML,
+        _ => return Err(format!("Invalid mode: {}", mode)),
+    };
+    detector.set_presidio_mode(presidio_mode).await.map_err(|e| e.to_string())?;
     Ok(format!("PII mode set to: {}", mode))
 }
 

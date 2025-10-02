@@ -23,6 +23,8 @@ pub mod transparency_commands;
 // Transparency commands exported directly from transparency_commands module
 
 // Scheduler commands exported directly from scheduler_commands module
+// Note: These commands are not currently registered in main.rs
+#[allow(unused_imports)]
 pub use scheduler_commands::{
     apply_default_retention_policies, get_last_cleanup_result, get_scheduler_status,
     preview_retention_cleanup, set_automatic_cleanup, trigger_retention_cleanup,
@@ -30,6 +32,8 @@ pub use scheduler_commands::{
 };
 
 // Model transparency commands exported directly from model_transparency module
+// Note: These commands are not currently registered in main.rs
+#[allow(unused_imports)]
 pub use model_transparency::{
     add_model_mapping,
     clear_all_model_cache,

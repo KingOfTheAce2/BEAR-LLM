@@ -230,7 +230,7 @@ impl RiskAssessor {
         }
     }
 
-    fn assess_legal_suitability(&self, tags: &[&str], limitations: &[String]) -> LegalSuitability {
+    fn assess_legal_suitability(&self, _tags: &[&str], limitations: &[String]) -> LegalSuitability {
         let suitable = !limitations.iter().any(|lim| {
             lim.to_lowercase().contains("not suitable for")
                 || lim.to_lowercase().contains("research only")
