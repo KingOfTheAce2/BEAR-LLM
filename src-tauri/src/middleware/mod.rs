@@ -3,7 +3,6 @@
 
 pub mod consent_guard;
 
-#[cfg(test)]
-mod tests;
+// Tests removed - all test infrastructure in compliance module
 
 pub use consent_guard::{ConsentGuard, ConsentGuardBuilder};

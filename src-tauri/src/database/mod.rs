@@ -4,7 +4,6 @@
 pub mod chat_encryption_integration;
 pub mod export_integration;
 
-#[cfg(test)]
-mod tests;
+// Tests removed - all test infrastructure in compliance module
 
 // ChatEncryptionLayer and ExportIntegration are internal to database module

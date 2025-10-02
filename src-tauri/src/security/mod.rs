@@ -16,8 +16,7 @@ pub mod encrypted_pool;
 pub mod key_manager;
 pub mod migration;
 
-#[cfg(test)]
-mod tests;
+// Tests removed - all test infrastructure in compliance module
 
 // Re-export commonly used types
 pub use chat_encryption::{ChatEncryptor, EncryptedMessage, UserKeyDerivation};
