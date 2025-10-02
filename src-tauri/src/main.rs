@@ -701,9 +701,7 @@ async fn get_database_stats(state: State<'_, AppState>) -> Result<serde_json::Va
 async fn get_system_specs(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let detector = state.hardware_detector.read().await;
     let mut detector_mut = detector.clone();
-    let specs = detector_mut
-        .detect_hardware()
-        .map_err(|e| e.to_string())?;
+    let specs = detector_mut.detect_hardware().map_err(|e| e.to_string())?;
 
     Ok(serde_json::json!({
         "cpu_cores": specs.cpu_cores,
@@ -725,9 +723,7 @@ async fn check_model_compatibility(
 ) -> Result<serde_json::Value, String> {
     let detector = state.hardware_detector.read().await;
     let mut detector_mut = detector.clone();
-    let specs = detector_mut
-        .detect_hardware()
-        .map_err(|e| e.to_string())?;
+    let specs = detector_mut.detect_hardware().map_err(|e| e.to_string())?;
 
     // Check if system can run the model
     let required_ram_gb = model_size_gb * 1.5; // Model + context overhead
@@ -867,8 +863,16 @@ async fn search_huggingface_models(
     // Simple search implementation - in production use HF API
     let popular_models = vec![
         ("TheBloke/Llama-2-7B-Chat-GGUF", "Llama 2 7B Chat", "7B"),
-        ("TheBloke/Mistral-7B-Instruct-v0.2-GGUF", "Mistral 7B Instruct", "7B"),
-        ("TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF", "TinyLlama 1.1B", "1.1B"),
+        (
+            "TheBloke/Mistral-7B-Instruct-v0.2-GGUF",
+            "Mistral 7B Instruct",
+            "7B",
+        ),
+        (
+            "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+            "TinyLlama 1.1B",
+            "1.1B",
+        ),
         ("TheBloke/CodeLlama-7B-Instruct-GGUF", "CodeLlama 7B", "7B"),
     ];
 
@@ -901,9 +905,24 @@ async fn search_huggingface_models(
 #[tauri::command]
 async fn get_available_rag_models() -> Result<serde_json::Value, String> {
     let models = vec![
-        ("BAAI/bge-small-en-v1.5", "BGE Small English", "Small", "133MB"),
-        ("BAAI/bge-base-en-v1.5", "BGE Base English", "Medium", "438MB"),
-        ("sentence-transformers/all-MiniLM-L6-v2", "MiniLM L6", "Small", "90MB"),
+        (
+            "BAAI/bge-small-en-v1.5",
+            "BGE Small English",
+            "Small",
+            "133MB",
+        ),
+        (
+            "BAAI/bge-base-en-v1.5",
+            "BGE Base English",
+            "Medium",
+            "438MB",
+        ),
+        (
+            "sentence-transformers/all-MiniLM-L6-v2",
+            "MiniLM L6",
+            "Small",
+            "90MB",
+        ),
     ];
 
     let model_list: Vec<serde_json::Value> = models
@@ -1054,10 +1073,7 @@ async fn get_pii_config(state: State<'_, AppState>) -> Result<serde_json::Value,
 }
 
 #[tauri::command]
-async fn set_pii_mode(
-    state: State<'_, AppState>,
-    mode: String,
-) -> Result<String, String> {
+async fn set_pii_mode(state: State<'_, AppState>, mode: String) -> Result<String, String> {
     let detector = state.pii_detector.write().await;
     detector.set_mode(&mode).await.map_err(|e| e.to_string())?;
     Ok(format!("PII mode set to: {}", mode))

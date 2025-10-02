@@ -31,9 +31,14 @@ pub use scheduler_commands::{
 
 // Model transparency commands exported directly from model_transparency module
 pub use model_transparency::{
-    add_model_mapping, clear_all_model_cache, clear_model_cache,
+    add_model_mapping,
+    clear_all_model_cache,
+    clear_model_cache,
     // format_disclaimer_display, format_generic_disclaimer_display, get_high_risk_disclaimer, // Unused
-    get_ai_act_disclaimer, get_general_disclaimer,
-    get_model_info, get_model_mappings, remove_model_mapping,
+    get_ai_act_disclaimer,
+    get_general_disclaimer,
+    get_model_info,
+    get_model_mappings,
+    remove_model_mapping,
     ModelTransparencyState,
 };
