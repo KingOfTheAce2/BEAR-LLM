@@ -303,7 +303,7 @@ impl ChatEncryptionLayer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rusqlite::Connection;
+    use r2d2::Pool;
     use std::sync::Arc;
 
     fn setup_test_db() -> Pool<SqliteConnectionManager> {

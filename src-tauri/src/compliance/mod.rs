@@ -242,9 +242,10 @@ mod tests {
         let user_id = "test_user";
 
         // Grant consent
-        let consent = manager.consent().write().await;
-        consent.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
-        drop(consent);
+        {
+            let mut consent = manager.consent().write().await;
+            consent.grant_consent(user_id, &ConsentType::ChatStorage).unwrap();
+        }
 
         // Check consent
         let has_consent = manager.check_operation_consent(user_id, "chat_storage").await.unwrap();
