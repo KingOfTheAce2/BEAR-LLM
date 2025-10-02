@@ -73,7 +73,7 @@ impl EncryptionConfig {
 }
 
 impl HmacAlgorithm {
-    fn to_sqlcipher_value(&self) -> &str {
+    fn to_sqlcipher_value(self) -> &'static str {
         match self {
             HmacAlgorithm::Sha1 => "HMAC_SHA1",
             HmacAlgorithm::Sha256 => "HMAC_SHA256",

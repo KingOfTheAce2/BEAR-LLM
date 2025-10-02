@@ -17,7 +17,7 @@ on:
     inputs:
       version:
         description: 'Version to build (e.g., 1.0.31)'
-        required: true
+        required: false
         default: '1.0.31'
 
 env:
@@ -166,13 +166,14 @@ jobs:
           tagName: ${{ github.event.inputs.version || github.ref_name }}
           releaseName: 'BEAR AI v${{ github.event.inputs.version || github.ref_name }}'
           releaseBody: |
-            🐻 BEAR AI Local LLM Assistant v1.0.28
+            🐻 BEAR AI Local LLM Assistant v${{ github.event.inputs.version || github.ref_name }}
 
             Download and run the installer for your platform:
             - Windows: BEAR-AI_x64-setup.exe
 
-            ## What's New in v1.0.28
-            ✅ Production-ready compilation fixes
+            ## What's New in v${{ github.event.inputs.version || github.ref_name }}
+            ✅ Fixed all clippy warnings for production build
+            ✅ Async mutex improvements for better performance
             ✅ Complete GDPR & AI Act compliance
             ✅ Enhanced security infrastructure
             ✅ Optimized dependency management

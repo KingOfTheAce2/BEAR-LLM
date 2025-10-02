@@ -5,9 +5,10 @@ use crate::ai_transparency::{
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::State;
+use tokio::sync::Mutex as TokioMutex;
 
 pub struct ModelTransparencyState {
-    fetcher: Mutex<ModelCardFetcher>,
+    fetcher: TokioMutex<ModelCardFetcher>,
     registry: Mutex<ModelRegistry>,
     #[allow(dead_code)]
     cache_dir: PathBuf,
@@ -24,7 +25,7 @@ impl ModelTransparencyState {
             .unwrap_or_else(|_| ModelRegistry::new());
 
         Self {
-            fetcher: Mutex::new(fetcher),
+            fetcher: TokioMutex::new(fetcher),
             registry: Mutex::new(registry),
             cache_dir,
             config_path,
@@ -59,11 +60,9 @@ pub async fn get_model_info(
     };
 
     if let Some(ref model_id) = model_id {
-        // Try to fetch model card
-        let fetcher_result = {
-            let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
-            fetcher.fetch_model_card(model_id).await
-        };
+        // Try to fetch model card using tokio mutex (async-aware, doesn't hold lock across await)
+        let fetcher = state.fetcher.lock().await;
+        let fetcher_result = fetcher.fetch_model_card(model_id).await;
         match fetcher_result {
             Ok(cached_card) => {
                 let model_card =
@@ -147,14 +146,14 @@ pub async fn clear_model_cache(
     model_id: String,
     state: State<'_, ModelTransparencyState>,
 ) -> Result<(), String> {
-    let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
+    let fetcher = state.fetcher.lock().await;
     fetcher.clear_cache(&model_id)
 }
 
 /// Clear all cached model cards
 #[tauri::command]
 pub async fn clear_all_model_cache(state: State<'_, ModelTransparencyState>) -> Result<(), String> {
-    let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
+    let fetcher = state.fetcher.lock().await;
     fetcher.clear_all_cache()
 }
 

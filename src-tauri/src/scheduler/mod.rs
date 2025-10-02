@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
 use tokio::time::{interval, Duration};
@@ -201,10 +201,10 @@ impl RetentionScheduler {
     }
 
     /// Execute cleanup task
-    async fn execute_cleanup(db_path: &PathBuf, status: &Arc<RwLock<SchedulerStatus>>) {
+    async fn execute_cleanup(db_path: &Path, status: &Arc<RwLock<SchedulerStatus>>) {
         let start_time = Utc::now();
 
-        let task = RetentionCleanupTask::new(db_path.clone());
+        let task = RetentionCleanupTask::new(db_path.to_path_buf());
         let result = match task.execute().await {
             Ok(counts) => {
                 info!(

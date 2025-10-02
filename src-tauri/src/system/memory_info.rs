@@ -93,16 +93,19 @@ impl PIIMode {
             }
         }
     }
+}
 
-    /// Convert to string for serialization
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for PIIMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PIIMode::Builtin => "builtin".to_string(),
-            PIIMode::PresidioLite => "presidio_lite".to_string(),
-            PIIMode::PresidioFull => "presidio_full".to_string(),
+            PIIMode::Builtin => write!(f, "builtin"),
+            PIIMode::PresidioLite => write!(f, "presidio_lite"),
+            PIIMode::PresidioFull => write!(f, "presidio_full"),
         }
     }
+}
 
+impl PIIMode {
     /// Parse from string
     pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {

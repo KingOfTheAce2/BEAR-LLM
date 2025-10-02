@@ -126,6 +126,7 @@ impl AuditLogger {
     }
 
     /// Log an audit event
+    #[allow(clippy::too_many_arguments)]
     pub fn log(
         &self,
         user_id: &str,

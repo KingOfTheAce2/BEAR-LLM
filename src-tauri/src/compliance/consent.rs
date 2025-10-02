@@ -28,7 +28,7 @@ impl ConsentType {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self> {
+    pub fn parse(s: &str) -> Result<Self> {
         match s {
             "pii_detection" => Ok(ConsentType::PiiDetection),
             "chat_storage" => Ok(ConsentType::ChatStorage),
@@ -190,7 +190,7 @@ impl ConsentManager {
                 Ok(ConsentRecord {
                     id: row.get(0)?,
                     user_id: row.get(1)?,
-                    consent_type: ConsentType::from_str(&row.get::<_, String>(2)?).unwrap(),
+                    consent_type: ConsentType::parse(&row.get::<_, String>(2)?).unwrap(),
                     granted: row.get(3)?,
                     granted_at: row.get::<_, Option<String>>(4)?.map(|s| s.parse().unwrap()),
                     revoked_at: row.get::<_, Option<String>>(5)?.map(|s| s.parse().unwrap()),
@@ -280,7 +280,7 @@ impl ConsentManager {
             .query_map([], |row| {
                 Ok(ConsentVersion {
                     id: row.get(0)?,
-                    consent_type: ConsentType::from_str(&row.get::<_, String>(1)?).unwrap(),
+                    consent_type: ConsentType::parse(&row.get::<_, String>(1)?).unwrap(),
                     version: row.get(2)?,
                     consent_text: row.get(3)?,
                     effective_date: row.get::<_, String>(4)?.parse().unwrap(),
@@ -339,6 +339,7 @@ impl ConsentManager {
 
     /// Log granular consent action to consent_log table
     /// Provides detailed audit trail with IP address and user agent
+    #[allow(clippy::too_many_arguments)]
     pub fn log_granular_consent(
         &self,
         user_id: &str,
