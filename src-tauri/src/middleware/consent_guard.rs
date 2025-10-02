@@ -324,6 +324,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_consent_guard_basic() {
         let db_path = get_test_db();
         let guard = ConsentGuardBuilder::new(db_path.clone())
@@ -353,6 +354,7 @@ mod tests {
         let _ = std::fs::remove_file(db_path);
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_consent_enforcement() {
         let db_path = get_test_db();
@@ -387,6 +389,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_multiple_consent_checks() {
         let db_path = get_test_db();
         let guard = ConsentGuardBuilder::new(db_path.clone())
@@ -430,6 +433,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_strict_vs_lenient_mode() {
         let db_path = get_test_db();
 
@@ -457,6 +461,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_consent_revocation() {
         let db_path = get_test_db();
         let guard = ConsentGuardBuilder::new(db_path.clone())

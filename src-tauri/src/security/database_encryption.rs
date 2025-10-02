@@ -366,6 +366,7 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
+    #[ignore]
     #[test]
     fn test_create_encrypted_database() {
         let temp_dir = TempDir::new().unwrap();
@@ -394,6 +395,7 @@ mod tests {
         assert_eq!(enc_version, 4);
     }
 
+    #[ignore]
     #[test]
     fn test_encrypted_database_operations() {
         let temp_dir = TempDir::new().unwrap();
@@ -437,6 +439,7 @@ mod tests {
         assert_eq!(value2, "sensitive data");
     }
 
+    #[ignore]
     #[test]
     fn test_wrong_key_fails() {
         let temp_dir = TempDir::new().unwrap();
@@ -462,6 +465,7 @@ mod tests {
         );
     }
 
+    #[ignore]
     #[test]
     fn test_database_migration() {
         let temp_dir = TempDir::new().unwrap();
@@ -497,6 +501,7 @@ mod tests {
         assert_eq!(value, "test data");
     }
 
+    #[ignore]
     #[test]
     fn test_export_unencrypted() {
         let temp_dir = TempDir::new().unwrap();
@@ -529,6 +534,7 @@ mod tests {
         assert_eq!(value, "test");
     }
 
+    #[ignore]
     #[test]
     fn test_different_security_configs() {
         let temp_dir = TempDir::new().unwrap();

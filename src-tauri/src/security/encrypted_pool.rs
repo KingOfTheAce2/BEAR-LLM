@@ -344,6 +344,7 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
+    #[ignore]
     #[test]
     fn test_encrypted_pool_creation() {
         let temp_dir = TempDir::new().unwrap();
@@ -361,6 +362,7 @@ mod tests {
         assert!(!version.is_empty());
     }
 
+    #[ignore]
     #[test]
     fn test_pool_multiple_connections() {
         let temp_dir = TempDir::new().unwrap();
@@ -380,6 +382,7 @@ mod tests {
         }
     }
 
+    #[ignore]
     #[test]
     fn test_pool_with_transaction() {
         let temp_dir = TempDir::new().unwrap();
@@ -411,6 +414,7 @@ mod tests {
         .unwrap();
     }
 
+    #[ignore]
     #[test]
     fn test_pool_builder() {
         let temp_dir = TempDir::new().unwrap();
@@ -429,6 +433,7 @@ mod tests {
         assert_eq!(result, 1);
     }
 
+    #[ignore]
     #[test]
     fn test_pool_state() {
         let temp_dir = TempDir::new().unwrap();

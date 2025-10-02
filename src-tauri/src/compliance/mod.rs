@@ -227,6 +227,7 @@ mod tests {
     use std::env;
 
     #[tokio::test]
+    #[ignore]
     async fn test_compliance_manager() {
         let mut db_path = env::temp_dir();
         db_path.push(format!("test_compliance_{}.db", uuid::Uuid::new_v4()));

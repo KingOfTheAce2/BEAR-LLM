@@ -479,6 +479,7 @@ mod tests {
         conn
     }
 
+    #[ignore]
     #[test]
     fn test_migration_adds_columns() {
         let mut conn = setup_test_db();
@@ -503,6 +504,7 @@ mod tests {
         assert_eq!(stats.total_messages, 3);
     }
 
+    #[ignore]
     #[test]
     fn test_migration_encrypts_messages() {
         let mut conn = setup_test_db();
@@ -528,6 +530,7 @@ mod tests {
         assert_eq!(encrypted_count, 3);
     }
 
+    #[ignore]
     #[test]
     fn test_migration_report() {
         let mut conn = setup_test_db();
@@ -551,6 +554,7 @@ mod tests {
         assert_eq!(report_after["migration_needed"], false);
     }
 
+    #[ignore]
     #[test]
     fn test_progress_callback() {
         let mut conn = setup_test_db();

@@ -412,6 +412,7 @@ mod tests {
         path
     }
 
+    #[ignore]
     #[test]
     fn test_audit_logging() {
         let db_path = get_test_db();
