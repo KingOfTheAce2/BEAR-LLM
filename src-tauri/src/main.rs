@@ -32,9 +32,19 @@ mod huggingface_api;
 mod model_manager;
 mod process_helper;
 mod rate_limiter;
+mod system;
 
 // GDPR Compliance module
 mod compliance;
+
+// AI Transparency module
+mod ai_transparency;
+
+// Middleware for consent enforcement
+mod middleware;
+
+// Scheduler for automated tasks
+mod scheduler;
 
 // Import commands that are defined in commands.rs
 use commands::{
@@ -52,6 +62,15 @@ use commands::{
     switch_rag_model,
     get_rag_config,
     update_rag_config,
+    // PII and Memory commands
+    get_memory_info,
+    can_use_pii_mode,
+    estimate_mode_impact,
+    get_pii_config,
+    set_pii_mode,
+    update_pii_config,
+    install_presidio,
+    check_presidio_status,
 };
 
 // Use core AI modules
@@ -69,6 +88,9 @@ use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 use compliance::ComplianceManager;
 use rate_limiter::RateLimiter;
+use middleware::{ConsentGuard, ConsentGuardBuilder};
+use scheduler::{RetentionScheduler, SchedulerHandle};
+use ai_transparency::TransparencyState;
 
 // SECURITY FIX: Use tempfile crate for atomic temporary file creation
 // This prevents race conditions where file creation happens after validation
@@ -188,8 +210,17 @@ struct AppState {
     // GDPR Compliance
     compliance_manager: Arc<ComplianceManager>,
 
+    // Consent Guard Middleware
+    consent_guard: Arc<ConsentGuard>,
+
     // Rate limiting
     rate_limiter: Arc<RateLimiter>,
+
+    // Retention Scheduler
+    scheduler_handle: Option<Arc<RwLock<SchedulerHandle>>>,
+
+    // AI Transparency
+    transparency_state: Arc<TransparencyState>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -973,10 +1004,25 @@ fn main() {
     };
 
     // Initialize Compliance Manager
-    let db_path = dirs::data_local_dir()
-        .map(|mut p| { p.push("bear-ai"); p.push("bear_ai.db"); p })
-        .unwrap_or_else(|| PathBuf::from("bear_ai.db"));
-    let compliance_manager = Arc::new(ComplianceManager::new(db_path));
+    let app_data_dir = dirs::data_local_dir()
+        .map(|mut p| { p.push("bear-ai"); p })
+        .unwrap_or_else(|| PathBuf::from("."));
+    let db_path = app_data_dir.join("bear_ai.db");
+    let compliance_manager = Arc::new(ComplianceManager::new(db_path.clone()));
+
+    // Initialize Model Transparency State
+    let model_transparency = commands::ModelTransparencyState::new(app_data_dir.clone());
+
+    // Initialize Consent Guard Middleware
+    let consent_guard = Arc::new(
+        ConsentGuardBuilder::new(db_path.clone())
+            .strict_mode(true) // Enforce up-to-date consent
+            .build()
+    );
+
+    // Initialize Retention Scheduler
+    let retention_scheduler = RetentionScheduler::new(db_path.clone());
+    let scheduler_handle = Arc::new(RwLock::new(retention_scheduler.get_handle()));
 
     // Create unified app state
     let app_state = AppState {
@@ -1003,8 +1049,17 @@ fn main() {
         // GDPR Compliance
         compliance_manager,
 
+        // Consent Guard Middleware
+        consent_guard: consent_guard.clone(),
+
         // Rate limiting
         rate_limiter: Arc::new(RateLimiter::new()),
+
+        // Retention Scheduler
+        scheduler_handle: Some(scheduler_handle.clone()),
+
+        // AI Transparency
+        transparency_state: Arc::new(TransparencyState::new()),
     };
 
     // Initialize modules
@@ -1059,6 +1114,13 @@ fn main() {
         } else {
             tracing::info!("✅ GDPR Compliance Manager initialized successfully");
         }
+
+        // Start Retention Scheduler
+        if let Err(e) = retention_scheduler.start().await {
+            tracing::error!(error = %e, "Failed to start retention scheduler");
+        } else {
+            tracing::info!("✅ Retention Scheduler started successfully");
+        }
     });
 
     tauri::Builder::default()
@@ -1069,6 +1131,11 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .manage(app_state.compliance_manager.clone())
+        .manage(consent_guard.clone())
+        .manage(scheduler_handle.clone())
+        .manage(db_path.clone())
+        .manage(app_state.transparency_state.clone())
+        .manage(model_transparency)
         .setup(move |_app| {
             let state = app_state.clone();
 
@@ -1178,6 +1245,69 @@ fn main() {
             compliance::commands::delete_user_data,
             compliance::commands::generate_compliance_report,
             compliance::commands::run_compliance_maintenance,
+            compliance::commands::update_user_data,
+            compliance::commands::get_granular_consent_log,
+            compliance::commands::withdraw_consent_with_reason,
+            compliance::commands::get_consent_statistics,
+            // Consent Middleware Commands
+            middleware::commands::check_consent_status,
+            middleware::commands::grant_consent,
+            middleware::commands::revoke_consent,
+            middleware::commands::check_multiple_consents,
+            middleware::commands::get_consent_history,
+            middleware::commands::check_reconsent_needed,
+            middleware::commands::grant_all_consents,
+            middleware::commands::revoke_all_consents,
+            middleware::commands::get_consent_statistics as get_middleware_consent_stats,
+
+            // Retention Scheduler Commands
+            commands::trigger_retention_cleanup,
+            commands::get_scheduler_status,
+            commands::update_scheduler_config,
+            commands::preview_retention_cleanup,
+            commands::apply_default_retention_policies,
+            commands::get_last_cleanup_result,
+            commands::set_automatic_cleanup,
+
+            // AI Transparency
+            commands::transparency_commands::get_startup_notice,
+            commands::transparency_commands::get_onboarding_notice,
+            commands::transparency_commands::get_limitations_notice,
+            commands::transparency_commands::get_data_processing_notice,
+            commands::transparency_commands::get_legal_disclaimer,
+            commands::transparency_commands::create_transparency_context,
+            commands::transparency_commands::get_transparency_notice,
+            commands::transparency_commands::calculate_confidence_score,
+            commands::transparency_commands::get_transparency_preferences,
+            commands::transparency_commands::update_transparency_preferences,
+            commands::transparency_commands::complete_onboarding,
+            commands::transparency_commands::needs_disclaimer,
+            commands::transparency_commands::acknowledge_disclaimers,
+            commands::transparency_commands::get_all_notices,
+            commands::transparency_commands::export_transparency_context,
+
+            // Model Card Transparency
+            commands::get_model_info,
+            commands::add_model_mapping,
+            commands::remove_model_mapping,
+            commands::get_model_mappings,
+            commands::clear_model_cache,
+            commands::clear_all_model_cache,
+            commands::get_general_disclaimer,
+            commands::get_ai_act_disclaimer,
+            commands::get_high_risk_disclaimer,
+            commands::format_disclaimer_display,
+            commands::format_generic_disclaimer_display,
+
+            // PII Detection & Memory Management
+            get_memory_info,
+            can_use_pii_mode,
+            estimate_mode_impact,
+            get_pii_config,
+            set_pii_mode,
+            update_pii_config,
+            install_presidio,
+            check_presidio_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

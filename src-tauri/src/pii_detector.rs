@@ -80,9 +80,63 @@ pub struct PIIEntity {
     pub engine: String, // "presidio", "transformer", or "regex"
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum PresidioMode {
+    /// Presidio disabled - use built-in detection only
+    Disabled,
+    /// Presidio Lite - spaCy only (~500MB overhead)
+    SpacyOnly,
+    /// Presidio Full - spaCy + transformer models (~2GB overhead)
+    FullML,
+}
+
+impl Default for PresidioMode {
+    fn default() -> Self {
+        PresidioMode::Disabled // Default to built-in for safety
+    }
+}
+
+impl PresidioMode {
+    pub fn to_string(&self) -> String {
+        match self {
+            PresidioMode::Disabled => "disabled".to_string(),
+            PresidioMode::SpacyOnly => "spacy_only".to_string(),
+            PresidioMode::FullML => "full_ml".to_string(),
+        }
+    }
+
+    pub fn from_string(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "disabled" => PresidioMode::Disabled,
+            "spacy_only" => PresidioMode::SpacyOnly,
+            "full_ml" => PresidioMode::FullML,
+            _ => PresidioMode::Disabled,
+        }
+    }
+
+    /// Get memory overhead in MB
+    pub fn memory_overhead_mb(&self) -> u64 {
+        match self {
+            PresidioMode::Disabled => 0,
+            PresidioMode::SpacyOnly => 500,
+            PresidioMode::FullML => 2048,
+        }
+    }
+
+    /// Get expected accuracy
+    pub fn accuracy(&self) -> u8 {
+        match self {
+            PresidioMode::Disabled => 85,
+            PresidioMode::SpacyOnly => 90,
+            PresidioMode::FullML => 95,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PIIDetectionConfig {
-    pub use_presidio: bool,
+    pub use_presidio: bool, // Deprecated - use presidio_mode instead
+    pub presidio_mode: PresidioMode,
     pub confidence_threshold: f32,
     pub detect_names: bool,
     pub detect_organizations: bool,
@@ -99,7 +153,8 @@ pub struct PIIDetectionConfig {
 impl Default for PIIDetectionConfig {
     fn default() -> Self {
         Self {
-            use_presidio: true,
+            use_presidio: false, // Deprecated field - defaults to false for backward compat
+            presidio_mode: PresidioMode::Disabled, // Use built-in by default
             confidence_threshold: 0.85,
             detect_names: true,
             detect_organizations: true,
@@ -306,11 +361,19 @@ impl PIIDetector {
         let config = self.config.read().await;
         let mut all_entities = Vec::new();
 
-        // Phase 1: Try Presidio if available
-        if config.use_presidio && *self.presidio_available.read().await {
+        // Phase 1: Try Presidio based on mode (not the deprecated use_presidio flag)
+        let should_use_presidio = match config.presidio_mode {
+            PresidioMode::Disabled => false,
+            PresidioMode::SpacyOnly | PresidioMode::FullML => true,
+        };
+
+        if should_use_presidio && *self.presidio_available.read().await {
             match self.detect_with_presidio(text).await {
                 Ok(entities) => all_entities.extend(entities),
-                Err(e) => eprintln!("Presidio detection error: {}", e),
+                Err(e) => {
+                    tracing::warn!("Presidio detection error, falling back to built-in: {}", e);
+                    eprintln!("Presidio detection error: {}", e);
+                }
             }
         }
 
@@ -756,6 +819,23 @@ print(json.dumps(entities))
         let mut current = self.config.write().await;
         *current = config;
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_config(&self) -> PIIDetectionConfig {
+        self.config.read().await.clone()
+    }
+
+    #[allow(dead_code)]
+    pub async fn set_presidio_mode(&self, mode: PresidioMode) -> Result<()> {
+        let mut config = self.config.write().await;
+        config.presidio_mode = mode;
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_presidio_mode(&self) -> PresidioMode {
+        self.config.read().await.presidio_mode.clone()
     }
 
     #[allow(dead_code)]

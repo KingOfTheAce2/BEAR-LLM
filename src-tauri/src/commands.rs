@@ -1,4 +1,6 @@
 use crate::system_monitor::{ModelParams, Quantization, ModelCompatibility};
+use crate::system::memory_info::{MemoryDetector, MemoryInfo, PIIMode};
+use crate::pii_detector::{PIIDetector, PIIDetectionConfig, PresidioMode};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -415,4 +417,88 @@ pub async fn update_rag_config(
         .map_err(|e| e.to_string())?;
 
     Ok("RAG configuration updated successfully".to_string())
+}
+
+// ========== PII Detection & Memory Info Commands ==========
+
+/// Get system memory information and PII mode recommendation
+#[tauri::command]
+pub async fn get_memory_info() -> Result<MemoryInfo, String> {
+    let mut detector = MemoryDetector::new();
+    detector.get_memory_info().map_err(|e| e.to_string())
+}
+
+/// Check if a specific PII mode can be safely used
+#[tauri::command]
+pub async fn can_use_pii_mode(mode: String) -> Result<(bool, Option<String>), String> {
+    let mut detector = MemoryDetector::new();
+    let pii_mode = PIIMode::from_string(&mode);
+    detector.can_use_mode(&pii_mode).map_err(|e| e.to_string())
+}
+
+/// Get memory impact estimate for switching PII modes
+#[tauri::command]
+pub async fn estimate_mode_impact(current_mode: String, new_mode: String) -> Result<String, String> {
+    let mut detector = MemoryDetector::new();
+    let current = PIIMode::from_string(&current_mode);
+    let new = PIIMode::from_string(&new_mode);
+    detector.estimate_mode_impact(&current, &new).map_err(|e| e.to_string())
+}
+
+/// Get current PII detection configuration
+#[tauri::command]
+pub async fn get_pii_config(state: State<'_, crate::AppState>) -> Result<PIIDetectionConfig, String> {
+    let pii_detector = state.pii_detector.read().await;
+    Ok(pii_detector.get_config().await)
+}
+
+/// Set PII detection mode
+#[tauri::command]
+pub async fn set_pii_mode(state: State<'_, crate::AppState>, mode: String) -> Result<String, String> {
+    let pii_detector = state.pii_detector.write().await;
+    let presidio_mode = match mode.as_str() {
+        "builtin" => PresidioMode::Disabled,
+        "presidio_lite" => PresidioMode::SpacyOnly,
+        "presidio_full" => PresidioMode::FullML,
+        _ => return Err(format!("Invalid PII mode: {}", mode)),
+    };
+    
+    pii_detector.set_presidio_mode(presidio_mode).await
+        .map_err(|e| e.to_string())?;
+    
+    Ok(format!("PII mode set to: {}", mode))
+}
+
+/// Update PII detection configuration
+#[tauri::command]
+pub async fn update_pii_config(
+    state: State<'_, crate::AppState>,
+    config_json: String,
+) -> Result<String, String> {
+    let config: PIIDetectionConfig = serde_json::from_str(&config_json)
+        .map_err(|e| format!("Invalid config JSON: {}", e))?;
+    
+    let pii_detector = state.pii_detector.write().await;
+    pii_detector.update_config(config).await
+        .map_err(|e| e.to_string())?;
+    
+    Ok("PII configuration updated successfully".to_string())
+}
+
+/// Install Presidio dependencies (async operation)
+#[tauri::command]
+pub async fn install_presidio(state: State<'_, crate::AppState>) -> Result<String, String> {
+    let presidio_bridge = state.presidio_bridge.read().await;
+    presidio_bridge.setup().await
+        .map_err(|e| e.to_string())?;
+    
+    Ok("Presidio installed successfully".to_string())
+}
+
+/// Check if Presidio is installed and available
+#[tauri::command]
+pub async fn check_presidio_status(state: State<'_, crate::AppState>) -> Result<bool, String> {
+    let presidio_bridge = state.presidio_bridge.read().await;
+    presidio_bridge.check_installation_status().await
+        .map_err(|e| e.to_string())
 }
