@@ -94,14 +94,15 @@ impl GGUFInferenceEngine {
 
         tracing::info!("Loading GGUF model from: {:?}", path);
 
-        // Configure model parameters
-        let model_params = LlamaModelParams::default().with_n_gpu_layers(n_gpu_layers);
+        // Load the model synchronously before any await points
+        // This ensures LlamaModelParams doesn't cross await boundaries
+        let model = {
+            let model_params = LlamaModelParams::default().with_n_gpu_layers(n_gpu_layers);
+            LlamaModel::load_from_file(&self.backend, path, &model_params)
+                .map_err(|e| anyhow!("Failed to load GGUF model: {}", e))?
+        }; // model_params is dropped here, before any await
 
-        // Load the model
-        let model = LlamaModel::load_from_file(&self.backend, path, &model_params)
-            .map_err(|e| anyhow!("Failed to load GGUF model: {}", e))?;
-
-        // Store model
+        // Now we can safely await since model_params is gone
         let mut model_lock = self.model.write().await;
         *model_lock = Some(model);
 
