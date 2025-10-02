@@ -238,7 +238,8 @@ mod tests {
 
         // Grant consent
         {
-            let mut consent = manager.consent().write().await;
+            let consent_arc = manager.consent();
+            let mut consent = consent_arc.write().await;
             consent
                 .grant_consent(user_id, &ConsentType::ChatStorage)
                 .unwrap();
