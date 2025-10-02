@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use hf_hub::api::tokio::Api;
 use candle_core::Device;
 use tokenizers::Tokenizer;
-use crate::gguf_inference::{GGUFInferenceEngine, GGUFInferenceConfig, GenerationResult};
+use crate::gguf_inference::{GGUFInferenceEngine, GGUFInferenceConfig};
 use crate::constants::*;
 
 // Production LLM Manager with real model downloading and inference
@@ -557,7 +557,7 @@ impl LLMManager {
     /// Check if a model is currently loaded
     pub async fn is_model_loaded(&self) -> Result<bool> {
         let active = self.active_model.read().await;
-        Ok(active.is_some() && self.gguf_engine.is_loaded())
+        Ok(active.is_some() && self.gguf_engine.is_model_loaded().await)
     }
 
     #[allow(dead_code)]

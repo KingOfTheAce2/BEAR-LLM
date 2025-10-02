@@ -83,7 +83,7 @@ use presidio_bridge::PresidioBridge;
 use setup_manager::SetupManager;
 use hardware_monitor::HardwareMonitor;
 use file_processor::FileProcessor;
-use database::DatabaseManager;
+use bear_ai_llm::database::DatabaseManager;
 use mcp_server::{MCPServer, AgentOrchestrator};
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 use compliance::ComplianceManager;

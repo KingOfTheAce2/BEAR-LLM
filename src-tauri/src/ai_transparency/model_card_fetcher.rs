@@ -23,6 +23,7 @@ pub struct CachedModelCard {
 }
 
 pub struct ModelCardFetcher {
+    #[allow(dead_code)]
     cache_dir: PathBuf,
     http_client: reqwest::Client,
     cache_ttl: Duration,

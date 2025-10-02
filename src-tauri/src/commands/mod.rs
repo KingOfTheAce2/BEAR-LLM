@@ -1,22 +1,24 @@
 // Commands Module - Tauri Command Exports
 // Organizes all Tauri commands for frontend integration
 
-pub mod consent_commands;
+// FIXME: Consent commands disabled - requires middleware module
+// pub mod consent_commands;
 pub mod transparency_commands;
 pub mod scheduler_commands;
 pub mod model_transparency;
 
-pub use consent_commands::{
-    check_consent_status,
-    grant_consent,
-    revoke_consent,
-    check_multiple_consents,
-    get_consent_history,
-    check_reconsent_needed,
-    grant_all_consents,
-    revoke_all_consents,
-    get_consent_statistics,
-};
+// FIXME: Consent command exports disabled
+// pub use consent_commands::{
+//     check_consent_status,
+//     grant_consent,
+//     revoke_consent,
+//     check_multiple_consents,
+//     get_consent_history,
+//     check_reconsent_needed,
+//     grant_all_consents,
+//     revoke_all_consents,
+//     get_consent_statistics,
+// };
 
 pub use transparency_commands::{
     get_startup_notice,
@@ -37,11 +39,11 @@ pub use transparency_commands::{
 };
 
 pub use scheduler_commands::{
-    trigger_retention_cleanup,
+    // trigger_retention_cleanup,  // Using compliance version instead
     get_scheduler_status,
     update_scheduler_config,
     preview_retention_cleanup,
-    apply_default_retention_policies,
+    // apply_default_retention_policies,  // Using compliance version instead
     get_last_cleanup_result,
     set_automatic_cleanup,
 };

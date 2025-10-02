@@ -16,7 +16,7 @@ use ring::aead::{Aad, BoundKey, Nonce, NonceSequence, OpeningKey, SealingKey, Un
 use ring::error::Unspecified;
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroU32;
+// NonZeroU32 removed - no longer used in this module
 use zeroize::Zeroize;
 
 /// Encrypted message structure stored in database
@@ -236,7 +236,7 @@ impl UserKeyDerivation {
             .p_cost(4) // 4 parallel threads
             .output_len(32) // 256-bit output
             .build()
-            .context("Failed to build Argon2 parameters")?;
+            .map_err(|e| anyhow::anyhow!("Failed to build Argon2 parameters: {}", e))?;
 
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,

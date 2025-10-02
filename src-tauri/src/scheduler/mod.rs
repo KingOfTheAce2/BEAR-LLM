@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::{info, error, warn, debug};
+use tracing::{info, error, debug};
 
 pub mod retention_tasks;
 

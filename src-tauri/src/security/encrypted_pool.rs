@@ -17,6 +17,30 @@ use std::time::Duration;
 use super::database_encryption::{EncryptedDatabase, EncryptionConfig};
 use super::key_manager::KeyManager;
 
+/// Custom error wrapper that implements std::error::Error for r2d2
+#[derive(Debug)]
+pub struct PoolError(String);
+
+impl std::fmt::Display for PoolError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for PoolError {}
+
+impl From<anyhow::Error> for PoolError {
+    fn from(err: anyhow::Error) -> Self {
+        PoolError(err.to_string())
+    }
+}
+
+impl From<rusqlite::Error> for PoolError {
+    fn from(err: rusqlite::Error) -> Self {
+        PoolError(err.to_string())
+    }
+}
+
 /// Connection manager for encrypted databases
 pub struct EncryptedConnectionManager {
     key_manager: Arc<KeyManager>,
@@ -45,26 +69,29 @@ impl EncryptedConnectionManager {
 
 impl r2d2::ManageConnection for EncryptedConnectionManager {
     type Connection = Connection;
-    type Error = anyhow::Error;
+    type Error = PoolError;
 
     fn connect(&self) -> Result<Self::Connection, Self::Error> {
         // Get encryption key
         let key = self.key_manager.get_sqlcipher_key(
             self.key_context.as_deref()
-        )?;
+        ).map_err(|e| PoolError(format!("Failed to get encryption key: {}", e)))?;
 
         // Open connection
         let conn = Connection::open(&self.db_path)
-            .with_context(|| format!("Failed to open database at {:?}", self.db_path))?;
+            .map_err(|e| PoolError(format!("Failed to open database at {:?}: {}", self.db_path, e)))?;
 
         // Configure SQLCipher encryption
-        self.configure_encryption(&conn, &key)?;
+        self.configure_encryption(&conn, &key)
+            .map_err(|e| PoolError(format!("Failed to configure encryption: {}", e)))?;
 
         // Enable foreign keys
-        conn.execute("PRAGMA foreign_keys = ON", [])?;
+        conn.execute("PRAGMA foreign_keys = ON", [])
+            .map_err(|e| PoolError(format!("Failed to enable foreign keys: {}", e)))?;
 
         // Set journal mode to WAL for better concurrency
-        conn.execute("PRAGMA journal_mode = WAL", [])?;
+        conn.execute("PRAGMA journal_mode = WAL", [])
+            .map_err(|e| PoolError(format!("Failed to set WAL mode: {}", e)))?;
 
         Ok(conn)
     }
@@ -72,7 +99,7 @@ impl r2d2::ManageConnection for EncryptedConnectionManager {
     fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {
         // Verify connection is still valid by executing a simple query
         conn.query_row("SELECT 1", [], |_| Ok(()))
-            .context("Connection validation failed")?;
+            .map_err(|e| PoolError(format!("Connection validation failed: {}", e)))?;
         Ok(())
     }
 

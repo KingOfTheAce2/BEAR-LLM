@@ -8,7 +8,7 @@
 // and chat message encryption, enabling transparent encryption/decryption.
 
 use anyhow::{Context, Result};
-use r2d2::{Pool, PooledConnection};
+use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
 use serde_json::Value as JsonValue;
 use std::sync::Arc;

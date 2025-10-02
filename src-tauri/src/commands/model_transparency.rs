@@ -9,6 +9,7 @@ use crate::ai_transparency::{
 pub struct ModelTransparencyState {
     fetcher: Mutex<ModelCardFetcher>,
     registry: Mutex<ModelRegistry>,
+    #[allow(dead_code)]
     cache_dir: PathBuf,
     config_path: PathBuf,
 }

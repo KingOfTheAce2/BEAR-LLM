@@ -2,15 +2,7 @@
 
 **100% Private AI Assistant for Legal and Professional Use**
 
-> **⚠️ CUDA Support Note**: By default, BEAR AI builds with **CPU-only support** for maximum compatibility.
-> If you have an NVIDIA GPU with CUDA Toolkit installed, enable GPU acceleration with:
-> ```bash
-> cd src-tauri
-> cargo build --release --features cuda
-> npm run tauri:build -- -- --features cuda
-> ```
-
-![Version](https://img.shields.io/badge/version-1.0.23-blue)
+![Version](https://img.shields.io/badge/version-1.0.27-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Author](https://img.shields.io/badge/author-Ernst%20van%20Gassen-green)
@@ -53,6 +45,15 @@ BEAR AI LLM is a fully production-ready desktop application that runs large lang
 - AI models: 2-8GB per model
 - Document embeddings: Variable
 - Build dependencies: ~2GB
+
+
+> **⚠️ CUDA Support Note**: By default, BEAR AI builds with **CPU-only support** for maximum compatibility.
+> If you have an NVIDIA GPU with CUDA Toolkit installed, enable GPU acceleration with:
+> ```bash
+> cd src-tauri
+> cargo build --release --features cuda
+> npm run tauri:build -- -- --features cuda
+> ```
 
 ## 🚀 Installation
 

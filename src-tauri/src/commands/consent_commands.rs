@@ -3,7 +3,8 @@
 
 use tauri::State;
 use serde_json::Value as JsonValue;
-use crate::middleware::ConsentGuard;
+// FIXME: Middleware module not available - commented out for build
+// use crate::middleware::ConsentGuard;
 use crate::compliance::ConsentType;
 
 /// Check consent status for a specific operation
@@ -249,19 +250,6 @@ pub async fn revoke_all_consents(
         "timestamp": chrono::Utc::now().to_rfc3339(),
         "gdpr_article": "Article 7(3) - Right to withdraw consent"
     }))
-}
-
-/// Get consent statistics for compliance reporting
-#[tauri::command]
-pub async fn get_consent_statistics(
-    consent_guard: State<'_, ConsentGuard>,
-) -> Result<JsonValue, String> {
-    let manager = consent_guard.consent_manager();
-    let manager_lock = manager.read().await;
-
-    manager_lock
-        .get_consent_statistics()
-        .map_err(|e| e.to_string())
 }
 
 /// Helper function to parse consent type string to enum

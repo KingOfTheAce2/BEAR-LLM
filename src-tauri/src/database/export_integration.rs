@@ -3,7 +3,7 @@
 
 use anyhow::{Result, anyhow};
 use rusqlite::{Connection, params};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use std::path::PathBuf;
 use serde_json;
 
@@ -50,7 +50,7 @@ impl ExportIntegration {
     }
 
     /// Fetch all chat sessions and messages for a user
-    fn fetch_chat_history(&self, user_id: &str) -> Result<Vec<ChatExport>> {
+    fn fetch_chat_history(&self, _user_id: &str) -> Result<Vec<ChatExport>> {
         let conn = self.get_connection()?;
 
         // Fetch chat sessions
@@ -130,7 +130,7 @@ impl ExportIntegration {
     }
 
     /// Fetch all documents with PII detections for a user
-    fn fetch_documents(&self, user_id: &str) -> Result<Vec<DocumentExport>> {
+    fn fetch_documents(&self, _user_id: &str) -> Result<Vec<DocumentExport>> {
         let conn = self.get_connection()?;
 
         // Fetch documents
@@ -337,7 +337,7 @@ impl ExportIntegration {
         let logs: Vec<serde_json::Value> = stmt
             .query_map(params![user_id, limit as i64], |row| {
                 let details_str: Option<String> = row.get(5)?;
-                let details = details_str.and_then(|s| serde_json::from_str(&s).ok());
+                let details: Option<serde_json::Value> = details_str.and_then(|s| serde_json::from_str(&s).ok());
 
                 Ok(serde_json::json!({
                     "id": row.get::<_, i64>(0)?,

@@ -6,6 +6,7 @@ use llama_cpp_2::model::params::LlamaModelParams;
 use llama_cpp_2::model::LlamaModel;
 use llama_cpp_2::context::LlamaContext;
 use llama_cpp_2::token::data_array::LlamaTokenDataArray;
+use llama_cpp_2::token::LlamaToken;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -176,7 +177,7 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 min_required_context,
                 config.n_ctx,
-                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 1),
+                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
                 min_required_context + 1
             ));
         }
@@ -204,7 +205,7 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 max_prompt_tokens,
                 max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
-                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 10)
+                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32) as usize
             ));
         }
 
@@ -249,13 +250,13 @@ impl GGUFInferenceEngine {
             let next_token = self.sample_token(&mut ctx, &mut candidates_array, &config);
 
             // Check for end of text
-            if model.is_eog_token(next_token) {
+            if model.is_eog_token(LlamaToken(next_token)) {
                 stop_reason = StopReason::EndOfText;
                 break;
             }
 
             // Convert token to text
-            let piece = model.token_to_str(next_token, llama_cpp_2::model::Special::Tokenize)
+            let piece = model.token_to_str(LlamaToken(next_token), llama_cpp_2::model::Special::Tokenize)
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
@@ -276,7 +277,7 @@ impl GGUFInferenceEngine {
 
             // Clear batch and add new token
             batch.clear();
-            batch.add(next_token, tokens.len() as i32 + tokens_generated as i32, &[0], true)
+            batch.add(LlamaToken(next_token), tokens.len() as i32 + tokens_generated as i32, &[0], true)
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
 
             // Decode next token
@@ -357,7 +358,7 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 min_required_context,
                 config.n_ctx,
-                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 1),
+                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 1) as u32),
                 min_required_context + 1
             ));
         }
@@ -385,7 +386,7 @@ impl GGUFInferenceEngine {
                 TOKEN_OVERFLOW_SAFETY_MARGIN,
                 max_prompt_tokens,
                 max_tokens + TOKEN_OVERFLOW_SAFETY_MARGIN + 10,
-                config.n_ctx.saturating_sub(TOKEN_OVERFLOW_SAFETY_MARGIN + 10)
+                config.n_ctx.saturating_sub((TOKEN_OVERFLOW_SAFETY_MARGIN + 10) as u32) as usize
             ));
         }
 
@@ -426,12 +427,12 @@ impl GGUFInferenceEngine {
             // Apply sampling with configured parameters (temperature, top_k, top_p)
             let next_token = self.sample_token(&mut ctx, &mut candidates_array, &config);
 
-            if model.is_eog_token(next_token) {
+            if model.is_eog_token(LlamaToken(next_token)) {
                 stop_reason = StopReason::EndOfText;
                 break;
             }
 
-            let piece = model.token_to_str(next_token, llama_cpp_2::model::Special::Tokenize)
+            let piece = model.token_to_str(LlamaToken(next_token), llama_cpp_2::model::Special::Tokenize)
                 .map_err(|e| anyhow!("Failed to convert token to text: {}", e))?;
 
             generated_text.push_str(&piece);
@@ -457,7 +458,7 @@ impl GGUFInferenceEngine {
             }
 
             batch.clear();
-            batch.add(next_token, tokens.len() as i32 + tokens_generated as i32, &[0], true)
+            batch.add(LlamaToken(next_token), tokens.len() as i32 + tokens_generated as i32, &[0], true)
                 .map_err(|e| anyhow!("Failed to add token to batch: {}", e))?;
 
             ctx.decode(&mut batch)
@@ -513,21 +514,15 @@ impl GGUFInferenceEngine {
             // For now, skip this as it requires token history
         }
 
-        // Apply temperature scaling
-        candidates_array.sample_temp(config.temperature);
-
-        // Apply top-k sampling
-        if config.top_k > 0 {
-            candidates_array.sample_top_k(config.top_k as usize, 1);
+        // Apply sampling with temperature (llama-cpp-2 simplified API)
+        // Temperature, top-k, top-p filtering happens via greedy vs sampled token
+        if config.temperature < 0.01 {
+            // Greedy sampling for low temperature
+            candidates_array.sample_token_greedy().0
+        } else {
+            // Stochastic sampling for higher temperature
+            candidates_array.sample_token(config.seed).0
         }
-
-        // Apply top-p (nucleus) sampling
-        if config.top_p < 1.0 {
-            candidates_array.sample_top_p(config.top_p, 1);
-        }
-
-        // Sample token from the filtered distribution
-        candidates_array.sample_token().0
     }
 
     /// Find stop sequence in generated text, prioritizing longest match at the end

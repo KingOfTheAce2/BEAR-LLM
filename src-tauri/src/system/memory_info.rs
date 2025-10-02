@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryInfo {
@@ -154,7 +154,9 @@ impl MemoryDetector {
 
     /// Get current process memory usage
     fn get_process_memory(&mut self) -> u64 {
-        self.system.refresh_processes();
+        use sysinfo::ProcessesToUpdate;
+
+        self.system.refresh_processes(ProcessesToUpdate::All, true);
 
         if let Some(process) = self.system.process(sysinfo::get_current_pid().ok().unwrap()) {
             process.memory()

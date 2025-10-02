@@ -86,6 +86,7 @@ impl ExportEngine {
     }
 
     /// Generate SHA-256 hash for data integrity verification
+    #[allow(dead_code)]
     fn generate_hash(data: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(data.as_bytes());

@@ -1,6 +1,6 @@
 use tauri::State;
 use crate::scheduler::{SchedulerHandle, ScheduleConfig, SchedulerStatus, CleanupResult};
-use crate::scheduler::retention_tasks::{RetentionCleanupTask, CleanupPreview, PolicyApplicationResult};
+use crate::scheduler::retention_tasks::{RetentionCleanupTask, CleanupPreview};
 use tokio::sync::RwLock;
 use std::sync::Arc;
 use std::path::PathBuf;
@@ -60,17 +60,6 @@ pub async fn preview_retention_cleanup(
     task.preview_cleanup()
         .await
         .map_err(|e| format!("Failed to preview cleanup: {}", e))
-}
-
-/// Apply default retention policies
-#[tauri::command]
-pub async fn apply_default_retention_policies(
-    db_path: State<'_, PathBuf>,
-) -> Result<PolicyApplicationResult, String> {
-    let task = RetentionCleanupTask::new(db_path.inner().clone());
-    task.apply_default_policies()
-        .await
-        .map_err(|e| format!("Failed to apply default policies: {}", e))
 }
 
 /// Get last cleanup result

@@ -151,7 +151,7 @@ impl DisclaimerGenerator {
     }
 
     /// Generate not-recommended use statement
-    fn generate_not_recommended_use(model_card: &ModelCard) -> String {
+    fn generate_not_recommended_use(_model_card: &ModelCard) -> String {
         let restricted_uses = vec![
             "Medical diagnosis or treatment decisions",
             "Legal advice or court proceedings",
