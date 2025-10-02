@@ -79,9 +79,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-v2-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-release-
+            ${{ runner.os }}-cargo-release-v2-
 
       - name: Install Node dependencies
         run: npm ci
