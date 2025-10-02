@@ -2,7 +2,6 @@
 ///
 /// This module centralizes all magic numbers, thresholds, and configuration values
 /// for easier maintenance and tuning.
-
 // ============================================================================
 // Hardware Monitoring Thresholds
 // ============================================================================

@@ -50,11 +50,15 @@ impl DisclaimerGenerator {
         let mut summary = format!("Model: {}\n", model_card.model_id);
 
         if !model_card.description.is_empty() {
-            summary.push_str(&format!("\n{}\n", model_card.description));
+            summary.push('\n');
+            summary.push_str(&model_card.description);
+            summary.push('\n');
         }
 
         if let Some(ref license) = model_card.license {
-            summary.push_str(&format!("\nLicense: {}\n", license));
+            summary.push_str("\nLicense: ");
+            summary.push_str(license);
+            summary.push('\n');
         }
 
         summary
@@ -180,27 +184,31 @@ impl DisclaimerGenerator {
     pub fn format_for_display(disclaimer: &ModelDisclaimer) -> String {
         let mut text = String::new();
 
-        text.push_str(&format!("═══════════════════════════════════════════\n"));
-        text.push_str(&format!("  AI MODEL DISCLOSURE\n"));
-        text.push_str(&format!("═══════════════════════════════════════════\n\n"));
+        text.push_str("═══════════════════════════════════════════\n");
+        text.push_str("  AI MODEL DISCLOSURE\n");
+        text.push_str("═══════════════════════════════════════════\n\n");
 
         text.push_str(&disclaimer.summary);
-        text.push_str("\n");
+        text.push('\n');
 
         text.push_str("📋 Intended Use:\n");
         for capability in &disclaimer.capabilities {
-            text.push_str(&format!("  • {}\n", capability));
+            text.push_str("  • ");
+            text.push_str(capability);
+            text.push('\n');
         }
-        text.push_str("\n");
+        text.push('\n');
 
         text.push_str("⚠️  IMPORTANT WARNINGS:\n");
         for warning in &disclaimer.warnings {
-            text.push_str(&format!("{}\n", warning));
+            text.push_str(warning);
+            text.push('\n');
         }
-        text.push_str("\n");
+        text.push('\n');
 
-        text.push_str("🚫 NOT Recommended For:\n");
-        text.push_str(&format!("  {}\n\n", disclaimer.not_recommended_use));
+        text.push_str("🚫 NOT Recommended For:\n  ");
+        text.push_str(&disclaimer.not_recommended_use);
+        text.push_str("\n\n");
 
         text.push_str("═══════════════════════════════════════════\n");
 

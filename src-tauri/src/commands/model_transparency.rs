@@ -60,8 +60,11 @@ pub async fn get_model_info(
 
     if let Some(ref model_id) = model_id {
         // Try to fetch model card
-        let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
-        match fetcher.fetch_model_card(model_id).await {
+        let fetcher_result = {
+            let fetcher = state.fetcher.lock().map_err(|e| e.to_string())?;
+            fetcher.fetch_model_card(model_id).await
+        };
+        match fetcher_result {
             Ok(cached_card) => {
                 let model_card =
                     ModelCardParser::parse(model_id.clone(), &cached_card.readme_content);

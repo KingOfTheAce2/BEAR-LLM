@@ -25,6 +25,14 @@ impl Default for NoticeTemplates {
     }
 }
 
+// Derive Default is preferable to manual implementation
+impl NoticeTemplates {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
 /// Startup disclaimer shown on application launch
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StartupNotice {

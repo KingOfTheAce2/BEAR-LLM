@@ -2,6 +2,13 @@
 ///
 /// This module contains reusable functions that are used across multiple
 /// components to avoid code duplication and ensure consistency.
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    static ref MODEL_PARAM_PATTERN: Regex =
+        Regex::new(r"(\d+\.?\d*)\s*b(?:illion)?").expect("Model param regex is invalid");
+}
 
 /// Calculate cosine similarity between two vectors
 ///
@@ -134,9 +141,7 @@ pub fn parse_model_params_from_id(model_id: &str) -> Option<f32> {
     }
 
     // Extract from patterns like "7b", "13b", "70b", "1.1b"
-    let re = regex::Regex::new(r"(\d+\.?\d*)\s*b(?:illion)?").ok()?;
-
-    if let Some(caps) = re.captures(&id_lower) {
+    if let Some(caps) = MODEL_PARAM_PATTERN.captures(&id_lower) {
         if let Some(num_str) = caps.get(1) {
             return num_str.as_str().parse::<f32>().ok();
         }
