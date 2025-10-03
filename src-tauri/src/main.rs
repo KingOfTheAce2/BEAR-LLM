@@ -844,7 +844,7 @@ async fn download_model_from_huggingface(
     model_id: String,
     filename: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    use tokio::process::Command;
+    use hf_hub::api::tokio::Api;
 
     let download_dir = dirs::data_local_dir()
         .map(|mut p| {
@@ -855,31 +855,30 @@ async fn download_model_from_huggingface(
 
     std::fs::create_dir_all(&download_dir).map_err(|e| e.to_string())?;
 
+    // Use pure Rust hf-hub crate (no external CLI dependency)
+    let api = Api::new().map_err(|e| format!("Failed to initialize HF API: {}", e))?;
+    let repo = api.model(model_id.clone());
+
+    // Download the specified file (or default to model.gguf)
     let file = filename.unwrap_or_else(|| "model.gguf".to_string());
-    let output_path = download_dir.join(&file);
 
-    // Use huggingface_hub CLI to download
-    let output = Command::new("huggingface-cli")
-        .arg("download")
-        .arg(&model_id)
-        .arg(&file)
-        .arg("--local-dir")
-        .arg(&download_dir)
-        .output()
+    let downloaded_path = repo
+        .get(&file)
         .await
-        .map_err(|e| format!("Failed to execute download: {}", e))?;
+        .map_err(|e| format!("Failed to download {}: {}", file, e))?;
 
-    if output.status.success() {
-        Ok(serde_json::json!({
-            "success": true,
-            "model_id": model_id,
-            "path": output_path.to_string_lossy(),
-            "message": "Model downloaded successfully"
-        }))
-    } else {
-        let error = String::from_utf8_lossy(&output.stderr);
-        Err(format!("Download failed: {}", error))
-    }
+    // Copy to our models directory
+    let output_path = download_dir.join(&file);
+    tokio::fs::copy(&downloaded_path, &output_path)
+        .await
+        .map_err(|e| format!("Failed to copy model: {}", e))?;
+
+    Ok(serde_json::json!({
+        "success": true,
+        "model_id": model_id,
+        "path": output_path.to_string_lossy(),
+        "message": "Model downloaded successfully"
+    }))
 }
 
 #[tauri::command]
