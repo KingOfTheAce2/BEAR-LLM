@@ -176,8 +176,7 @@ const HuggingFaceBrowser: React.FC<HuggingFaceBrowserProps> = ({
       const modelPath = `models/${model.id.replace('/', '_')}`;
 
       const result = await invoke('download_model_from_huggingface', {
-        model_id: model.id,  // Changed from modelId to model_id to match backend
-        save_path: modelPath  // Changed from modelName to save_path to match backend
+        modelId: model.id
       });
 
       logger.info('Model download result', { result, modelId: model.id });
