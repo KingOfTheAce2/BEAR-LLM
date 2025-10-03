@@ -43,14 +43,18 @@ jobs:
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
             VERSION=$(grep -m1 '^version' src-tauri/Cargo.toml | cut -d'"' -f2)
+            if [ -z "$VERSION" ]; then
+              echo "❌ Error: Could not extract version from Cargo.toml"
+              exit 1
+            fi
             echo "version=$VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Display build info
         run: |
-          echo "Building version: ${{ steps.get-version.outputs.version }}"
-          echo "Create release: ${{ github.event.inputs.create_release }}"
-          echo "Draft release: ${{ github.event.inputs.draft_release }}"
+          echo "🔧 Building version: ${{ steps.get-version.outputs.version }}"
+          echo "📦 Create release: ${{ github.event.inputs.create_release }}"
+          echo "📝 Draft release: ${{ github.event.inputs.draft_release }}"
 
   # Windows release build
   build-windows:
@@ -79,9 +83,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ${{ runner.os }}-cargo-release-v2-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-release-v2-
+            ${{ runner.os }}-cargo-release-
 
       - name: Install Node dependencies
         run: npm ci
@@ -89,28 +93,43 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Fast Pre-Build Validation (Check + Clippy)
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Security Audit
+        working-directory: src-tauri
+        run: cargo audit
+        continue-on-error: true
+
+      - name: Optimized Pre-Build Validation
         shell: pwsh
         run: |
           cd src-tauri
-          Write-Host "⚡ Running fast validation (check + clippy)..." -ForegroundColor Yellow
+          Write-Host "⚡ Running validation (clippy with all targets)..." -ForegroundColor Yellow
 
-          # Combined check and clippy for faster validation
-          Write-Host "🔍 Step 1/2: Build check..." -ForegroundColor Cyan
-          cargo check --release --target x86_64-pc-windows-msvc
+          # Clippy includes checking, so just run this with -D warnings
+          cargo clippy --release --target x86_64-pc-windows-msvc --all-targets -- -D warnings
 
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ BUILD CHECK FAILED" -ForegroundColor Red
+            Write-Host "❌ VALIDATION FAILED - Fix clippy warnings before release" -ForegroundColor Red
             exit 1
           }
 
-          Write-Host "✅ Build check passed" -ForegroundColor Green
-          Write-Host "🔍 Step 2/2: Code quality check (clippy)..." -ForegroundColor Cyan
-
-          # Clippy with warnings allowed (production-ready code)
-          cargo clippy --release --lib -- -W clippy::all
-
           Write-Host "✅ Pre-build validation complete" -ForegroundColor Green
+
+      - name: Run Tests
+        working-directory: src-tauri
+        shell: pwsh
+        run: |
+          Write-Host "🧪 Running tests..." -ForegroundColor Yellow
+          cargo test --release --target x86_64-pc-windows-msvc
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ TESTS FAILED" -ForegroundColor Red
+            exit 1
+          }
+          
+          Write-Host "✅ All tests passed" -ForegroundColor Green
 
       - name: Build Tauri application
         id: tauri-build
@@ -119,12 +138,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # No C++ build configuration needed - Pure Rust with Candle
           RUST_BACKTRACE: full
-          CARGO_INCREMENTAL: 0
         with:
-          tagName: v${{ needs.validate.outputs.version }}
-          releaseName: 'BEAR AI v${{ needs.validate.outputs.version }}'
+          tagName: ${{ github.event.inputs.create_release == 'true' && format('v{0}', needs.validate.outputs.version) || '' }}
+          releaseName: ${{ github.event.inputs.create_release == 'true' && format('BEAR AI v{0}', needs.validate.outputs.version) || '' }}
           releaseBody: |
             🐻 BEAR AI Local LLM Assistant v${{ needs.validate.outputs.version }}
 
@@ -133,11 +150,11 @@ jobs:
             - BEAR-AI_x64_en-US.msi (MSI installer)
 
             ## What's New in v${{ needs.validate.outputs.version }}
-            ✅ Fixed all clippy warnings for production build
-            ✅ Async mutex improvements for better concurrent performance
+            ✅ Streamlined CI/CD pipeline with optimized validation
+            ✅ Security audit integration for dependency scanning
+            ✅ Enhanced test coverage in release builds
             ✅ Complete GDPR & AI Act compliance framework
             ✅ Enhanced security infrastructure with database encryption
-            ✅ Optimized dependency management
 
             ## Core Features
             ✅ **100% Local** - No internet required, complete privacy
@@ -176,6 +193,23 @@ jobs:
           includeUpdaterJson: true
           args: --verbose
 
+      - name: Verify Signatures
+        if: env.TAURI_SIGNING_PRIVATE_KEY != ''
+        shell: pwsh
+        run: |
+          Write-Host "🔐 Verifying build signatures..." -ForegroundColor Yellow
+          
+          $sigFiles = Get-ChildItem -Path src-tauri/target/release/bundle -Recurse -Filter "*.sig" -ErrorAction SilentlyContinue
+          
+          if ($sigFiles.Count -eq 0) {
+            Write-Host "⚠️  No signature files found - signing may have failed" -ForegroundColor Yellow
+          } else {
+            Write-Host "✅ Found $($sigFiles.Count) signature file(s):" -ForegroundColor Green
+            $sigFiles | ForEach-Object {
+              Write-Host "   - $($_.Name)" -ForegroundColor White
+            }
+          }
+
       - name: Debug - List all build artifacts
         if: always()
         shell: pwsh
@@ -188,6 +222,10 @@ jobs:
           Write-Host "`n=== EXE Files ===" -ForegroundColor Yellow
           Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
             Write-Host "  $($_.FullName) ($([math]::Round($_.Length / 1MB, 2)) MB)" -ForegroundColor White
+          }
+          Write-Host "`n=== Signature Files ===" -ForegroundColor Yellow
+          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.sig" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  $($_.FullName)" -ForegroundColor White
           }
           Write-Host "`n=== Bundle Directory Structure ===" -ForegroundColor Yellow
           if (Test-Path "src-tauri/target/release/bundle") {
@@ -203,31 +241,42 @@ jobs:
         run: |
           Write-Host "📦 Verifying build artifacts..." -ForegroundColor Yellow
 
-          # Search more broadly for installers
+          # Search for installers
           $msiFiles = Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
           $exeFiles = Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Directory.Name -eq "nsis" }
 
+          $failed = $false
+
           # Check MSI
           if ($msiFiles.Count -eq 0) {
-            Write-Host "🔍 No MSI files found in any location" -ForegroundColor Red
-            Write-Host "Expected location: src-tauri/target/release/bundle/msi/" -ForegroundColor Yellow
-            exit 1
+            Write-Host "❌ No MSI files found" -ForegroundColor Red
+            Write-Host "   Expected location: src-tauri/target/release/bundle/msi/" -ForegroundColor Yellow
+            $failed = $true
           } else {
             $msi = $msiFiles | Select-Object -First 1
-            Write-Host "✅ Found MSI: $($msi.Name) at $($msi.DirectoryName)" -ForegroundColor Green
-            Write-Host "   Size: $([math]::Round($msi.Length / 1MB, 2)) MB" -ForegroundColor Green
+            Write-Host "✅ Found MSI: $($msi.Name)" -ForegroundColor Green
+            Write-Host "   Location: $($msi.DirectoryName)" -ForegroundColor Cyan
+            Write-Host "   Size: $([math]::Round($msi.Length / 1MB, 2)) MB" -ForegroundColor Cyan
           }
 
           # Check EXE
           if ($exeFiles.Count -eq 0) {
-            Write-Host "🔍 No NSIS EXE files found in any location" -ForegroundColor Red
-            Write-Host "Expected location: src-tauri/target/release/bundle/nsis/" -ForegroundColor Yellow
-            exit 1
+            Write-Host "❌ No NSIS EXE files found" -ForegroundColor Red
+            Write-Host "   Expected location: src-tauri/target/release/bundle/nsis/" -ForegroundColor Yellow
+            $failed = $true
           } else {
             $exe = $exeFiles | Select-Object -First 1
-            Write-Host "✅ Found EXE: $($exe.Name) at $($exe.DirectoryName)" -ForegroundColor Green
-            Write-Host "   Size: $([math]::Round($exe.Length / 1MB, 2)) MB" -ForegroundColor Green
+            Write-Host "✅ Found EXE: $($exe.Name)" -ForegroundColor Green
+            Write-Host "   Location: $($exe.DirectoryName)" -ForegroundColor Cyan
+            Write-Host "   Size: $([math]::Round($exe.Length / 1MB, 2)) MB" -ForegroundColor Cyan
           }
+
+          if ($failed) {
+            Write-Host "`n❌ Build verification failed - missing required artifacts" -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "`n✅ All required artifacts verified successfully" -ForegroundColor Green
 
       - name: Upload Windows Installers
         uses: actions/upload-artifact@v4
@@ -236,5 +285,18 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/**/*.sig
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
+
+      - name: Build Summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "`n========================================" -ForegroundColor Cyan
+          Write-Host "         BUILD SUMMARY" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Version: v${{ needs.validate.outputs.version }}" -ForegroundColor White
+          Write-Host "Release Created: ${{ github.event.inputs.create_release }}" -ForegroundColor White
+          Write-Host "Draft Mode: ${{ github.event.inputs.draft_release }}" -ForegroundColor White
+          Write-Host "========================================`n" -ForegroundColor Cyan
