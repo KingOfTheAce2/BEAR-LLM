@@ -458,14 +458,19 @@ impl GGUFInferenceEngine {
 
     /// Create a fallback tokenizer when tokenizer.json is not available
     fn create_fallback_tokenizer(&self) -> Result<Tokenizer> {
-        // This is a very basic fallback - in production you'd want to download from HuggingFace
-        tracing::warn!("Using basic fallback tokenizer - may not match model vocabulary");
-
-        // Create a simple BPE tokenizer
-        use tokenizers::models::bpe::BPE;
-        let bpe = BPE::default();
-
-        Ok(Tokenizer::new(bpe))
+        // PRODUCTION: Fail loudly instead of using broken tokenizer
+        Err(anyhow!(
+            "Tokenizer not found. GGUF models require a tokenizer.json file.\n\
+             \n\
+             Solutions:\n\
+             1. Place tokenizer.json in the same directory as your model file\n\
+             2. Download from HuggingFace model repo (usually named 'tokenizer.json')\n\
+             3. Use a model that includes tokenizer in the download\n\
+             \n\
+             Example: For TheBloke models, download both:\n\
+             - model.gguf (the model weights)\n\
+             - tokenizer.json (from the original model repo)"
+        ))
     }
 
     /// Get model information

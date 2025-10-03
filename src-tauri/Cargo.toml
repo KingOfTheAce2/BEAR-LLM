@@ -42,7 +42,7 @@ zip = "0.6"
 # AI/ML dependencies - Pure Rust inference (no C++ build issues)
 candle-core = { version = "0.8", features = ["cuda"] }
 candle-nn = "0.8"
-candle-transformers = { version = "0.8", features = ["gguf"] }
+candle-transformers = "0.8"  # GGUF support is built-in via quantized_llama module
 tokenizers = "0.21"
 # Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
 # Vector database
