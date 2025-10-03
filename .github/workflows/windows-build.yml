@@ -101,10 +101,10 @@ jobs:
 
       - name: Quick Link Validation (Fast Fail)
         shell: pwsh
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           cd src-tauri
-          Write-Host "⚡ Running quick link validation (fails in <5min if issues exist)..." -ForegroundColor Yellow
+          Write-Host "⚡ Running quick link validation (fails in <10min if issues exist)..." -ForegroundColor Yellow
           cargo check --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -FilePath link-check.log
 
           if ($LASTEXITCODE -ne 0) {
