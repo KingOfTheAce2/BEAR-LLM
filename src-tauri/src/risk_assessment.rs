@@ -115,11 +115,17 @@ impl RiskAssessor {
 
     async fn cache_assessment(&self, model_id: &str, assessment: RiskAssessment) {
         let mut cache = self.cache.write().await;
-        cache.insert(model_id.to_string(), (assessment, std::time::Instant::now()));
+        cache.insert(
+            model_id.to_string(),
+            (assessment, std::time::Instant::now()),
+        );
     }
 
     /// Attempt to fetch model card from Hugging Face
-    async fn fetch_from_huggingface(&self, model_id: &str) -> Result<RiskAssessment, Box<dyn std::error::Error + Send + Sync>> {
+    async fn fetch_from_huggingface(
+        &self,
+        model_id: &str,
+    ) -> Result<RiskAssessment, Box<dyn std::error::Error + Send + Sync>> {
         let url = format!("https://huggingface.co/api/models/{}", model_id);
 
         let client = reqwest::Client::builder()
@@ -162,13 +168,10 @@ impl RiskAssessor {
         }
 
         // Check tags for risk indicators
-        let tags = info.get("tags")
+        let tags = info
+            .get("tags")
             .and_then(|t| t.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .collect::<Vec<_>>()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
             .unwrap_or_default();
 
         // Determine risk level based on model characteristics
@@ -200,19 +203,12 @@ impl RiskAssessor {
 
     fn determine_risk_level(&self, tags: &[&str], limitations: &[String]) -> RiskLevel {
         // Check for indicators of high-risk usage
-        let high_risk_indicators = [
-            "legal",
-            "medical",
-            "finance",
-            "law",
-            "court",
-            "contract",
-        ];
+        let high_risk_indicators = ["legal", "medical", "finance", "law", "court", "contract"];
 
         let has_high_risk = tags.iter().any(|tag| {
-            high_risk_indicators.iter().any(|indicator| {
-                tag.to_lowercase().contains(indicator)
-            })
+            high_risk_indicators
+                .iter()
+                .any(|indicator| tag.to_lowercase().contains(indicator))
         });
 
         let has_severe_limitations = limitations.iter().any(|lim| {

@@ -1036,9 +1036,7 @@ async fn update_rag_config(
         config.similarity_threshold = threshold;
     }
 
-    rag.update_config(config)
-        .await
-        .map_err(|e| e.to_string())?;
+    rag.update_config(config).await.map_err(|e| e.to_string())?;
 
     Ok("RAG configuration updated".to_string())
 }
@@ -1127,7 +1125,10 @@ async fn set_pii_mode(state: State<'_, AppState>, mode: String) -> Result<String
         "full" => PresidioMode::FullML,
         _ => return Err(format!("Invalid mode: {}", mode)),
     };
-    detector.set_presidio_mode(presidio_mode).await.map_err(|e| e.to_string())?;
+    detector
+        .set_presidio_mode(presidio_mode)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(format!("PII mode set to: {}", mode))
 }
 
