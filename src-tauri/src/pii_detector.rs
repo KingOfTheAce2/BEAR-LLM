@@ -522,9 +522,10 @@ impl PIIDetector {
 
         // Initialize Candle NER model (Layer 2) if needed
         let config = self.config.read().await;
-        let model_id = match config.candle_model_language.as_str() {
-            "dutch" => "pdelobelle/robbert-v2-dutch-ner",
-            _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
+        let model_id = if config.candle_model_language.as_str() == "dutch" {
+            "pdelobelle/robbert-v2-dutch-ner"
+        } else {
+            "dbmdz/bert-large-cased-finetuned-conll03-english"
         };
         if matches!(config.detection_layer, DetectionLayer::WithCandle | DetectionLayer::FullStack) {
             let mut candle_ner_model = self.candle_ner_model.write().await;
@@ -1149,13 +1150,13 @@ print(json.dumps(entities))
     #[allow(dead_code)]
     pub async fn set_candle_enabled(&self, enabled: bool) -> Result<()> {
         let config = self.config.read().await;
-        let model_id = match config.candle_model_language.as_str() {
-            "dutch" => "pdelobelle/robbert-v2-dutch-ner",
-            _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
+        let model_id = if config.candle_model_language.as_str() == "dutch" {
+            "pdelobelle/robbert-v2-dutch-ner"
+        } else {
+            "dbmdz/bert-large-cased-finetuned-conll03-english"
         };
         drop(config); // Drop config read lock early
 
-        let current_config = self.config.write().await;
         // This function now controls whether the Candle model is loaded/used
         // The actual loading happens in `initialize` or `set_detection_layer`
         // For now, we just update the config, and `detect_pii` will check if the model is loaded
