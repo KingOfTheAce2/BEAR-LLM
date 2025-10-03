@@ -30,7 +30,7 @@ impl NerModel {
         let config: BertConfig = serde_json::from_str(&std::fs::read_to_string(config_filename)?)?;
 
         let model_weights = safetensors::load(&model_filename, &device)?;
-        let vb = VarBuilder::from_tensors(model_weights, DType::F32, &device)?;
+        let vb = VarBuilder::from_tensors(model_weights, DType::F32, &device);
         let model = BertModel::load(vb, &config)?;
 
         // This mapping needs to be accurate for the chosen model.
