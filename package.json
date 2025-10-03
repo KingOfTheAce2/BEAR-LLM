@@ -1,7 +1,7 @@
 {
   "name": "bear-ai-llm",
   "private": true,
-  "version": "1.0.45",
+  "version": "1.0.46",
   "license": "PROPRIETARY",
   "type": "module",
   "scripts": {

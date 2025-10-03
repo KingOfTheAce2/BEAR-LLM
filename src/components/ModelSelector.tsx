@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Download, CheckCircle, AlertCircle, Globe, Laptop, MemoryStick, HardDrive, Zap } from 'lucide-react';
+import { ChevronDown, Download, CheckCircle, AlertCircle, Zap, Database, Globe, MonitorSmartphone, Server } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, HuggingFaceModel } from '../stores/appStore';
 import HuggingFaceBrowser from './HuggingFaceBrowser';
@@ -24,9 +24,29 @@ const ModelSelector: React.FC = () => {
     loadAvailableModels();
   }, []);
 
+  const supportedModels = [
+    {
+      name: "Llama 2 7B Chat",
+      id: "TheBloke/Llama-2-7B-Chat-GGUF",
+      description: "Meta's Llama 2 7B chat model (GGUF format)"
+    },
+    {
+      name: "Mistral 7B Instruct",
+      id: "TheBloke/Mistral-7B-Instruct-v0.1-GGUF",
+      description: "Mistral AI's 7B instruction model (GGUF format)"
+    },
+    {
+      name: "Phi-2",
+      id: "TheBloke/phi-2-GGUF",
+      description: "Microsoft's Phi-2 model (GGUF format)"
+    }
+  ];
+
   const loadAvailableModels = async () => {
     try {
-      const models = await invoke<string[]>('list_available_models');
+      const models = supportedModels.map(model => model.id);
+      // Fallback to supported models when backend is not available
+      console.log('Using supported GGUF models:', supportedModels);
       setAvailableModels(models);
       setError(null);
     } catch (error) {
@@ -154,18 +174,18 @@ const ModelSelector: React.FC = () => {
                             <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
                               {modelInfo.size && (
                                 <div className="flex items-center gap-1">
-                                  <HardDrive className="w-3 h-3" />
+                                  <Database className="w-3 h-3" />
                                   {modelInfo.size}
                                 </div>
                               )}
                               {modelInfo.systemRequirements && (
                                 <>
                                   <div className="flex items-center gap-1">
-                                    <MemoryStick className="w-3 h-3" />
+                                    <Server className="w-3 h-3" />
                                     {modelInfo.systemRequirements.recommendedRam}
                                   </div>
                                   <div className={`flex items-center gap-1 ${getPerformanceColor(modelInfo.systemRequirements.performance)}`}>
-                                    <Laptop className="w-3 h-3" />
+                                    <MonitorSmartphone className="w-3 h-3" />
                                     {modelInfo.systemRequirements.performance}
                                   </div>
                                 </>

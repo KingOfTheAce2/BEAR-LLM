@@ -338,13 +338,25 @@ impl LLMManager {
         Ok(())
     }
 
-    pub async fn load_model(&self, model_name: &str) -> Result<()> {
-        // Check if model is downloaded
+    pub async fn load_model(&self, model_path: &str) -> Result<()> {
+        // Check if this is a local file path
+        if model_path.ends_with(".gguf") {
+            let path = PathBuf::from(model_path);
+            if !path.exists() {
+                return Err(anyhow!("Model file not found: {}", model_path));
+            }
+            
+            // Load local GGUF file directly
+            self.gguf_engine.load_model(&path).await?;
+            return Ok(());
+        }
+
+        // Otherwise treat as a model from registry
         let status = self
             .model_status
             .read()
             .await
-            .get(model_name)
+            .get(model_path)
             .cloned()
             .unwrap_or(ModelStatus::NotDownloaded);
 
