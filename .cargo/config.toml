@@ -6,12 +6,6 @@ git-fetch-with-cli = true
 target-dir = "target"
 
 # Windows MSVC runtime library configuration
-# Use STATIC CRT to resolve LNK2038 mismatch errors
-# Explicitly exclude dynamic CRT (msvcrt.lib) and use static CRT (libcmt.lib)
+# Use DYNAMIC CRT to match llama-cpp-sys-2 compilation settings
 [target.x86_64-pc-windows-msvc]
-rustflags = [
-    "-C", "target-feature=+crt-static",
-    "-C", "link-arg=/NODEFAULTLIB:msvcrt.lib",
-    "-C", "link-arg=/NODEFAULTLIB:msvcrtd.lib",
-    "-C", "link-arg=/DEFAULTLIB:libcmt.lib"
-]
+rustflags = ["-C", "target-feature=-crt-static"]

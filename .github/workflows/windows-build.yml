@@ -89,15 +89,15 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Configure Build Environment (Static CRT Strategy)
+      - name: Configure Build Environment (Dynamic CRT Strategy)
         shell: pwsh
         run: |
-          Write-Host "🔧 Configuring MSVC for STATIC runtime linking..." -ForegroundColor Cyan
-          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "RUSTFLAGS=-C target-feature=+crt-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "✅ Environment variables set for static linking:" -ForegroundColor Green
-          Write-Host "  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded (static)"
-          Write-Host "  RUSTFLAGS=-C target-feature=+crt-static"
+          Write-Host "🔧 Configuring MSVC for DYNAMIC runtime linking..." -ForegroundColor Cyan
+          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "RUSTFLAGS=-C target-feature=-crt-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "✅ Environment variables set for dynamic linking:" -ForegroundColor Green
+          Write-Host "  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL (dynamic)"
+          Write-Host "  RUSTFLAGS=-C target-feature=-crt-static"
 
       - name: Quick Link Validation (Fast Fail)
         shell: pwsh
@@ -120,7 +120,7 @@ jobs:
               if (Select-String -Path link-check.log -Pattern "LNK2038.*RuntimeLibrary") {
                 Write-Host "`n💡 DIAGNOSIS: MSVC Runtime Library Mismatch" -ForegroundColor Magenta
                 Write-Host "   One dependency uses /MD (dynamic) while another uses /MT (static)" -ForegroundColor Magenta
-                Write-Host "   This build is attempting STATIC linking strategy." -ForegroundColor Magenta
+                Write-Host "   This build is attempting DYNAMIC linking strategy." -ForegroundColor Magenta
               }
 
               # Check for missing symbols
@@ -152,8 +152,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           GGML_CUDA: OFF
           GGML_METAL: OFF
-          CMAKE_MSVC_RUNTIME_LIBRARY: MultiThreaded
-          RUSTFLAGS: "-C target-feature=+crt-static"
+          CMAKE_MSVC_RUNTIME_LIBRARY: MultiThreadedDLL
+          RUSTFLAGS: "-C target-feature=-crt-static"
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
         with:
