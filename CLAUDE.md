@@ -23,6 +23,7 @@ When a user reports an issue or requests a feature:
 3. ALWAYS organize files in appropriate subdirectories
 4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
 5. **ALWAYS verify BOTH frontend (React/TS) AND backend (Rust) for every task**
+6. UPDATE README.md and other .md documents and refactor where needed after the coding task is completed
 
 ### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
 
