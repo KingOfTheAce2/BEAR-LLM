@@ -53,28 +53,6 @@ fastembed = { version = "5.2.0", default-features = false, features = ["online"]
 
 [patch.crates-io]
 ort = { version = "=2.0.0-rc.10", default-features = false, features = [] }
-# Note: ort (ONNX Runtime) is brought in by gline-rs and fastembed - no direct dependency needed
-pdf-extract = "0.7"
-rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
-r2d2 = "0.8"  # Connection pooling
-r2d2_sqlite = { version = "0.24", default-features = false }  # SQLite connection pool manager (compatible with rusqlite 0.31)
-keyring = "3.6"  # Secure OS keychain integration for encryption keys
-rand = "0.8"  # Cryptographically secure random number generation
-ring = "0.17"  # FIPS-compatible cryptography for chat encryption
-argon2 = "0.5"  # Key derivation for per-user encryption
-calamine = { version = "0.26", features = ["dates"] }
-docx-rs = "0.4"
-
-# Export and compliance dependencies
-printpdf = "0.7"  # PDF export
-age = "0.10"  # Encryption for data portability
-zeroize = "1.7"  # Memory scrubbing for security
-sha2 = "0.10"  # Hash functions for integrity checks
-hex = "0.4"  # Hex encoding for hashes
-# Legacy format support
-encoding_rs = "0.8"
-cfb = "0.9"  # Compound File Binary format for DOC/PPT
-toml = "0.8"  # For PII exclusions config
 
 # Windows-specific dependencies for GPU detection
 [target.'cfg(target_os = "windows")'.dependencies]
