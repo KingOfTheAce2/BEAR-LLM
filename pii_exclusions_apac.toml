@@ -1,0 +1,319 @@
+# PII Exclusions - APAC Region (Asia-Pacific)
+# Languages: Chinese (Simplified/Traditional), Japanese, Korean
+# Coverage: China, Hong Kong, Taiwan, Japan, South Korea, Singapore
+
+# ============================================================================
+# CHINA - GEOGRAPHIC LOCATIONS (中国地理位置)
+# ============================================================================
+
+# China - Country Names
+china_country = [
+    "中国", "中华人民共和国", "China", "People's Republic of China", "PRC",
+]
+
+# China - Provinces (省)
+china_provinces = [
+    "北京市", "Beijing", "上海市", "Shanghai", "天津市", "Tianjin", "重庆市", "Chongqing",
+    "河北省", "Hebei", "山西省", "Shanxi", "辽宁省", "Liaoning", "吉林省", "Jilin",
+    "黑龙江省", "Heilongjiang", "江苏省", "Jiangsu", "浙江省", "Zhejiang",
+    "安徽省", "Anhui", "福建省", "Fujian", "江西省", "Jiangxi", "山东省", "Shandong",
+    "河南省", "Henan", "湖北省", "Hubei", "湖南省", "Hunan", "广东省", "Guangdong",
+    "海南省", "Hainan", "四川省", "Sichuan", "贵州省", "Guizhou", "云南省", "Yunnan",
+    "陕西省", "Shaanxi", "甘肃省", "Gansu", "青海省", "Qinghai", "台湾省", "Taiwan",
+]
+
+# China - Autonomous Regions (自治区)
+china_autonomous_regions = [
+    "内蒙古自治区", "Inner Mongolia", "广西壮族自治区", "Guangxi", "西藏自治区", "Tibet",
+    "宁夏回族自治区", "Ningxia", "新疆维吾尔自治区", "Xinjiang",
+]
+
+# China - Special Administrative Regions (特别行政区)
+china_special_regions = [
+    "香港特别行政区", "Hong Kong", "Hong Kong SAR", "HKSAR", "HK",
+    "澳门特别行政区", "Macau", "Macao", "Macau SAR", "Macao SAR",
+]
+
+# China - Major Cities (主要城市)
+china_cities = [
+    "北京", "Beijing", "上海", "Shanghai", "广州", "Guangzhou", "深圳", "Shenzhen",
+    "成都", "Chengdu", "杭州", "Hangzhou", "武汉", "Wuhan", "西安", "Xi'an",
+    "南京", "Nanjing", "天津", "Tianjin", "苏州", "Suzhou", "重庆", "Chongqing",
+    "长沙", "Changsha", "沈阳", "Shenyang", "青岛", "Qingdao", "郑州", "Zhengzhou",
+    "大连", "Dalian", "东莞", "Dongguan", "宁波", "Ningbo", "厦门", "Xiamen",
+]
+
+# ============================================================================
+# CHINA - LEGAL SYSTEM (中国法律制度)
+# ============================================================================
+
+# China - Courts (法院)
+china_courts = [
+    "最高人民法院", "Supreme People's Court", "SPC",
+    "高级人民法院", "Higher People's Court",
+    "中级人民法院", "Intermediate People's Court",
+    "基层人民法院", "Primary People's Court",
+    "人民法院", "People's Court",
+]
+
+# China - Legal Terms (法律术语)
+china_legal = [
+    "宪法", "Constitution", "民法典", "Civil Code",
+    "刑法", "Criminal Law", "行政法", "Administrative Law",
+    "诉讼法", "Procedural Law", "合同法", "Contract Law",
+    "公司法", "Company Law", "劳动法", "Labor Law",
+    "知识产权法", "Intellectual Property Law",
+    "反垄断法", "Anti-Monopoly Law",
+]
+
+# China - Data Protection (数据保护)
+china_data_protection = [
+    "个人信息保护法", "Personal Information Protection Law", "PIPL",
+    "网络安全法", "Cybersecurity Law", "CSL",
+    "数据安全法", "Data Security Law", "DSL",
+    "国家互联网信息办公室", "Cyberspace Administration of China", "CAC",
+    "工业和信息化部", "Ministry of Industry and Information Technology", "MIIT",
+]
+
+# China - Government Organizations (政府机构)
+china_government = [
+    "全国人民代表大会", "National People's Congress", "NPC",
+    "国务院", "State Council",
+    "最高人民检察院", "Supreme People's Procuratorate",
+    "公安部", "Ministry of Public Security", "MPS",
+    "司法部", "Ministry of Justice",
+]
+
+# ============================================================================
+# JAPAN - GEOGRAPHIC LOCATIONS (日本地理位置)
+# ============================================================================
+
+# Japan - Country Names
+japan_country = [
+    "日本", "日本国", "Japan", "Nihon", "Nippon",
+]
+
+# Japan - Prefectures (都道府県)
+japan_prefectures = [
+    "北海道", "Hokkaido", "青森県", "Aomori", "岩手県", "Iwate", "宮城県", "Miyagi",
+    "秋田県", "Akita", "山形県", "Yamagata", "福島県", "Fukushima",
+    "茨城県", "Ibaraki", "栃木県", "Tochigi", "群馬県", "Gunma", "埼玉県", "Saitama",
+    "千葉県", "Chiba", "東京都", "Tokyo", "神奈川県", "Kanagawa",
+    "新潟県", "Niigata", "富山県", "Toyama", "石川県", "Ishikawa", "福井県", "Fukui",
+    "山梨県", "Yamanashi", "長野県", "Nagano", "岐阜県", "Gifu", "静岡県", "Shizuoka",
+    "愛知県", "Aichi", "三重県", "Mie", "滋賀県", "Shiga", "京都府", "Kyoto",
+    "大阪府", "Osaka", "兵庫県", "Hyogo", "奈良県", "Nara", "和歌山県", "Wakayama",
+    "鳥取県", "Tottori", "島根県", "Shimane", "岡山県", "Okayama", "広島県", "Hiroshima",
+    "山口県", "Yamaguchi", "徳島県", "Tokushima", "香川県", "Kagawa", "愛媛県", "Ehime",
+    "高知県", "Kochi", "福岡県", "Fukuoka", "佐賀県", "Saga", "長崎県", "Nagasaki",
+    "熊本県", "Kumamoto", "大分県", "Oita", "宮崎県", "Miyazaki", "鹿児島県", "Kagoshima",
+    "沖縄県", "Okinawa",
+]
+
+# Japan - Major Cities (主要都市)
+japan_cities = [
+    "東京", "Tokyo", "横浜", "Yokohama", "大阪", "Osaka", "名古屋", "Nagoya",
+    "札幌", "Sapporo", "神戸", "Kobe", "京都", "Kyoto", "福岡", "Fukuoka",
+    "川崎", "Kawasaki", "さいたま", "Saitama", "広島", "Hiroshima", "仙台", "Sendai",
+]
+
+# ============================================================================
+# JAPAN - LEGAL SYSTEM (日本法律制度)
+# ============================================================================
+
+# Japan - Courts (裁判所)
+japan_courts = [
+    "最高裁判所", "Supreme Court of Japan",
+    "高等裁判所", "High Court", "地方裁判所", "District Court",
+    "家庭裁判所", "Family Court", "簡易裁判所", "Summary Court",
+]
+
+# Japan - Legal Terms (法律用語)
+japan_legal = [
+    "憲法", "Constitution", "民法", "Civil Code",
+    "刑法", "Penal Code", "商法", "Commercial Code",
+    "会社法", "Companies Act", "労働法", "Labor Law",
+    "行政法", "Administrative Law",
+]
+
+# Japan - Data Protection (個人情報保護)
+japan_data_protection = [
+    "個人情報保護法", "Act on Protection of Personal Information", "APPI",
+    "個人情報保護委員会", "Personal Information Protection Commission", "PPC",
+    "マイナンバー法", "My Number Act",
+    "特定個人情報", "Specific Personal Information",
+]
+
+# Japan - Government Organizations (政府機関)
+japan_government = [
+    "国会", "Diet", "内閣", "Cabinet",
+    "総務省", "Ministry of Internal Affairs and Communications", "MIC",
+    "法務省", "Ministry of Justice", "MOJ",
+    "経済産業省", "Ministry of Economy, Trade and Industry", "METI",
+]
+
+# ============================================================================
+# SOUTH KOREA - GEOGRAPHIC LOCATIONS (대한민국 지리 위치)
+# ============================================================================
+
+# South Korea - Country Names
+korea_country = [
+    "대한민국", "한국", "South Korea", "Republic of Korea", "ROK", "Korea",
+]
+
+# Korea - Special/Metropolitan Cities (특별시/광역시)
+korea_cities = [
+    "서울특별시", "Seoul", "부산광역시", "Busan", "인천광역시", "Incheon",
+    "대구광역시", "Daegu", "대전광역시", "Daejeon", "광주광역시", "Gwangju",
+    "울산광역시", "Ulsan", "세종특별자치시", "Sejong",
+]
+
+# Korea - Provinces (도)
+korea_provinces = [
+    "경기도", "Gyeonggi", "강원도", "Gangwon",
+    "충청북도", "North Chungcheong", "충청남도", "South Chungcheong",
+    "전라북도", "North Jeolla", "전라남도", "South Jeolla",
+    "경상북도", "North Gyeongsang", "경상남도", "South Gyeongsang",
+    "제주특별자치도", "Jeju",
+]
+
+# ============================================================================
+# SOUTH KOREA - LEGAL SYSTEM (대한민국 법률 제도)
+# ============================================================================
+
+# Korea - Courts (법원)
+korea_courts = [
+    "대법원", "Supreme Court of Korea",
+    "고등법원", "High Court", "지방법원", "District Court",
+    "가정법원", "Family Court", "행정법원", "Administrative Court",
+    "헌법재판소", "Constitutional Court",
+]
+
+# Korea - Legal Terms (법률 용어)
+korea_legal = [
+    "헌법", "Constitution", "민법", "Civil Act",
+    "형법", "Criminal Act", "상법", "Commercial Act",
+    "행정법", "Administrative Law", "노동법", "Labor Law",
+]
+
+# Korea - Data Protection (개인정보 보호)
+korea_data_protection = [
+    "개인정보 보호법", "Personal Information Protection Act", "PIPA",
+    "개인정보보호위원회", "Personal Information Protection Commission", "PIPC",
+    "정보통신망법", "Act on Promotion of Information and Communications Network Utilization",
+    "신용정보법", "Credit Information Act",
+]
+
+# Korea - Government Organizations (정부 기관)
+korea_government = [
+    "국회", "National Assembly",
+    "행정안전부", "Ministry of the Interior and Safety", "MOIS",
+    "법무부", "Ministry of Justice", "MOJ",
+    "과학기술정보통신부", "Ministry of Science and ICT", "MSIT",
+]
+
+# ============================================================================
+# TAIWAN - GEOGRAPHIC & LEGAL (台灣地理與法律)
+# ============================================================================
+
+taiwan_locations = [
+    "台灣", "台湾", "Taiwan", "中華民國", "Republic of China", "ROC",
+    "台北", "Taipei", "新北", "New Taipei", "桃園", "Taoyuan",
+    "台中", "Taichung", "台南", "Tainan", "高雄", "Kaohsiung",
+]
+
+taiwan_legal = [
+    "個人資料保護法", "Personal Data Protection Act", "PDPA",
+    "最高法院", "Supreme Court",
+    "國家發展委員會", "National Development Council",
+]
+
+# ============================================================================
+# SINGAPORE - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+singapore_locations = [
+    "Singapore", "新加坡", "シンガポール", "싱가포르",
+    "Central Region", "East Region", "North Region", "North-East Region", "West Region",
+]
+
+singapore_legal = [
+    "Personal Data Protection Act", "PDPA",
+    "Personal Data Protection Commission", "PDPC",
+    "Supreme Court of Singapore",
+    "High Court", "State Courts",
+]
+
+# ============================================================================
+# TIME TERMS - CHINESE (时间术语)
+# ============================================================================
+
+time_chinese = [
+    # Months (月份)
+    "一月", "二月", "三月", "四月", "五月", "六月",
+    "七月", "八月", "九月", "十月", "十一月", "十二月",
+    # Days of week (星期)
+    "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日",
+    "周一", "周二", "周三", "周四", "周五", "周六", "周日",
+    # Time periods
+    "上午", "下午", "晚上", "今天", "昨天", "明天",
+    "本周", "上周", "下周", "本月", "上月", "下月",
+    "今年", "去年", "明年",
+]
+
+# ============================================================================
+# TIME TERMS - JAPANESE (時間用語)
+# ============================================================================
+
+time_japanese = [
+    # Months (月)
+    "1月", "2月", "3月", "4月", "5月", "6月",
+    "7月", "8月", "9月", "10月", "11月", "12月",
+    "一月", "二月", "三月", "四月", "五月", "六月",
+    "七月", "八月", "九月", "十月", "十一月", "十二月",
+    # Days of week (曜日)
+    "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日",
+    # Time periods
+    "午前", "午後", "今日", "昨日", "明日",
+    "今週", "先週", "来週", "今月", "先月", "来月",
+    "今年", "去年", "来年",
+]
+
+# ============================================================================
+# TIME TERMS - KOREAN (시간 용어)
+# ============================================================================
+
+time_korean = [
+    # Months (월)
+    "1월", "2월", "3월", "4월", "5월", "6월",
+    "7월", "8월", "9월", "10월", "11월", "12월",
+    # Days of week (요일)
+    "월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일",
+    # Time periods
+    "오전", "오후", "오늘", "어제", "내일",
+    "이번 주", "지난주", "다음 주", "이번 달", "지난달", "다음 달",
+    "올해", "작년", "내년",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "apac"
+description = "Asia-Pacific region exclusions (Chinese, Japanese, Korean)"
+languages = [
+    "Chinese (Simplified)",
+    "Chinese (Traditional)",
+    "Japanese",
+    "Korean",
+    "English"
+]
+countries = [
+    "China",
+    "Hong Kong",
+    "Taiwan",
+    "Japan",
+    "South Korea",
+    "Singapore"
+]

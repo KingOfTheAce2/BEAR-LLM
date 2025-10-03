@@ -1,0 +1,595 @@
+# PII Exclusions Configuration - European Union (27 Member States)
+# This file defines terms and patterns that should NOT be flagged as PII
+# Covers all 24 official EU languages plus regional variants
+# EU Member States: Austria, Belgium, Bulgaria, Croatia, Cyprus, Czech Republic,
+# Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Ireland, Italy,
+# Latvia, Lithuania, Luxembourg, Malta, Netherlands, Poland, Portugal, Romania,
+# Slovakia, Slovenia, Spain, Sweden
+
+[exclusions]
+
+# ============================================================================
+# EU-WIDE INSTITUTIONS & TERMS (MULTILINGUAL)
+# ============================================================================
+
+# EU Institutions - English
+eu_institutions_en = [
+    "European Union", "EU", "European Economic Area", "EEA", "Schengen Area",
+    "European Commission", "European Parliament", "Council of the European Union",
+    "European Council", "European Central Bank", "ECB",
+    "European Investment Bank", "EIB", "European Court of Justice", "ECJ",
+    "Court of Justice of the European Union", "CJEU", "General Court",
+    "European Court of Human Rights", "ECHR", "European Court of Auditors",
+    "European Ombudsman", "European Data Protection Board", "EDPB",
+    "European Data Protection Supervisor", "EDPS",
+    "European Medicines Agency", "EMA", "European Banking Authority", "EBA",
+    "European Securities and Markets Authority", "ESMA",
+    "European Insurance and Occupational Pensions Authority", "EIOPA",
+    "European Aviation Safety Agency", "EASA", "European Food Safety Authority", "EFSA",
+    "European Environment Agency", "EEA", "Europol", "European Police Office",
+    "European Public Prosecutor's Office", "EPPO", "Frontex",
+    "European Border and Coast Guard Agency",
+]
+
+# EU Legal Terms - English
+eu_legal_en = [
+    "General Data Protection Regulation", "GDPR",
+    "Data Protection Directive", "ePrivacy Directive",
+    "Digital Services Act", "DSA", "Digital Markets Act", "DMA",
+    "AI Act", "Artificial Intelligence Act",
+    "Article 6 GDPR", "Article 7 GDPR", "Article 13 GDPR",
+    "Article 15 GDPR", "Article 17 GDPR", "Right to be Forgotten",
+    "Right to Erasure", "Data Subject Access Request", "DSAR",
+    "Data Protection Officer", "DPO", "Data Controller", "Data Processor",
+    "Supervisory Authority", "Lead Supervisory Authority",
+    "Standard Contractual Clauses", "SCC", "Binding Corporate Rules", "BCR",
+    "Data Protection Impact Assessment", "DPIA",
+    "Legitimate Interest", "Legal Basis", "Consent",
+    "Treaty on European Union", "TEU",
+    "Treaty on the Functioning of the European Union", "TFEU",
+    "Charter of Fundamental Rights", "European Convention on Human Rights",
+]
+
+# ============================================================================
+# FRENCH / FRANÇAIS
+# ============================================================================
+
+# France - Geographic
+france_locations = [
+    "France", "République Française", "French Republic",
+    # Major Cities
+    "Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Strasbourg",
+    "Montpellier", "Bordeaux", "Lille", "Rennes", "Reims", "Le Havre",
+    "Saint-Étienne", "Toulon", "Grenoble", "Dijon", "Angers", "Nîmes",
+    # Regions
+    "Île-de-France", "Provence-Alpes-Côte d'Azur", "Auvergne-Rhône-Alpes",
+    "Nouvelle-Aquitaine", "Occitanie", "Hauts-de-France", "Bretagne",
+    "Grand Est", "Pays de la Loire", "Bourgogne-Franche-Comté", "Normandie",
+    "Centre-Val de Loire", "Corse",
+]
+
+# France - Courts & Legal
+france_legal = [
+    "Conseil d'État", "Cour de Cassation", "Conseil Constitutionnel",
+    "Cour d'Appel", "Tribunal Judiciaire", "Tribunal de Commerce",
+    "Conseil de Prud'hommes", "Tribunal Administratif", "Cour Administrative d'Appel",
+    "Procureur de la République", "Avocat Général", "Juge d'Instruction",
+    # Data Protection
+    "Commission Nationale de l'Informatique et des Libertés", "CNIL",
+    "Règlement Général sur la Protection des Données", "RGPD",
+    "Délégué à la Protection des Données", "DPD",
+    "Responsable de Traitement", "Sous-traitant", "Personne Concernée",
+    "Droit d'Accès", "Droit à l'Effacement", "Droit à l'Oubli",
+    "Consentement", "Intérêt Légitime", "Autorité de Contrôle",
+    # Other Legal
+    "Code Civil", "Code Pénal", "Code du Travail", "Loi", "Décret", "Arrêté",
+]
+
+# Belgium (French) - Additional terms
+belgium_french = [
+    "Belgique", "Royaume de Belgique",
+    "Bruxelles", "Anvers", "Gand", "Charleroi", "Liège", "Bruges", "Namur",
+    "Autorité de Protection des Données", "APD",
+    "Cour Constitutionnelle", "Cour de Cassation",
+]
+
+# Luxembourg (French)
+luxembourg_french = [
+    "Luxembourg", "Grand-Duché de Luxembourg",
+    "Ville de Luxembourg", "Esch-sur-Alzette",
+    "Commission Nationale pour la Protection des Données", "CNPD",
+]
+
+# Switzerland (French) - Not EU but French-speaking
+switzerland_french = [
+    "Suisse", "Confédération Suisse",
+    "Genève", "Lausanne", "Berne", "Bern",
+    "Préposé fédéral à la protection des données",
+]
+
+# ============================================================================
+# GERMAN / DEUTSCH
+# ============================================================================
+
+# Germany - Geographic
+germany_locations = [
+    "Deutschland", "Bundesrepublik Deutschland", "Germany",
+    # States
+    "Baden-Württemberg", "Bayern", "Bavaria", "Berlin", "Brandenburg",
+    "Bremen", "Hamburg", "Hessen", "Hesse", "Mecklenburg-Vorpommern",
+    "Niedersachsen", "Lower Saxony", "Nordrhein-Westfalen", "North Rhine-Westphalia",
+    "Rheinland-Pfalz", "Rhineland-Palatinate", "Saarland", "Sachsen", "Saxony",
+    "Sachsen-Anhalt", "Saxony-Anhalt", "Schleswig-Holstein", "Thüringen", "Thuringia",
+    # Major Cities
+    "Berlin", "Hamburg", "München", "Munich", "Köln", "Cologne", "Frankfurt",
+    "Frankfurt am Main", "Stuttgart", "Düsseldorf", "Dortmund", "Essen",
+    "Leipzig", "Bremen", "Dresden", "Hannover", "Nürnberg", "Nuremberg",
+    "Duisburg", "Bochum", "Wuppertal", "Bonn", "Bielefeld", "Mannheim",
+]
+
+# Germany - Courts & Legal
+germany_legal = [
+    "Bundesverfassungsgericht", "Federal Constitutional Court",
+    "Bundesgerichtshof", "Federal Court of Justice", "BGH",
+    "Bundesverwaltungsgericht", "Federal Administrative Court",
+    "Bundesarbeitsgericht", "Federal Labour Court",
+    "Bundessozialgericht", "Federal Social Court",
+    "Bundesfinanzhof", "Federal Fiscal Court",
+    "Oberlandesgericht", "Higher Regional Court", "OLG",
+    "Landgericht", "Regional Court", "LG",
+    "Amtsgericht", "Local Court", "AG",
+    "Staatsanwaltschaft", "Public Prosecutor's Office",
+    "Bundesanwaltschaft", "Federal Prosecutor's Office",
+    # Data Protection
+    "Datenschutz-Grundverordnung", "DSGVO",
+    "Bundesdatenschutzgesetz", "BDSG", "Federal Data Protection Act",
+    "Bundesbeauftragter für den Datenschutz und die Informationsfreiheit", "BfDI",
+    "Datenschutzbeauftragter", "Data Protection Officer",
+    "Verantwortlicher", "Controller", "Auftragsverarbeiter", "Processor",
+    "Betroffener", "Data Subject", "Auskunftsrecht", "Right of Access",
+    "Recht auf Vergessenwerden", "Right to be Forgotten",
+    "Recht auf Löschung", "Right to Erasure",
+    "Einwilligung", "Consent", "Berechtigtes Interesse", "Legitimate Interest",
+    "Aufsichtsbehörde", "Supervisory Authority",
+    # Constitutional & Other
+    "Grundgesetz", "Basic Law", "GG", "Artikel 1 Grundgesetz",
+    "Menschenwürde", "Human Dignity", "Bürgerliches Gesetzbuch", "BGB",
+    "Strafgesetzbuch", "StGB", "Criminal Code",
+]
+
+# Austria (German)
+austria_german = [
+    "Österreich", "Republik Österreich", "Austria",
+    "Wien", "Vienna", "Graz", "Linz", "Salzburg", "Innsbruck", "Klagenfurt",
+    "Österreichische Datenschutzbehörde", "Austrian DPA",
+    "Verfassungsgerichtshof", "Constitutional Court",
+    "Oberster Gerichtshof", "Supreme Court",
+]
+
+# Belgium (Dutch/Flemish)
+belgium_dutch = [
+    "België", "Koninkrijk België",
+    "Brussel", "Antwerpen", "Gent", "Brugge", "Leuven",
+    "Gegevensbeschermingsautoriteit", "GBA",
+]
+
+# Switzerland (German)
+switzerland_german = [
+    "Schweiz", "Schweizerische Eidgenossenschaft",
+    "Zürich", "Bern", "Basel", "Genf", "Lausanne",
+    "Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter",
+]
+
+# ============================================================================
+# SPANISH / ESPAÑOL
+# ============================================================================
+
+# Spain - Geographic
+spain_locations = [
+    "España", "Reino de España", "Spain",
+    # Autonomous Communities
+    "Andalucía", "Andalusia", "Aragón", "Aragon", "Asturias", "Principado de Asturias",
+    "Islas Baleares", "Balearic Islands", "Canarias", "Canary Islands",
+    "Cantabria", "Castilla-La Mancha", "Castilla y León", "Castile and León",
+    "Cataluña", "Catalunya", "Catalonia", "Extremadura", "Galicia",
+    "La Rioja", "Comunidad de Madrid", "Región de Murcia", "Murcia",
+    "Comunidad Foral de Navarra", "Navarre", "País Vasco", "Euskadi", "Basque Country",
+    "Comunitat Valenciana", "Valencian Community",
+    # Major Cities
+    "Madrid", "Barcelona", "Valencia", "Sevilla", "Seville", "Zaragoza",
+    "Málaga", "Murcia", "Palma de Mallorca", "Las Palmas", "Bilbao",
+    "Alicante", "Córdoba", "Valladolid", "Vigo", "Gijón", "L'Hospitalet",
+    "Granada", "Oviedo", "Badalona", "Cartagena", "Terrassa", "Jerez",
+]
+
+# Spain - Courts & Legal
+spain_legal = [
+    "Tribunal Constitucional", "Constitutional Court",
+    "Tribunal Supremo", "Supreme Court", "TS",
+    "Audiencia Nacional", "National Court",
+    "Tribunal Superior de Justicia", "High Court of Justice", "TSJ",
+    "Audiencia Provincial", "Provincial Court",
+    "Juzgado de Primera Instancia", "Court of First Instance",
+    "Juzgado de lo Penal", "Criminal Court",
+    "Fiscalía", "Public Prosecutor's Office", "Fiscal General del Estado",
+    # Data Protection
+    "Agencia Española de Protección de Datos", "AEPD", "Spanish DPA",
+    "Reglamento General de Protección de Datos", "RGPD",
+    "Delegado de Protección de Datos", "DPD", "Data Protection Officer",
+    "Responsable del Tratamiento", "Controller",
+    "Encargado del Tratamiento", "Processor",
+    "Interesado", "Data Subject", "Derecho de Acceso", "Right of Access",
+    "Derecho al Olvido", "Right to be Forgotten",
+    "Derecho de Supresión", "Right to Erasure",
+    "Consentimiento", "Consent", "Interés Legítimo", "Legitimate Interest",
+    "Autoridad de Control", "Supervisory Authority",
+    # Constitutional & Other
+    "Constitución Española", "Spanish Constitution", "CE",
+    "Código Civil", "Civil Code", "Código Penal", "Criminal Code",
+]
+
+# ============================================================================
+# ITALIAN / ITALIANO
+# ============================================================================
+
+# Italy - Geographic
+italy_locations = [
+    "Italia", "Repubblica Italiana", "Italy",
+    # Regions
+    "Lazio", "Latium", "Lombardia", "Lombardy", "Campania",
+    "Sicilia", "Sicily", "Veneto", "Emilia-Romagna", "Piemonte", "Piedmont",
+    "Puglia", "Apulia", "Toscana", "Tuscany", "Calabria", "Sardegna", "Sardinia",
+    "Liguria", "Marche", "Abruzzo", "Friuli-Venezia Giulia", "Trentino-Alto Adige",
+    "Umbria", "Basilicata", "Molise", "Valle d'Aosta",
+    # Major Cities
+    "Roma", "Rome", "Milano", "Milan", "Napoli", "Naples", "Torino", "Turin",
+    "Palermo", "Genova", "Genoa", "Bologna", "Firenze", "Florence",
+    "Bari", "Catania", "Venezia", "Venice", "Verona", "Messina",
+    "Padova", "Padua", "Trieste", "Brescia", "Prato", "Taranto",
+]
+
+# Italy - Courts & Legal
+italy_legal = [
+    "Corte Costituzionale", "Constitutional Court",
+    "Corte Suprema di Cassazione", "Court of Cassation",
+    "Consiglio di Stato", "Council of State",
+    "Corte d'Appello", "Court of Appeal",
+    "Tribunale", "Tribunal", "Corte d'Assise", "Assize Court",
+    "Giudice di Pace", "Justice of the Peace",
+    "Procura della Repubblica", "Public Prosecutor's Office",
+    "Procuratore della Repubblica", "Public Prosecutor",
+    # Data Protection
+    "Garante per la Protezione dei Dati Personali", "Italian DPA",
+    "Regolamento Generale sulla Protezione dei Dati", "GDPR",
+    "Responsabile della Protezione dei Dati", "RPD", "Data Protection Officer",
+    "Titolare del Trattamento", "Controller",
+    "Responsabile del Trattamento", "Processor",
+    "Interessato", "Data Subject", "Diritto di Accesso", "Right of Access",
+    "Diritto all'Oblio", "Right to be Forgotten",
+    "Diritto alla Cancellazione", "Right to Erasure",
+    "Consenso", "Consent", "Interesse Legittimo", "Legitimate Interest",
+    "Autorità di Controllo", "Supervisory Authority",
+    # Constitutional & Other
+    "Costituzione Italiana", "Italian Constitution",
+    "Codice Civile", "Civil Code", "Codice Penale", "Criminal Code",
+]
+
+# ============================================================================
+# DUTCH / NEDERLANDS
+# ============================================================================
+
+# Netherlands - Geographic
+netherlands_locations = [
+    "Nederland", "Netherlands", "Holland",
+    # Provinces
+    "Noord-Holland", "North Holland", "Zuid-Holland", "South Holland",
+    "Utrecht", "Gelderland", "Noord-Brabant", "North Brabant",
+    "Limburg", "Zeeland", "Friesland", "Fryslân", "Groningen",
+    "Drenthe", "Overijssel", "Flevoland",
+    # Major Cities
+    "Amsterdam", "Rotterdam", "Den Haag", "The Hague", "'s-Gravenhage",
+    "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Almere",
+    "Breda", "Nijmegen", "Enschede", "Haarlem", "Arnhem",
+    "Zaanstad", "Amersfoort", "Apeldoorn", "Hoofddorp", "'s-Hertogenbosch",
+]
+
+# Netherlands - Courts & Legal
+netherlands_legal = [
+    "Hoge Raad", "Supreme Court", "HR",
+    "Raad van State", "Council of State",
+    "Gerechtshof", "Court of Appeal",
+    "Rechtbank", "District Court",
+    "Kantonrechter", "Subdistrict Court",
+    "Openbaar Ministerie", "Public Prosecution Service", "OM",
+    # Data Protection
+    "Autoriteit Persoonsgegevens", "AP", "Dutch DPA",
+    "Algemene Verordening Gegevensbescherming", "AVG", "GDPR",
+    "Functionaris voor Gegevensbescherming", "FG", "Data Protection Officer",
+    "Verwerkingsverantwoordelijke", "Controller",
+    "Verwerker", "Processor", "Betrokkene", "Data Subject",
+    "Recht op Inzage", "Right of Access",
+    "Recht op Vergetelheid", "Right to be Forgotten",
+    "Recht op Wissing", "Right to Erasure",
+    "Toestemming", "Consent", "Gerechtvaardigd Belang", "Legitimate Interest",
+    "Toezichthoudende Autoriteit", "Supervisory Authority",
+    # Constitutional & Other
+    "Grondwet", "Constitution", "Burgerlijk Wetboek", "BW", "Civil Code",
+    "Wetboek van Strafrecht", "Sr", "Criminal Code",
+]
+
+# ============================================================================
+# POLISH / POLSKI
+# ============================================================================
+
+# Poland - Geographic
+poland_locations = [
+    "Polska", "Rzeczpospolita Polska", "Poland",
+    # Voivodeships
+    "Mazowieckie", "Masovian", "Śląskie", "Silesian", "Wielkopolskie", "Greater Poland",
+    "Małopolskie", "Lesser Poland", "Dolnośląskie", "Lower Silesian",
+    "Łódzkie", "Łódź", "Zachodniopomorskie", "West Pomeranian",
+    "Lubelskie", "Lublin", "Podkarpackie", "Subcarpathian",
+    "Pomorskie", "Pomeranian", "Warmińsko-Mazurskie", "Warmian-Masurian",
+    "Kujawsko-Pomorskie", "Kuyavian-Pomeranian", "Podlaskie", "Podlachia",
+    "Lubuskie", "Lubusz", "Opolskie", "Opole", "Świętokrzyskie", "Holy Cross",
+    # Major Cities
+    "Warszawa", "Warsaw", "Kraków", "Cracow", "Łódź", "Lodz",
+    "Wrocław", "Wroclaw", "Poznań", "Poznan", "Gdańsk", "Gdansk",
+    "Szczecin", "Bydgoszcz", "Lublin", "Katowice", "Białystok",
+    "Gdynia", "Częstochowa", "Radom", "Sosnowiec", "Toruń", "Kielce",
+]
+
+# Poland - Courts & Legal
+poland_legal = [
+    "Trybunał Konstytucyjny", "Constitutional Tribunal", "TK",
+    "Sąd Najwyższy", "Supreme Court", "SN",
+    "Naczelny Sąd Administracyjny", "Supreme Administrative Court", "NSA",
+    "Sąd Apelacyjny", "Court of Appeal",
+    "Sąd Okręgowy", "Regional Court", "Sąd Rejonowy", "District Court",
+    "Prokuratura", "Prosecutor's Office", "Prokurator Generalny", "Prosecutor General",
+    # Data Protection
+    "Urząd Ochrony Danych Osobowych", "UODO", "Polish DPA",
+    "Ogólne Rozporządzenie o Ochronie Danych", "RODO", "GDPR",
+    "Inspektor Ochrony Danych", "IOD", "Data Protection Officer",
+    "Administrator Danych", "Controller", "Procesor Danych", "Processor",
+    "Osoba Której Dane Dotyczą", "Data Subject",
+    "Prawo Dostępu", "Right of Access",
+    "Prawo do Bycia Zapomnianym", "Right to be Forgotten",
+    "Prawo do Usunięcia", "Right to Erasure",
+    "Zgoda", "Consent", "Prawnie Uzasadniony Interes", "Legitimate Interest",
+    "Organ Nadzorczy", "Supervisory Authority",
+    # Constitutional & Other
+    "Konstytucja", "Constitution", "Konstytucja Rzeczypospolitej Polskiej",
+    "Kodeks Cywilny", "Civil Code", "KC",
+    "Kodeks Karny", "Criminal Code", "KK",
+]
+
+# ============================================================================
+# PORTUGUESE / PORTUGUÊS
+# ============================================================================
+
+# Portugal - Geographic
+portugal_locations = [
+    "Portugal", "República Portuguesa",
+    # Regions
+    "Norte", "Centro", "Lisboa", "Lisbon", "Alentejo", "Algarve",
+    "Açores", "Azores", "Madeira",
+    # Major Cities
+    "Lisboa", "Lisbon", "Porto", "Oporto", "Vila Nova de Gaia", "Amadora",
+    "Braga", "Coimbra", "Funchal", "Setúbal", "Almada", "Agualva-Cacém",
+    "Queluz", "Rio de Mouro", "Évora", "Faro", "Portimão",
+]
+
+# Portugal - Courts & Legal
+portugal_legal = [
+    "Tribunal Constitucional", "Constitutional Court",
+    "Supremo Tribunal de Justiça", "Supreme Court of Justice", "STJ",
+    "Supremo Tribunal Administrativo", "Supreme Administrative Court",
+    "Tribunal da Relação", "Court of Appeal",
+    "Tribunal de Primeira Instância", "Court of First Instance",
+    "Ministério Público", "Public Prosecutor's Office",
+    # Data Protection
+    "Comissão Nacional de Proteção de Dados", "CNPD", "Portuguese DPA",
+    "Regulamento Geral sobre a Proteção de Dados", "RGPD", "GDPR",
+    "Encarregado de Proteção de Dados", "EPD", "Data Protection Officer",
+    "Responsável pelo Tratamento", "Controller",
+    "Subcontratante", "Processor", "Titular dos Dados", "Data Subject",
+    "Direito de Acesso", "Right of Access",
+    "Direito ao Esquecimento", "Right to be Forgotten",
+    "Direito à Eliminação", "Right to Erasure",
+    "Consentimento", "Consent", "Interesse Legítimo", "Legitimate Interest",
+    "Autoridade de Controlo", "Supervisory Authority",
+    # Constitutional & Other
+    "Constituição da República Portuguesa", "Portuguese Constitution",
+    "Código Civil", "Civil Code", "Código Penal", "Criminal Code",
+]
+
+# ============================================================================
+# GREEK / ΕΛΛΗΝΙΚΆ
+# ============================================================================
+
+# Greece - Geographic & Legal
+greece_terms = [
+    "Ελλάδα", "Ελληνική Δημοκρατία", "Greece", "Hellenic Republic",
+    "Αθήνα", "Athens", "Θεσσαλονίκη", "Thessaloniki", "Πάτρα", "Patras",
+    "Ηράκλειο", "Heraklion", "Λάρισα", "Larissa",
+    "Hellenic Data Protection Authority", "HDPA",
+    "Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα",
+    "Γενικός Κανονισμός Προστασίας Δεδομένων", "GDPR",
+]
+
+# ============================================================================
+# NORDIC COUNTRIES
+# ============================================================================
+
+# Sweden - Geographic & Legal
+sweden_terms = [
+    "Sverige", "Konungariket Sverige", "Sweden",
+    "Stockholm", "Göteborg", "Gothenburg", "Malmö", "Malmo", "Uppsala", "Västerås",
+    "Integritetsskyddsmyndigheten", "IMY", "Swedish DPA",
+    "Dataskyddsförordningen", "GDPR",
+    "Högsta domstolen", "Supreme Court",
+]
+
+# Denmark - Geographic & Legal
+denmark_terms = [
+    "Danmark", "Kongeriget Danmark", "Denmark",
+    "København", "Copenhagen", "Aarhus", "Odense", "Aalborg", "Esbjerg",
+    "Datatilsynet", "Danish DPA",
+    "Databeskyttelsesforordningen", "GDPR",
+    "Højesteret", "Supreme Court",
+]
+
+# Finland - Geographic & Legal
+finland_terms = [
+    "Suomi", "Finland", "Suomen tasavalta", "Republiken Finland",
+    "Helsinki", "Espoo", "Tampere", "Vantaa", "Oulu", "Turku",
+    "Tietosuojavaltuutetun toimisto", "Finnish DPA",
+    "Yleinen tietosuoja-asetus", "GDPR",
+    "Korkein oikeus", "Supreme Court",
+]
+
+# ============================================================================
+# BALTIC STATES
+# ============================================================================
+
+# Lithuania
+lithuania_terms = [
+    "Lietuva", "Lietuvos Respublika", "Lithuania",
+    "Vilnius", "Kaunas", "Klaipėda", "Šiauliai", "Panevėžys",
+    "Valstybinė duomenų apsaugos inspekcija", "VDAI", "Lithuanian DPA",
+]
+
+# Latvia
+latvia_terms = [
+    "Latvija", "Latvijas Republika", "Latvia",
+    "Rīga", "Riga", "Daugavpils", "Liepāja", "Jelgava",
+    "Datu valsts inspekcija", "DVI", "Latvian DPA",
+]
+
+# Estonia
+estonia_terms = [
+    "Eesti", "Eesti Vabariik", "Estonia",
+    "Tallinn", "Tartu", "Narva", "Pärnu", "Kohtla-Järve",
+    "Andmekaitse Inspektsioon", "AKI", "Estonian DPA",
+]
+
+# ============================================================================
+# OTHER EU COUNTRIES
+# ============================================================================
+
+# Czech Republic
+czech_terms = [
+    "Česká republika", "Česko", "Czech Republic", "Czechia",
+    "Praha", "Prague", "Brno", "Ostrava", "Plzeň", "Pilsen", "Liberec",
+    "Úřad pro ochranu osobních údajů", "ÚOOÚ", "Czech DPA",
+    "Obecné nařízení o ochraně osobních údajů", "GDPR",
+]
+
+# Slovakia
+slovakia_terms = [
+    "Slovensko", "Slovenská republika", "Slovakia", "Slovak Republic",
+    "Bratislava", "Košice", "Prešov", "Žilina", "Banská Bystrica",
+    "Úrad na ochranu osobných údajov", "Slovak DPA",
+]
+
+# Hungary
+hungary_terms = [
+    "Magyarország", "Hungary",
+    "Budapest", "Debrecen", "Szeged", "Miskolc", "Pécs",
+    "Nemzeti Adatvédelmi és Információszabadság Hatóság", "NAIH", "Hungarian DPA",
+]
+
+# Romania
+romania_terms = [
+    "România", "Romania",
+    "București", "Bucharest", "Cluj-Napoca", "Timișoara", "Iași", "Constanța",
+    "Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal",
+    "ANSPDCP", "Romanian DPA",
+]
+
+# Bulgaria
+bulgaria_terms = [
+    "България", "Bulgaria",
+    "София", "Sofia", "Пловдив", "Plovdiv", "Варна", "Varna", "Бургас", "Burgas",
+    "Commission for Personal Data Protection", "CPDP", "Bulgarian DPA",
+]
+
+# Croatia
+croatia_terms = [
+    "Hrvatska", "Republika Hrvatska", "Croatia",
+    "Zagreb", "Split", "Rijeka", "Osijek", "Zadar",
+    "Agencija za zaštitu osobnih podataka", "AZOP", "Croatian DPA",
+]
+
+# Slovenia
+slovenia_terms = [
+    "Slovenija", "Republika Slovenija", "Slovenia",
+    "Ljubljana", "Maribor", "Celje", "Kranj", "Velenje",
+    "Informacijski pooblaščenec", "IP", "Slovenian DPA",
+]
+
+# Malta
+malta_terms = [
+    "Malta", "Repubblika ta' Malta",
+    "Valletta", "Birkirkara", "Mosta", "Qormi", "Sliema",
+    "Office of the Information and Data Protection Commissioner", "IDPC",
+]
+
+# Cyprus
+cyprus_terms = [
+    "Κύπρος", "Cyprus", "Kýpros",
+    "Λευκωσία", "Nicosia", "Lefkosia", "Λεμεσός", "Limassol", "Lemesos",
+    "Commissioner for Personal Data Protection", "Cypriot DPA",
+]
+
+# ============================================================================
+# TIME TERMS (MULTILINGUAL)
+# ============================================================================
+
+time_terms_multilingual = [
+    # German months/days already in main file
+    # French
+    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+    "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche",
+    # Spanish
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo",
+    # Italian
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+    "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica",
+    # Dutch
+    "Januari", "Februari", "Maart", "April", "Mei", "Juni",
+    "Juli", "Augustus", "September", "Oktober", "November", "December",
+    "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag",
+    # Polish
+    "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+    "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
+    "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela",
+    # Portuguese
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+    "Sexta-feira", "Sábado", "Domingo",
+]
+
+# Custom exclusions
+custom = [
+    "Bear AI", "BEAR-LLM", "Claude", "Anthropic",
+]
+
+[settings]
+case_sensitive = false
+min_confidence = 0.5
+fuzzy_matching = false
+region = "eu"
+description = "European Union 27 member states - 24 official languages"
+languages = [
+    "Bulgarian", "Croatian", "Czech", "Danish", "Dutch", "English",
+    "Estonian", "Finnish", "French", "German", "Greek", "Hungarian",
+    "Irish", "Italian", "Latvian", "Lithuanian", "Maltese", "Polish",
+    "Portuguese", "Romanian", "Slovak", "Slovenian", "Spanish", "Swedish"
+]

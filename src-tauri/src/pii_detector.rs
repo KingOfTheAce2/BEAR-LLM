@@ -170,22 +170,65 @@ impl Default for PIIDetectionConfig {
 /// PII exclusions configuration loaded from TOML file
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PIIExclusionsConfig {
+    #[serde(flatten)]
     pub exclusions: PIIExclusions,
+    #[serde(default)]
     pub settings: PIIExclusionSettings,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct PIIExclusions {
-    #[serde(default)]
-    pub locations: Vec<String>,
-    #[serde(default)]
-    pub legal_terms: Vec<String>,
-    #[serde(default)]
-    pub organizations: Vec<String>,
-    #[serde(default)]
-    pub time_terms: Vec<String>,
-    #[serde(default)]
-    pub custom: Vec<String>,
+    // Flatten all region-specific arrays into a unified structure
+    #[serde(default, flatten)]
+    pub all_exclusions: HashMap<String, Vec<String>>,
+}
+
+impl PIIExclusions {
+    /// Get all location exclusions from any region-specific array
+    pub fn locations(&self) -> Vec<&String> {
+        self.all_exclusions
+            .iter()
+            .filter(|(k, _)| k.contains("location") || k.contains("cities") || k.contains("provinces") || k.contains("prefectures") || k.contains("regions") || k.contains("country"))
+            .flat_map(|(_, v)| v.iter())
+            .collect()
+    }
+
+    /// Get all legal term exclusions
+    pub fn legal_terms(&self) -> Vec<&String> {
+        self.all_exclusions
+            .iter()
+            .filter(|(k, _)| k.contains("legal") || k.contains("court") || k.contains("data_protection"))
+            .flat_map(|(_, v)| v.iter())
+            .collect()
+    }
+
+    /// Get all organization exclusions
+    pub fn organizations(&self) -> Vec<&String> {
+        self.all_exclusions
+            .iter()
+            .filter(|(k, _)| k.contains("organization") || k.contains("government") || k.contains("institution"))
+            .flat_map(|(_, v)| v.iter())
+            .collect()
+    }
+
+    /// Get all time term exclusions
+    pub fn time_terms(&self) -> Vec<&String> {
+        self.all_exclusions
+            .iter()
+            .filter(|(k, _)| k.contains("time"))
+            .flat_map(|(_, v)| v.iter())
+            .collect()
+    }
+
+    /// Get total count of all exclusions
+    pub fn total_count(&self) -> usize {
+        self.all_exclusions.values().map(|v| v.len()).sum()
+    }
+
+    /// Get all exclusions as a flat iterator
+    pub fn all(&self) -> impl Iterator<Item = &String> {
+        self.all_exclusions.values().flat_map(|v| v.iter())
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -196,6 +239,14 @@ pub struct PIIExclusionSettings {
     pub min_confidence: f32,
     #[serde(default)]
     pub fuzzy_matching: bool,
+    #[serde(default)]
+    pub region: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub languages: Option<Vec<String>>,
+    #[serde(default)]
+    pub countries: Option<Vec<String>>,
 }
 
 fn default_min_confidence() -> f32 {
@@ -204,19 +255,41 @@ fn default_min_confidence() -> f32 {
 
 impl Default for PIIExclusionsConfig {
     fn default() -> Self {
+        let mut all_exclusions = HashMap::new();
+        all_exclusions.insert(
+            "locations".to_string(),
+            vec!["United States".to_string(), "New York".to_string()],
+        );
+        all_exclusions.insert(
+            "legal_terms".to_string(),
+            vec!["First Amendment".to_string(), "Supreme Court".to_string()],
+        );
+
         Self {
-            exclusions: PIIExclusions {
-                locations: vec!["United States".to_string(), "New York".to_string()],
-                legal_terms: vec!["First Amendment".to_string(), "Supreme Court".to_string()],
-                organizations: vec![],
-                time_terms: vec![],
-                custom: vec![],
-            },
+            exclusions: PIIExclusions { all_exclusions },
             settings: PIIExclusionSettings {
                 case_sensitive: false,
                 min_confidence: 0.5,
                 fuzzy_matching: false,
+                region: Some("en".to_string()),
+                description: Some("Default English exclusions".to_string()),
+                languages: Some(vec!["English".to_string()]),
+                countries: Some(vec!["United States".to_string()]),
             },
+        }
+    }
+}
+
+impl Default for PIIExclusionSettings {
+    fn default() -> Self {
+        Self {
+            case_sensitive: false,
+            min_confidence: 0.5,
+            fuzzy_matching: false,
+            region: None,
+            description: None,
+            languages: None,
+            countries: None,
         }
     }
 }
@@ -274,51 +347,106 @@ impl PIIDetector {
         }
     }
 
-    /// Load PII exclusions configuration from TOML file
+    /// Load PII exclusions configuration from ALL regional TOML files
+    /// Loads and merges: pii_exclusions_en.toml, pii_exclusions_eu.toml, pii_exclusions_apac.toml
+    /// This ensures comprehensive multilingual PII detection regardless of document language
     fn load_exclusions_config() -> Result<PIIExclusionsConfig> {
-        // Try multiple possible locations for the config file
-        let possible_paths = vec![
-            PathBuf::from("pii_exclusions.toml"),
-            PathBuf::from("src-tauri/pii_exclusions.toml"),
-            dirs::config_dir()
-                .map(|p| p.join("bear-ai-llm").join("pii_exclusions.toml"))
-                .unwrap_or_else(|| PathBuf::from("pii_exclusions.toml")),
-        ];
+        let regions = vec!["en", "eu", "apac"];
+        let mut merged_exclusions = HashMap::new();
+        let mut merged_settings = PIIExclusionSettings::default();
+        let mut total_loaded = 0;
+        let mut loaded_regions = Vec::new();
 
-        tracing::info!("Searching for PII exclusions config in the following locations:");
-        for path in &possible_paths {
-            tracing::info!("  - {:?} (exists: {})", path, path.exists());
-        }
+        tracing::info!("Loading PII exclusions from all regional files...");
 
-        for path in possible_paths {
-            if path.exists() {
-                tracing::info!("✅ Loading PII exclusions config from: {:?}", path);
-                let content = fs::read_to_string(&path)?;
-                let config: PIIExclusionsConfig = toml::from_str(&content)?;
-                let total_patterns = config.exclusions.locations.len()
-                    + config.exclusions.legal_terms.len()
-                    + config.exclusions.organizations.len()
-                    + config.exclusions.time_terms.len()
-                    + config.exclusions.custom.len();
-                tracing::info!(
-                    "✅ Successfully loaded {} exclusion patterns from config",
-                    total_patterns
-                );
-                tracing::info!(
-                    "   - Locations: {}, Legal Terms: {}, Organizations: {}, Time Terms: {}, Custom: {}",
-                    config.exclusions.locations.len(),
-                    config.exclusions.legal_terms.len(),
-                    config.exclusions.organizations.len(),
-                    config.exclusions.time_terms.len(),
-                    config.exclusions.custom.len()
-                );
-                return Ok(config);
+        for region in &regions {
+            let base_name = format!("pii_exclusions_{}.toml", region);
+
+            // Try multiple possible locations
+            let possible_paths = vec![
+                PathBuf::from(&base_name),
+                PathBuf::from("src-tauri").join(&base_name),
+                dirs::config_dir()
+                    .map(|p| p.join("bear-ai-llm").join(&base_name))
+                    .unwrap_or_else(|| PathBuf::from(&base_name)),
+            ];
+
+            for path in possible_paths {
+                if path.exists() {
+                    match fs::read_to_string(&path) {
+                        Ok(content) => {
+                            match toml::from_str::<PIIExclusionsConfig>(&content) {
+                                Ok(config) => {
+                                    let count = config.exclusions.total_count();
+                                    tracing::info!(
+                                        "  ✅ Loaded {} patterns from {} ({})",
+                                        count,
+                                        region,
+                                        path.display()
+                                    );
+
+                                    // Merge all exclusions
+                                    for (key, values) in config.exclusions.all_exclusions {
+                                        merged_exclusions.entry(key)
+                                            .or_insert_with(Vec::new)
+                                            .extend(values);
+                                    }
+
+                                    total_loaded += count;
+                                    loaded_regions.push(region.to_string());
+
+                                    // Use first loaded settings as base
+                                    if total_loaded == count {
+                                        merged_settings = config.settings;
+                                    }
+
+                                    break; // Found the file, stop searching paths
+                                }
+                                Err(e) => {
+                                    tracing::warn!("  ⚠️  Failed to parse {}: {}", path.display(), e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!("  ⚠️  Failed to read {}: {}", path.display(), e);
+                        }
+                    }
+                }
             }
         }
 
-        Err(anyhow!(
-            "❌ PII exclusions config file not found in any expected location"
-        ))
+        if total_loaded == 0 {
+            return Err(anyhow!(
+                "❌ No PII exclusions config files found. Expected: pii_exclusions_en.toml, pii_exclusions_eu.toml, pii_exclusions_apac.toml"
+            ));
+        }
+
+        // Update merged settings to reflect all loaded regions
+        merged_settings.region = Some(format!("multi ({})", loaded_regions.join(", ")));
+        merged_settings.description = Some(format!(
+            "Merged exclusions from {} regions ({} total patterns)",
+            loaded_regions.len(),
+            total_loaded
+        ));
+
+        let merged_config = PIIExclusionsConfig {
+            exclusions: PIIExclusions {
+                all_exclusions: merged_exclusions,
+            },
+            settings: merged_settings,
+        };
+
+        let locations_count = merged_config.exclusions.locations().len();
+        let legal_count = merged_config.exclusions.legal_terms().len();
+        let org_count = merged_config.exclusions.organizations().len();
+        let time_count = merged_config.exclusions.time_terms().len();
+
+        tracing::info!("✅ Successfully merged {} exclusion patterns from {} regions", total_loaded, loaded_regions.len());
+        tracing::info!("   - Regions: {}", loaded_regions.join(", "));
+        tracing::info!("   - Locations: {}, Legal Terms: {}, Organizations: {}, Time Terms: {}",
+            locations_count, legal_count, org_count, time_count);
+
+        Ok(merged_config)
     }
 
     pub async fn initialize(&self) -> Result<()> {
@@ -760,18 +888,8 @@ print(json.dumps(entities))
         if let Ok(config) = exclusions_config {
             let case_sensitive = config.settings.case_sensitive;
 
-            // Check all exclusion categories
-            let all_exclusions: Vec<&String> = config
-                .exclusions
-                .locations
-                .iter()
-                .chain(config.exclusions.legal_terms.iter())
-                .chain(config.exclusions.organizations.iter())
-                .chain(config.exclusions.time_terms.iter())
-                .chain(config.exclusions.custom.iter())
-                .collect();
-
-            for exclusion in all_exclusions {
+            // Check all exclusion categories using the new API
+            for exclusion in config.exclusions.all() {
                 let matches = if case_sensitive {
                     text == exclusion
                 } else {
