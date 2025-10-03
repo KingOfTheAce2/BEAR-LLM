@@ -113,6 +113,7 @@ jobs:
           Write-Host "✅ Pre-build validation complete" -ForegroundColor Green
 
       - name: Build Tauri application
+        id: tauri-build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -175,26 +176,58 @@ jobs:
           includeUpdaterJson: true
           args: --verbose
 
-      - name: Verify and Upload Windows Installers
+      - name: Debug - List all build artifacts
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "📁 Listing all build artifacts..." -ForegroundColor Cyan
+          Write-Host "`n=== MSI Files ===" -ForegroundColor Yellow
+          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  $($_.FullName) ($([math]::Round($_.Length / 1MB, 2)) MB)" -ForegroundColor White
+          }
+          Write-Host "`n=== EXE Files ===" -ForegroundColor Yellow
+          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  $($_.FullName) ($([math]::Round($_.Length / 1MB, 2)) MB)" -ForegroundColor White
+          }
+          Write-Host "`n=== Bundle Directory Structure ===" -ForegroundColor Yellow
+          if (Test-Path "src-tauri/target/release/bundle") {
+            Get-ChildItem -Path src-tauri/target/release/bundle -Recurse | ForEach-Object {
+              Write-Host "  $($_.FullName)" -ForegroundColor White
+            }
+          } else {
+            Write-Host "  ⚠️  Bundle directory does not exist!" -ForegroundColor Red
+          }
+
+      - name: Verify build artifacts
         shell: pwsh
         run: |
           Write-Host "📦 Verifying build artifacts..." -ForegroundColor Yellow
 
-          $msi = Get-ChildItem -Path src-tauri/target/release/bundle/msi -Filter "*.msi" -ErrorAction SilentlyContinue
-          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter "*.exe" -ErrorAction SilentlyContinue
+          # Search more broadly for installers
+          $msiFiles = Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
+          $exeFiles = Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Directory.Name -eq "nsis" }
 
-          if (-not $msi) {
-            Write-Error "❌ No MSI installer found!"
+          # Check MSI
+          if ($msiFiles.Count -eq 0) {
+            Write-Host "🔍 No MSI files found in any location" -ForegroundColor Red
+            Write-Host "Expected location: src-tauri/target/release/bundle/msi/" -ForegroundColor Yellow
             exit 1
+          } else {
+            $msi = $msiFiles | Select-Object -First 1
+            Write-Host "✅ Found MSI: $($msi.Name) at $($msi.DirectoryName)" -ForegroundColor Green
+            Write-Host "   Size: $([math]::Round($msi.Length / 1MB, 2)) MB" -ForegroundColor Green
           }
 
-          if (-not $exe) {
-            Write-Error "❌ No EXE installer found!"
+          # Check EXE
+          if ($exeFiles.Count -eq 0) {
+            Write-Host "🔍 No NSIS EXE files found in any location" -ForegroundColor Red
+            Write-Host "Expected location: src-tauri/target/release/bundle/nsis/" -ForegroundColor Yellow
             exit 1
+          } else {
+            $exe = $exeFiles | Select-Object -First 1
+            Write-Host "✅ Found EXE: $($exe.Name) at $($exe.DirectoryName)" -ForegroundColor Green
+            Write-Host "   Size: $([math]::Round($exe.Length / 1MB, 2)) MB" -ForegroundColor Green
           }
-
-          Write-Host "✅ Found MSI: $($msi.Name) ($([math]::Round($msi.Length / 1MB, 2)) MB)" -ForegroundColor Green
-          Write-Host "✅ Found EXE: $($exe.Name) ($([math]::Round($exe.Length / 1MB, 2)) MB)" -ForegroundColor Green
 
       - name: Upload Windows Installers
         uses: actions/upload-artifact@v4
