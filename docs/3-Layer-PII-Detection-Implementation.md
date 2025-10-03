@@ -69,9 +69,26 @@ PIIDetectionConfig {
     presidio_mode: PresidioMode::Disabled,       // Layer 3 opt-in
     confidence_threshold: 0.85,
     use_context_enhancement: true,
+    candle_model_language: "english".to_string(), // Default to English
     // ... entity-specific flags
 }
 ```
+
+### Candle Model Language Selection
+
+To specify the language model for Layer 2 (Candle NER), set the `candle_model_language` field in `PIIDetectionConfig`:
+
+```rust
+PIIDetectionConfig {
+    // ... other settings
+    candle_model_language: "dutch".to_string(), // Use Dutch model
+}
+```
+
+**Available Options**:
+- `"english"` (Default): Uses `dbmdz/bert-large-cased-finetuned-conll03-english`
+- `"dutch"`: Uses `pdelobelle/robbert-v2-dutch-ner`
+
 
 ## API Usage
 
@@ -155,7 +172,11 @@ No installation needed. Always available.
 ### Layer 2 (Candle NER) - Automatic
 Automatically installed via Cargo.toml. Model weights are downloaded on first use.
 
-**Model**: `dbmdz/bert-large-cased-finetuned-conll03-english` (downloaded from HuggingFace Hub)
+**Available Models**:
+- **English (Default)**: `dbmdz/bert-large-cased-finetuned-conll03-english`
+- **Dutch**: `pdelobelle/robbert-v2-dutch-ner`
+
+**Configuration**: Select the desired language model in `PIIDetectionConfig` via the `candle_model_language` field.
 
 ### Layer 3 (Presidio) - Optional Post-Install
 

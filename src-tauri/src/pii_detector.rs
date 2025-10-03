@@ -206,6 +206,7 @@ pub struct PIIDetectionConfig {
     pub detect_medical: bool,
     pub detect_legal: bool,
     pub use_context_enhancement: bool,
+    pub candle_model_language: String,
 }
 
 impl Default for PIIDetectionConfig {
@@ -225,6 +226,7 @@ impl Default for PIIDetectionConfig {
             detect_medical: true,
             detect_legal: true,
             use_context_enhancement: true,
+            candle_model_language: "english".to_string(),
         }
     }
 }
@@ -523,8 +525,11 @@ impl PIIDetector {
             let mut candle_ner_model = self.candle_ner_model.write().await;
             if candle_ner_model.is_none() {
                 tracing::info!("Initializing Candle NER model for Layer 2...");
-                let device = Device::Cpu; // TODO: Make configurable, add GPU support
-                match NerModel::new("dbmdz/bert-large-cased-finetuned-conll03-english", "main", device) {
+                let model_id = match config.candle_model_language.as_str() {
+                    "dutch" => "pdelobelle/robbert-v2-dutch-ner",
+                    _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
+                };
+                match NerModel::new(model_id, "main", device) {
                     Ok(model) => {
                         *candle_ner_model = Some(model);
                         tracing::info!("✅ Candle NER model initialized successfully.");
@@ -644,9 +649,6 @@ impl PIIDetector {
 
         Ok(filtered)
     }
-
-
-
     /// Layer 1: Regex-based detection (renamed from detect_with_builtin)
     async fn detect_with_regex(
         &self,
@@ -1148,7 +1150,11 @@ print(json.dumps(entities))
             if self.candle_ner_model.read().await.is_none() {
                 tracing::info!("Attempting to load Candle NER model...");
                 let device = Device::Cpu; // TODO: Make configurable
-                match NerModel::new("dbmdz/bert-large-cased-finetuned-conll03-english", "main", device) {
+                let model_id = match config.candle_model_language.as_str() {
+                    "dutch" => "pdelobelle/robbert-v2-dutch-ner",
+                    _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
+                };
+                match NerModel::new(model_id, "main", device) {
                     Ok(model) => {
                         *self.candle_ner_model.write().await = Some(model);
                         tracing::info!("✅ Candle NER model loaded successfully.");
