@@ -62,15 +62,19 @@ pub const TOKEN_OVERFLOW_SAFETY_MARGIN: usize = 10;
 // ============================================================================
 
 /// Default number of documents to retrieve for RAG
+#[allow(dead_code)] // Reserved for future RAG implementation
 pub const RAG_DEFAULT_TOP_K: usize = 5;
 
 /// Minimum similarity score for RAG document retrieval
+#[allow(dead_code)] // Reserved for future RAG implementation
 pub const RAG_MIN_SIMILARITY: f32 = 0.3;
 
 /// Maximum chunk size for document splitting (in characters)
+#[allow(dead_code)] // Reserved for future RAG implementation
 pub const RAG_MAX_CHUNK_SIZE: usize = 1000;
 
 /// Chunk overlap size for context preservation (in characters)
+#[allow(dead_code)] // Reserved for future RAG implementation
 pub const RAG_CHUNK_OVERLAP: usize = 200;
 
 // ============================================================================
@@ -140,9 +144,6 @@ pub const MAX_HTTP_RETRIES: usize = 3;
 
 /// Retry backoff delay (in milliseconds)
 pub const RETRY_BACKOFF_MS: u64 = 1000;
-
-/// HuggingFace API rate limit delay (in milliseconds)
-pub const HF_API_RATE_LIMIT_MS: u64 = 100;
 
 // ============================================================================
 // Temporary File Management

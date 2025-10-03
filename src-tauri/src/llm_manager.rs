@@ -519,6 +519,7 @@ impl LLMManager {
     }
 
     /// Generate text with streaming support
+    #[allow(dead_code)] // Part of public API for streaming generation
     pub async fn generate_stream<F>(
         &self,
         prompt: &str,
@@ -621,6 +622,7 @@ impl LLMManager {
         Ok(())
     }
 
+    #[allow(dead_code)] // Part of public API for runtime config updates
     pub async fn update_generation_config(&self, config: GenerationConfig) -> Result<()> {
         let mut gen_config = self.generation_config.write().await;
         *gen_config = config.clone();
@@ -771,6 +773,7 @@ impl LLMManager {
         }
     }
 
+    #[allow(dead_code)] // Part of public API for direct model loading
     pub async fn load_model_for_inference(&self, model_path: &str) -> Result<()> {
         // This method loads a model for inference
         // The model_path is the model name or identifier

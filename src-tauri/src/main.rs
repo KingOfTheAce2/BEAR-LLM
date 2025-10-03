@@ -227,9 +227,11 @@ struct AppState {
     compliance_manager: Arc<ComplianceManager>,
 
     // Consent Guard Middleware
+    #[allow(dead_code)] // Used via Tauri dependency injection (.manage())
     consent_guard: Arc<ConsentGuard>,
 
     // Retention Scheduler
+    #[allow(dead_code)] // Used via Tauri dependency injection (.manage())
     scheduler_handle: Option<Arc<RwLock<SchedulerHandle>>>,
 
     // AI Transparency

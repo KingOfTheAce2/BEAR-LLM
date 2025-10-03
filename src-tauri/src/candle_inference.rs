@@ -274,6 +274,7 @@ impl GGUFInferenceEngine {
     }
 
     /// Generate text with streaming support
+    #[allow(dead_code)] // Part of public API, may be used by frontend
     pub async fn generate_stream<F>(
         &self,
         prompt: &str,
@@ -365,6 +366,7 @@ impl GGUFInferenceEngine {
     }
 
     /// Update generation configuration
+    #[allow(dead_code)] // Part of public API for runtime config updates
     pub async fn update_config(&self, config: GGUFInferenceConfig) -> Result<()> {
         let mut current_config = self.config.write().await;
         *current_config = config;
@@ -372,6 +374,7 @@ impl GGUFInferenceEngine {
     }
 
     /// Get current configuration
+    #[allow(dead_code)] // Part of public API for config inspection
     pub async fn get_config(&self) -> GGUFInferenceConfig {
         self.config.read().await.clone()
     }
@@ -475,6 +478,7 @@ impl GGUFInferenceEngine {
     }
 
     /// Get model information
+    #[allow(dead_code)] // Part of public API for model introspection
     pub async fn get_model_info(&self) -> Result<serde_json::Value> {
         let model_lock = self.model.read().await;
         if model_lock.is_none() {
