@@ -645,14 +645,7 @@ impl PIIDetector {
         Ok(filtered)
     }
 
-    /// Layer 2: gline-rs detection (Rust-native ML-enhanced)
-        }
 
-        Ok(entities)
-    }
-
-    /// Map gline entity types to our standard types
-    }
 
     /// Layer 1: Regex-based detection (renamed from detect_with_builtin)
     async fn detect_with_regex(
