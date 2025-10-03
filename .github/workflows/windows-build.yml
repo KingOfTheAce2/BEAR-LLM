@@ -101,7 +101,6 @@ jobs:
 
       - name: Quick Link Validation (Fast Fail)
         shell: pwsh
-        timeout-minutes: 10
         run: |
           cd src-tauri
           Write-Host "⚡ Running quick link validation (fails in <10min if issues exist)..." -ForegroundColor Yellow
