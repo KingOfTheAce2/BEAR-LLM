@@ -101,10 +101,11 @@ impl GGUFInferenceEngine {
         tracing::info!("Loading GGUF model from: {:?}", path);
 
         // Load quantized model (GGUF format)
-        use candle_transformers::quantized_var_builder::VarBuilder;
+        use candle_core::quantized::gguf_file;
 
         let mut file = std::fs::File::open(path)?;
-        let model = llama::ModelWeights::from_gguf(&mut file, &self.device)?;
+        let content = gguf_file::Content::read(&mut file)?;
+        let model = llama::ModelWeights::from_gguf(content, &mut file, &self.device)?;
 
         // Try to load tokenizer from same directory or HuggingFace cache
         let tokenizer_path = path.parent().map(|p| p.join("tokenizer.json"));
@@ -340,7 +341,7 @@ impl GGUFInferenceEngine {
                 break;
             }
 
-            if let Some((matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
+            if let Some((_matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
                 stop_reason = StopReason::StopSequence;
                 generated_text.truncate(pos);
                 break;
