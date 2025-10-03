@@ -11,7 +11,7 @@ use tauri::{Emitter, State};
 use tokio::sync::RwLock;
 
 // Core AI modules
-mod gguf_inference;
+mod candle_inference; // Pure Rust inference (Candle)
 mod llm_manager;
 mod pii_detector;
 mod rag_engine;

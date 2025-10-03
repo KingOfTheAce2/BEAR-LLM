@@ -2,13 +2,12 @@
 // This allows tests and external crates to use the modules
 
 pub mod ai_transparency;
-pub mod candle_inference; // Pure Rust inference - replaces gguf_inference
+pub mod candle_inference; // Pure Rust inference (Candle-based GGUF)
 pub mod commands;
 pub mod compliance;
 pub mod constants;
 pub mod database;
 pub mod export_engine;
-pub mod gguf_inference; // Deprecated - kept for migration compatibility
 pub mod hardware_monitor;
 pub mod llm_manager;
 pub mod middleware;

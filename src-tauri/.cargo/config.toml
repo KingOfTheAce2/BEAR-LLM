@@ -1,14 +1,6 @@
 # Cargo configuration for BEAR-LLM
-# This ensures consistent linking strategy across all dependencies
-
-[target.x86_64-pc-windows-msvc]
-# Use static CRT linking to avoid runtime library dependency issues
-# This produces a single executable with no DLL dependencies
-rustflags = ["-C", "target-feature=+crt-static"]
-
-# Alternative: Dynamic linking (uncomment if static fails)
-# rustflags = ["-C", "target-feature=-crt-static"]
+# Pure Rust build - no special MSVC runtime configuration needed
 
 [build]
-# Incremental compilation disabled for release builds (cleaner linking)
+# Incremental compilation disabled for release builds
 incremental = false

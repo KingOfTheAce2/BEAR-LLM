@@ -1,8 +1,14 @@
-# GGUF Model Integration - Production Ready
+# GGUF Model Integration - Pure Rust (Candle)
+
+## ⚠️ MIGRATION NOTICE
+
+**This document is deprecated.** BEAR AI has migrated from `llama-cpp-2` to **pure Rust Candle** for GGUF inference.
+
+👉 **See [CANDLE_MIGRATION.md](./CANDLE_MIGRATION.md) for current implementation details.**
 
 ## Overview
 
-BEAR AI now includes **full production-ready GGUF model support** using `llama-cpp-2`, providing high-performance local inference with quantized models.
+BEAR AI includes **full production-ready GGUF model support** using **Candle** (pure Rust), providing reliable local inference with quantized models.
 
 ## Features
 
