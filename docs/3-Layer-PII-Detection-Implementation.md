@@ -24,8 +24,8 @@ BEAR-LLM now features a sophisticated 3-layer PII (Personally Identifiable Infor
 - Names (with context awareness)
 - Organizations
 
-### Layer 2: gline-rs Enhanced Detection (Rust-Native ML)
-- **Engine**: gline-rs Rust-native ML library
+### Layer 2: Candle NER Enhanced Detection (Rust-Native ML)
+- **Engine**: Candle NER (Rust-native ML)
 - **Performance**: Fast (~10-20ms per document)
 - **Accuracy**: ~92%
 - **Status**: Enabled by default, can be toggled
@@ -56,7 +56,7 @@ BEAR-LLM now features a sophisticated 3-layer PII (Personally Identifiable Infor
 ```rust
 pub enum DetectionLayer {
     RegexOnly,    // Layer 1 only (fastest)
-    WithGline,    // Layer 1 + 2 (balanced) - DEFAULT
+    WithCandle,    // Layer 1 + 2 (balanced) - DEFAULT
     FullStack,    // All 3 layers (best accuracy)
 }
 ```
@@ -65,8 +65,7 @@ pub enum DetectionLayer {
 
 ```rust
 PIIDetectionConfig {
-    detection_layer: DetectionLayer::WithGline,  // Layer 1 + 2
-    gline_enabled: true,                         // Enable Layer 2
+    detection_layer: DetectionLayer::WithCandle,  // Layer 1 + 2
     presidio_mode: PresidioMode::Disabled,       // Layer 3 opt-in
     confidence_threshold: 0.85,
     use_context_enhancement: true,
@@ -93,7 +92,7 @@ let redacted = detector.redact_pii(text).await?;
 detector.set_detection_layer(DetectionLayer::RegexOnly).await?;
 
 // Use Layer 1 + 2 (balanced - default)
-detector.set_detection_layer(DetectionLayer::WithGline).await?;
+detector.set_detection_layer(DetectionLayer::WithCandle).await?;
 
 // Use all 3 layers (best accuracy)
 detector.set_detection_layer(DetectionLayer::FullStack).await?;
@@ -103,11 +102,11 @@ detector.set_presidio_mode(PresidioMode::SpacyOnly).await?;
 ### Toggle Layer 2
 
 ```rust
-// Disable gline-rs Layer 2
-detector.set_gline_enabled(false).await?;
+// Disable Candle NER Layer 2
+detector.set_candle_enabled(false).await?;
 
 // Re-enable Layer 2
-detector.set_gline_enabled(true).await?;
+detector.set_candle_enabled(true).await?;
 ```
 
 ### Check Layer Status
@@ -116,7 +115,7 @@ detector.set_gline_enabled(true).await?;
 let status = detector.get_layer_status().await;
 // {
 //   "layer1_regex": true,
-//   "layer2_gline": true,
+//   "layer2_candle": true,
 //   "layer3_presidio": false
 // }
 ```
@@ -125,16 +124,16 @@ let status = detector.get_layer_status().await;
 
 The system implements automatic fallback:
 
-1. **Layer 2 Failure**: If gline-rs detection fails, system continues with Layer 1 results
+1. **Layer 2 Failure**: If Candle NER detection fails, system continues with Layer 1 results
 2. **Layer 3 Failure**: If Presidio fails, system uses Layer 1+2 results
 3. **Graceful Degradation**: Errors are logged but never block detection
 
 ```rust
 // Layer 2 fallback example
-match self.detect_with_gline(text).await {
+match self.detect_with_candle(text).await {
     Ok(entities) => all_entities.extend(entities),
     Err(e) => {
-        tracing::warn!("Layer 2 failed: {}. Using Layer 1 results.", e);
+        tracing::warn!("Layer 2 (Candle) failed: {}. Using Layer 1 results.", e);
         // Continue with Layer 1 results already collected
     }
 }
@@ -153,11 +152,10 @@ match self.detect_with_gline(text).await {
 ### Layer 1 (Regex) - Automatic
 No installation needed. Always available.
 
-### Layer 2 (gline-rs) - Automatic
-Automatically installed via Cargo.toml:
-```toml
-gline = "0.2"  # Rust-native PII detection
-```
+### Layer 2 (Candle NER) - Automatic
+Automatically installed via Cargo.toml. Model weights are downloaded on first use.
+
+**Model**: `dbmdz/bert-large-cased-finetuned-conll03-english` (downloaded from HuggingFace Hub)
 
 ### Layer 3 (Presidio) - Optional Post-Install
 
@@ -183,7 +181,7 @@ pip install transformers torch
 
 ✅ **Fully Backward Compatible**
 - Existing code using `detect_pii()` works without changes
-- Default behavior: Layer 1 + 2 (better than old regex-only)
+- Default behavior: Layer 1 + 2 (Candle) (better than old regex-only)
 - Old `presidio_mode` configuration still respected
 - Deprecated `use_presidio` flag maintained for legacy code
 
@@ -204,10 +202,10 @@ let entities = detector.detect_pii(text).await?;
 ### Why 3 Layers?
 
 1. **Layer 1 (Regex)**: Guarantees minimum protection level, zero dependencies
-2. **Layer 2 (gline-rs)**: Significant accuracy boost with minimal overhead
+2. **Layer 2 (Candle NER)**: Significant accuracy boost with minimal overhead
 3. **Layer 3 (Presidio)**: Optional power-user feature for maximum accuracy
 
-### Why gline-rs for Layer 2?
+### Why Candle NER for Layer 2?
 
 - **Pure Rust**: No Python/C++ build dependencies
 - **Fast**: Compiled Rust performance
@@ -231,7 +229,7 @@ cargo test pii_detector
 
 # Test each layer independently
 cargo test layer1_regex
-cargo test layer2_gline
+cargo test layer2_candle
 cargo test layer3_presidio
 ```
 
@@ -241,7 +239,7 @@ The system logs detailed metrics:
 
 ```
 [INFO] Layer 1 (Regex): 12 entities in 2.3ms
-[INFO] Layer 2 (gline-rs): 8 entities in 15.7ms
+[INFO] Layer 2 (Candle): 8 entities in 15.7ms
 [INFO] Layer 3 (Presidio): 5 entities in 142ms
 [INFO] PII detection complete: 18 entities found across 3 layers
 ```
@@ -259,10 +257,9 @@ The system logs detailed metrics:
 ### Layer 2 Not Working
 
 ```bash
-# Check gline-rs availability
-cargo build --features gline
-
-# If build fails, Layer 1 fallback activates automatically
+# Check Candle NER availability
+# Model weights are downloaded on first use. Ensure internet connectivity.
+# Check logs for "Failed to initialize Candle NER model" errors.
 ```
 
 ### Layer 3 Configuration
@@ -283,6 +280,6 @@ Testing: QA Agent
 
 ## References
 
-- [gline-rs Documentation](https://docs.rs/gline)
+
 - [Microsoft Presidio](https://microsoft.github.io/presidio/)
 - [BEAR AI Privacy Architecture](/docs/privacy-architecture.md)

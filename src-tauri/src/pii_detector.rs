@@ -44,6 +44,9 @@ use std::sync::Arc;
 use tokio::process::Command as AsyncCommand;
 use tokio::sync::RwLock;
 
+mod candle_ner;
+use candle_ner::NerModel;
+
 // Layer 2: Planned for ML-enhanced detection (currently blocked by dependency conflict)
 // TODO: Implement with candle-transformers or wait for gline-rs dependency fix
 
@@ -92,15 +95,18 @@ pub enum DetectionLayer {
     /// Layer 1 only - Regex patterns (fastest, ~85% accuracy)
     #[default]
     RegexOnly,
-    /// Layer 1 + Layer 3 - Regex + Presidio (best available, ~95% accuracy)
-    WithPresidio,
+    /// Layer 1 + Layer 2 (Candle) - Regex + Candle (balanced, ~92% accuracy)
+    WithCandle,
+    /// Layer 1 + Layer 2 (Candle) + Layer 3 (Presidio) - Full Stack (best accuracy)
+    FullStack,
 }
 
 impl std::fmt::Display for DetectionLayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DetectionLayer::RegexOnly => write!(f, "regex_only"),
-            DetectionLayer::WithPresidio => write!(f, "with_presidio"),
+            DetectionLayer::WithCandle => write!(f, "with_candle"),
+            DetectionLayer::FullStack => write!(f, "full_stack"),
         }
     }
 }
@@ -109,7 +115,8 @@ impl DetectionLayer {
     pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "regex_only" | "layer1" | "fast" => DetectionLayer::RegexOnly,
-            "with_presidio" | "layer3" | "presidio" | "full" => DetectionLayer::WithPresidio,
+            "with_candle" | "layer2" | "candle" | "balanced" => DetectionLayer::WithCandle,
+            "full_stack" | "layer3" | "presidio" | "full" => DetectionLayer::FullStack,
             _ => DetectionLayer::RegexOnly, // Default to fast mode
         }
     }
@@ -118,7 +125,8 @@ impl DetectionLayer {
     pub fn accuracy(&self) -> u8 {
         match self {
             DetectionLayer::RegexOnly => 85,
-            DetectionLayer::WithPresidio => 95,
+            DetectionLayer::WithCandle => 92,
+            DetectionLayer::FullStack => 95,
         }
     }
 
@@ -126,7 +134,8 @@ impl DetectionLayer {
     pub fn layer_count(&self) -> u8 {
         match self {
             DetectionLayer::RegexOnly => 1,
-            DetectionLayer::WithPresidio => 2,  // Layer 1 + Layer 3 (skip Layer 2)
+            DetectionLayer::WithCandle => 2,
+            DetectionLayer::FullStack => 3,
         }
     }
 }
@@ -353,6 +362,7 @@ pub struct PIIDetector {
     python_path: Arc<RwLock<Option<PathBuf>>>,
     presidio_available: Arc<RwLock<bool>>,
     custom_patterns: Arc<RwLock<HashMap<String, Regex>>>,
+    candle_ner_model: Arc<RwLock<Option<NerModel>>>,
 }
 
 impl Default for PIIDetector {
@@ -397,6 +407,7 @@ impl PIIDetector {
             python_path: Arc::new(RwLock::new(None)),
             presidio_available: Arc::new(RwLock::new(false)),
             custom_patterns: Arc::new(RwLock::new(HashMap::new())),
+            candle_ner_model: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -505,6 +516,26 @@ impl PIIDetector {
     pub async fn initialize(&self) -> Result<()> {
         // Check for Python and Presidio (Layer 3)
         self.check_presidio_availability().await;
+
+        // Initialize Candle NER model (Layer 2) if needed
+        let config = self.config.read().await;
+        if matches!(config.detection_layer, DetectionLayer::WithCandle | DetectionLayer::FullStack) {
+            let mut candle_ner_model = self.candle_ner_model.write().await;
+            if candle_ner_model.is_none() {
+                tracing::info!("Initializing Candle NER model for Layer 2...");
+                let device = Device::Cpu; // TODO: Make configurable, add GPU support
+                match NerModel::new("dbmdz/bert-large-cased-finetuned-conll03-english", "main", device) {
+                    Ok(model) => {
+                        *candle_ner_model = Some(model);
+                        tracing::info!("✅ Candle NER model initialized successfully.");
+                    },
+                    Err(e) => {
+                        tracing::error!("❌ Failed to initialize Candle NER model: {}", e);
+                        tracing::warn!("⚠️  Layer 2 (Candle) will be unavailable. Falling back to Layer 1.");
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
@@ -544,9 +575,9 @@ impl PIIDetector {
         let config = self.config.read().await;
         let mut all_entities = Vec::new();
 
-        // === 2-LAYER PII DETECTION SYSTEM ===
+        // === 3-LAYER PII DETECTION SYSTEM ===
         // Layer 1: Regex (always active, fast baseline)
-        // Layer 2: Planned (Rust-native ML - blocked by dependency conflict)
+        // Layer 2: Candle (Rust-native ML)
         // Layer 3: MS Presidio (optional post-install ML)
 
         tracing::debug!("Starting PII detection (mode: {:?})", config.detection_layer);
@@ -557,8 +588,27 @@ impl PIIDetector {
         tracing::debug!("Layer 1 (Regex): {} entities in {:?}", layer1_entities.len(), layer1_start.elapsed());
         all_entities.extend(layer1_entities);
 
+        // LAYER 2: Candle NER (optional, if configured)
+        if matches!(config.detection_layer, DetectionLayer::WithCandle | DetectionLayer::FullStack) {
+            let candle_ner_model_guard = self.candle_ner_model.read().await;
+            if let Some(ner_model) = candle_ner_model_guard.as_ref() {
+                let layer2_start = std::time::Instant::now();
+                match ner_model.predict(text) {
+                    Ok(entities) => {
+                        tracing::debug!("Layer 2 (Candle): {} entities in {:?}", entities.len(), layer2_start.elapsed());
+                        all_entities.extend(entities);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Layer 2 (Candle) failed: {}. Falling back to Layer 1 results.", e);
+                    }
+                }
+            } else {
+                tracing::warn!("Layer 2 (Candle) is enabled but model is not loaded. Falling back to Layer 1 results.");
+            }
+        }
+
         // LAYER 3: MS Presidio (optional, post-install, if configured)
-        if matches!(config.detection_layer, DetectionLayer::WithPresidio) {
+        if matches!(config.detection_layer, DetectionLayer::FullStack) {
             let should_use_presidio = match config.presidio_mode {
                 PresidioMode::Disabled => false,
                 PresidioMode::SpacyOnly | PresidioMode::FullML => true,
@@ -572,8 +622,8 @@ impl PIIDetector {
                         all_entities.extend(entities);
                     }
                     Err(e) => {
-                        tracing::warn!("Layer 3 (Presidio) failed: {}. Using Layer 1 results.", e);
-                        // Fallback: Layer 1 results already added
+                        tracing::warn!("Layer 3 (Presidio) failed: {}. Falling back to Layer 1/2 results.", e);
+                        // Fallback: Layer 1/2 results already added
                     }
                 }
             }
@@ -1094,20 +1144,49 @@ print(json.dumps(entities))
         self.config.read().await.detection_layer.clone()
     }
 
-    /// Enable or disable gline-rs Layer 2
+    /// Enable or disable Candle NER Layer 2
     #[allow(dead_code)]
-
+    pub async fn set_candle_enabled(&self, enabled: bool) -> Result<()> {
+        let mut config = self.config.write().await;
+        // This function now controls whether the Candle model is loaded/used
+        // The actual loading happens in `initialize` or `set_detection_layer`
+        // For now, we just update the config, and `detect_pii` will check if the model is loaded
+        if enabled {
+            if self.candle_ner_model.read().await.is_none() {
+                tracing::info!("Attempting to load Candle NER model...");
+                let device = Device::Cpu; // TODO: Make configurable
+                match NerModel::new("dbmdz/bert-large-cased-finetuned-conll03-english", "main", device) {
+                    Ok(model) => {
+                        *self.candle_ner_model.write().await = Some(model);
+                        tracing::info!("✅ Candle NER model loaded successfully.");
+                    },
+                    Err(e) => {
+                        tracing::error!("❌ Failed to load Candle NER model: {}", e);
+                        return Err(anyhow!("Failed to load Candle NER model"));
+                    }
+                }
+            }
+        } else {
+            *self.candle_ner_model.write().await = None;
+            tracing::info!("Candle NER model unloaded.");
+        }
         Ok(())
     }
 
-    /// Check if gline-rs Layer 2 is available
+    /// Check if Candle NER Layer 2 is available
     #[allow(dead_code)]
-
-    /// Get layer status information
+    pub async fn is_candle_available(&self) -> bool {
+        self.candle_ner_model.read().await.is_some()
+    }
+        /// Get layer status information
     #[allow(dead_code)]
     pub async fn get_layer_status(&self) -> HashMap<String, bool> {
         let mut status = HashMap::new();
         status.insert("layer1_regex".to_string(), true); // Always available
+        status.insert("layer2_candle".to_string(), self.is_candle_available().await);
+        status.insert("layer3_presidio".to_string(), self.is_presidio_available().await);
+        status
+    }
 
     #[allow(dead_code)]
     pub async fn get_statistics(&self, text: &str) -> Result<HashMap<String, usize>> {

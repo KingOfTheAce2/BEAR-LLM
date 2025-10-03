@@ -43,7 +43,7 @@ zip = "0.6"
 candle-core = "0.8"  # CUDA support optional, enabled at runtime if available
 candle-nn = "0.8"
 candle-transformers = "0.8"  # GGUF support is built-in via quantized_llama module
-tokenizers = "0.21"
+tokenizers = "0.21.0"
 # Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
 # Note: GPU acceleration works without CUDA feature - Candle auto-detects at runtime
 # Vector database
@@ -61,9 +61,7 @@ ring = "0.17"  # FIPS-compatible cryptography for chat encryption
 argon2 = "0.5"  # Key derivation for per-user encryption
 calamine = { version = "0.26", features = ["dates"] }
 docx-rs = "0.4"
-# Layer 2 PII Detection - BLOCKED by dependency conflict
-# gline-rs = "1.0.0"  # ❌ Requires ort rc.9, conflicts with fastembed's ort rc.10
-# TODO: Implement with candle-transformers or wait for gline-rs v1.0.1
+
 # Export and compliance dependencies
 printpdf = "0.7"  # PDF export
 age = "0.10"  # Encryption for data portability
