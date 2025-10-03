@@ -89,12 +89,54 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Check Rust compilation
+      - name: Configure Build Environment (Static CRT Strategy)
+        shell: pwsh
+        run: |
+          Write-Host "🔧 Configuring MSVC for STATIC runtime linking..." -ForegroundColor Cyan
+          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "RUSTFLAGS=-C target-feature=+crt-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "✅ Environment variables set for static linking:" -ForegroundColor Green
+          Write-Host "  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded (static)"
+          Write-Host "  RUSTFLAGS=-C target-feature=+crt-static"
+
+      - name: Quick Link Validation (Fast Fail)
+        shell: pwsh
+        timeout-minutes: 5
         run: |
           cd src-tauri
-          echo "🔍 Checking if code compiles..."
-          cargo check --release --lib
-          echo "✅ Compilation check passed"
+          Write-Host "⚡ Running quick link validation (fails in <5min if issues exist)..." -ForegroundColor Yellow
+          cargo check --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -FilePath link-check.log
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ LINK VALIDATION FAILED - Analyzing errors..." -ForegroundColor Red
+
+            # Check for specific link errors
+            $linkErrors = Select-String -Path link-check.log -Pattern "linking with.*failed|LNK\d+|error: could not compile"
+
+            if ($linkErrors) {
+              Write-Host "`n🔍 DETECTED LINKING ERRORS:" -ForegroundColor Red
+              $linkErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+
+              # Check for runtime mismatch
+              if (Select-String -Path link-check.log -Pattern "LNK2038.*RuntimeLibrary") {
+                Write-Host "`n💡 DIAGNOSIS: MSVC Runtime Library Mismatch" -ForegroundColor Magenta
+                Write-Host "   One dependency uses /MD (dynamic) while another uses /MT (static)" -ForegroundColor Magenta
+                Write-Host "   This build is attempting STATIC linking strategy." -ForegroundColor Magenta
+              }
+
+              # Check for missing symbols
+              if (Select-String -Path link-check.log -Pattern "unresolved external symbol") {
+                Write-Host "`n💡 DIAGNOSIS: Missing symbols detected" -ForegroundColor Magenta
+                Write-Host "   This usually indicates library dependency issues" -ForegroundColor Magenta
+              }
+            }
+
+            Write-Host "`n📋 Full error log saved to artifacts" -ForegroundColor Yellow
+            Write-Host "🛑 STOPPING BUILD - No point continuing, this will fail" -ForegroundColor Red
+            exit 1
+          }
+
+          Write-Host "✅ Link validation passed - proceeding to full build" -ForegroundColor Green
 
       - name: Run Clippy (code quality check)
         run: |
@@ -102,18 +144,6 @@ jobs:
           echo "🔍 Running Clippy to catch code issues..."
           cargo clippy --release --lib -- -D warnings
           echo "✅ Clippy check passed - no warnings found"
-
-      - name: Configure Build Environment (Fix MSVC Runtime)
-        shell: pwsh
-        run: |
-          Write-Host "🔧 Configuring MSVC runtime environment..." -ForegroundColor Cyan
-          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "LLAMA_STATIC_LINK=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "CL=/MD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "✅ Environment variables set:" -ForegroundColor Green
-          Write-Host "  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
-          Write-Host "  LLAMA_STATIC_LINK=0"
-          Write-Host "  CL=/MD"
 
       - name: Build Tauri application
         uses: tauri-apps/tauri-action@v0
@@ -123,7 +153,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           GGML_CUDA: OFF
           GGML_METAL: OFF
-          RUSTFLAGS: "-C target-feature=-crt-static -v"
+          CMAKE_MSVC_RUNTIME_LIBRARY: MultiThreaded
+          RUSTFLAGS: "-C target-feature=+crt-static"
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
         with:
@@ -190,6 +221,16 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Upload Link Validation Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-validation-logs-v${{ needs.validate.outputs.version }}
+          path: |
+            src-tauri/link-check.log
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -198,6 +239,7 @@ jobs:
           path: |
             src-tauri/target/release/build/**/*.log
             src-tauri/target/release/*.log
+            src-tauri/*.log
           if-no-files-found: ignore
           retention-days: 7
 
