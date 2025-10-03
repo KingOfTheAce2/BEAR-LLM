@@ -1178,7 +1178,8 @@ print(json.dumps(entities))
     pub async fn is_candle_available(&self) -> bool {
         self.candle_ner_model.read().await.is_some()
     }
-        /// Get layer status information
+
+    /// Get layer status information
     #[allow(dead_code)]
     pub async fn get_layer_status(&self) -> HashMap<String, bool> {
         let mut status = HashMap::new();
