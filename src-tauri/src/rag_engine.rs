@@ -1,6 +1,5 @@
 use crate::utils::cosine_similarity;
 use anyhow::{anyhow, Result};
-use fastembed::{EmbeddingModel, InitOptions, TextEmbedding, StoreType};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -142,12 +141,7 @@ impl RAGEngine {
 
         Self {
             documents: Arc::new(RwLock::new(HashMap::new())),
-            embeddings_model: Arc::new(RwLock::new(TextEmbedding::new(InitOptions {
-                model_name: EmbeddingModel::BGESmallENV15,
-                store_type: StoreType::Disk,
-                show_download_message: false,
-                ..Default::default()
-            }).ok())),
+            embeddings_model: Arc::new(RwLock::new(None)), // Simplified embedding approach
             config: Arc::new(RwLock::new(RAGConfig::default())),
             index_path,
             inverted_index: Arc::new(RwLock::new(HashMap::new())),

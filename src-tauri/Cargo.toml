@@ -48,9 +48,6 @@ tokenizers = "0.21.0"
 # Note: GPU acceleration works without CUDA feature - Candle auto-detects at runtime
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
-# Better embeddings - Use fastembed with compatible features
-fastembed = { version = "5.2.0", default-features = false }
-
 # Windows-specific dependencies for GPU detection
 [target.'cfg(target_os = "windows")'.dependencies]
 wmi = "0.13"
@@ -75,10 +72,4 @@ path = "src/lib.rs"
 [[bin]]
 name = "bear-ai-llm"
 path = "src/main.rs"
-
-[workspace.dependencies]
-ort = { version = "2.0.0-rc.10", default-features = false }
-
-[workspace]
-inherit = "ort"
 
