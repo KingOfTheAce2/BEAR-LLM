@@ -4,3 +4,8 @@ git-fetch-with-cli = true
 
 [build]
 target-dir = "target"
+
+# Windows MSVC runtime library configuration
+# Force static CRT linking to resolve runtime mismatch between llama_cpp_sys (MD) and esaxx_rs (MT)
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
