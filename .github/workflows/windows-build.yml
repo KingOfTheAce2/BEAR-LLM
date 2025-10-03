@@ -103,6 +103,13 @@ jobs:
           cargo clippy --release --lib -- -D warnings
           echo "✅ Clippy check passed - no warnings found"
 
+      - name: Configure Build Environment (Fix MSVC Runtime)
+        shell: pwsh
+        run: |
+          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "LLAMA_STATIC_LINK=0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CL=/MD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build Tauri application
         uses: tauri-apps/tauri-action@v0
         env:
@@ -111,6 +118,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           GGML_CUDA: OFF
           GGML_METAL: OFF
+          RUSTFLAGS: "-C target-feature=-crt-static"
         with:
           tagName: v${{ needs.validate.outputs.version }}
           releaseName: 'BEAR AI v${{ needs.validate.outputs.version }}'
