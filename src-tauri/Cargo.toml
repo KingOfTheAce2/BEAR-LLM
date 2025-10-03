@@ -44,10 +44,25 @@ candle-core = "0.8"  # CUDA support optional, enabled at runtime if available
 candle-nn = "0.8"
 candle-transformers = "0.8"  # GGUF support is built-in via quantized_llama module
 tokenizers = "0.21.0"
+
+# Database
+rusqlite = { version = \"0.30\", features = [\"bundled\"] }\nr2d2 = \"0.8\"\nr2d2_sqlite = { version = \"0.23\", features = [\"bundled\"] }
+
+# Crypto & Security
+ring = "0.17"
+sha2 = "0.10"
+zeroize = "1.6"
+argon2 = "0.5"
+keyring = "2.1"
+rand = "0.8"
+hex = "0.4"
+
+# Document handling
+docx-rs = "0.4"
+printpdf = { version = "0.7", features = ["embedded_images"] }
+
 # Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
 # Note: GPU acceleration works without CUDA feature - Candle auto-detects at runtime
-# Vector database
-# faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Windows-specific dependencies for GPU detection
 [target.'cfg(target_os = "windows")'.dependencies]
 wmi = "0.13"
