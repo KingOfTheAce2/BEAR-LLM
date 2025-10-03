@@ -59,6 +59,7 @@ argon2 = "0.5.2"
 keyring = "2.1.0"
 rand = "0.8.5"
 hex = "0.4.3"
+toml = "0.8"
 
 # Document handling
 docx-rs = "0.4.7"

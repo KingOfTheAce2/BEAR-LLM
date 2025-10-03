@@ -1,5 +1,6 @@
 use crate::utils::cosine_similarity;
 use anyhow::{anyhow, Result};
+use candle_transformers::models::candle_embed::{EmbeddingModel, InitOptions, TextEmbedding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;

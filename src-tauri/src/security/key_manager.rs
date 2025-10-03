@@ -126,7 +126,7 @@ impl KeyManager {
     /// Only use for testing or complete data removal
     pub fn delete_key(&self) -> Result<()> {
         self.entry
-            .delete_credential()
+            .delete_password()
             .context("Failed to delete key from keychain")?;
 
         // Clear cache
