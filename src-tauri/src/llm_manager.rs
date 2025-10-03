@@ -347,7 +347,7 @@ impl LLMManager {
             }
             
             // Load local GGUF file directly
-            self.gguf_engine.load_model(&path).await?;
+            self.gguf_engine.load_model(&path, 0).await?;
             return Ok(());
         }
 
@@ -362,16 +362,16 @@ impl LLMManager {
 
         match status {
             ModelStatus::NotDownloaded => {
-                return Err(anyhow!("Model '{}' is not downloaded", model_name));
+                return Err(anyhow!("Model '{}' is not downloaded", model_path));
             }
             ModelStatus::Downloading { .. } => {
-                return Err(anyhow!("Model '{}' is currently downloading", model_name));
+                return Err(anyhow!("Model '{}' is currently downloading", model_path));
             }
             ModelStatus::Loading => {
-                return Err(anyhow!("Model '{}' is already loading", model_name));
+                return Err(anyhow!("Model '{}' is already loading", model_path));
             }
             ModelStatus::Loaded => {
-                tracing::debug!(model = %model_name, "Model already loaded");
+                tracing::debug!(model = %model_path, "Model already loaded");
                 return Ok(());
             }
             _ => {}
@@ -380,17 +380,17 @@ impl LLMManager {
         // Update status
         {
             let mut status = self.model_status.write().await;
-            status.insert(model_name.to_string(), ModelStatus::Loading);
+            status.insert(model_path.to_string(), ModelStatus::Loading);
         }
 
-        tracing::info!(model = %model_name, "Loading GGUF model");
+        tracing::info!(model = %model_path, "Loading GGUF model");
 
         // Get model config
         let model_config = {
             let registry = self.models_registry.read().await;
             registry
-                .get(model_name)
-                .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_name))?
+                .get(model_path)
+                .ok_or_else(|| anyhow!("Model '{}' not found in registry", model_path))?
                 .clone()
         };
 
@@ -408,7 +408,7 @@ impl LLMManager {
         if !model_file.exists() {
             let mut status = self.model_status.write().await;
             status.insert(
-                model_name.to_string(),
+                model_path.to_string(),
                 ModelStatus::Failed("Model file not found".to_string()),
             );
             return Err(anyhow!("Model file not found: {:?}", model_file));
@@ -444,16 +444,16 @@ impl LLMManager {
         // Update active model
         {
             let mut active = self.active_model.write().await;
-            *active = Some(model_name.to_string());
+            *active = Some(model_path.to_string());
         }
 
         // Update status
         {
             let mut status = self.model_status.write().await;
-            status.insert(model_name.to_string(), ModelStatus::Loaded);
+            status.insert(model_path.to_string(), ModelStatus::Loaded);
         }
 
-        tracing::info!(model = %model_name, "✅ GGUF model loaded and ready for inference");
+        tracing::info!(model = %model_path, "✅ GGUF model loaded and ready for inference");
 
         Ok(())
     }

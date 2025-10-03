@@ -15,6 +15,8 @@ mod candle_inference; // Pure Rust inference (Candle)
 mod llm_manager;
 mod pii_detector;
 mod rag_engine;
+mod candle_ner;
+mod candle_ner;
 
 // Core modules
 mod commands;

@@ -43,9 +43,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::process::Command as AsyncCommand;
 use tokio::sync::RwLock;
+use candle_core::Device;
 
-mod candle_ner;
-use candle_ner::NerModel;
+pub mod candle_ner;
+use crate::pii_detector::candle_ner::NerModel;
 
 // Layer 2: Planned for ML-enhanced detection (currently blocked by dependency conflict)
 // TODO: Implement with candle-transformers or wait for gline-rs dependency fix
