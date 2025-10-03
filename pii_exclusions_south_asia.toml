@@ -1,0 +1,408 @@
+# PII Exclusions - South Asia Region
+# Languages: Hindi, Urdu, Bengali, Tamil, Telugu, Punjabi, Marathi, etc.
+# Coverage: India, Pakistan, Bangladesh, Sri Lanka, Nepal, Afghanistan
+
+# ============================================================================
+# INDIA - GEOGRAPHIC LOCATIONS (भारत)
+# ============================================================================
+
+# India - Country Names
+india_country = [
+    "India", "भारत", "Bharat", "Republic of India",
+    "भारत गणराज्य", "Bhārat Gaṇarājya",
+]
+
+# India - States and Union Territories
+india_states = [
+    # States
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+    "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+    "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    # Union Territories
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli",
+    "Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh",
+    "Lakshadweep", "Puducherry",
+]
+
+# India - Major Cities
+india_cities = [
+    "Mumbai", "मुंबई", "Delhi", "दिल्ली", "Bangalore", "Bengaluru", "बेंगलुरु",
+    "Hyderabad", "हैदराबाद", "Ahmedabad", "अहमदाबाद",
+    "Chennai", "चेन्नई", "Kolkata", "कोलकाता",
+    "Pune", "पुणे", "Jaipur", "जयपुर", "Surat", "सूरत",
+    "Lucknow", "लखनऊ", "Kanpur", "कानपुर", "Nagpur", "नागपुर",
+    "Indore", "इंदौर", "Thane", "ठाणे", "Bhopal", "भोपाल",
+    "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "पटना",
+]
+
+# ============================================================================
+# INDIA - LEGAL SYSTEM (भारतीय न्यायिक प्रणाली)
+# ============================================================================
+
+# India - Courts (न्यायालय)
+india_courts = [
+    # Supreme Court
+    "Supreme Court of India", "भारत का सर्वोच्च न्यायालय",
+    "Apex Court", "SC",
+    # High Courts
+    "High Court", "उच्च न्यायालय",
+    "Delhi High Court", "Bombay High Court", "Calcutta High Court",
+    "Madras High Court", "Karnataka High Court", "Gujarat High Court",
+    "Allahabad High Court", "Rajasthan High Court",
+    # Lower Courts
+    "District Court", "जिला न्यायालय",
+    "Sessions Court", "सत्र न्यायालय",
+    "Magistrate Court", "मजिस्ट्रेट कोर्ट",
+    "Family Court", "Consumer Court", "Labour Court",
+]
+
+# India - Legal Terms (कानूनी शब्द)
+india_legal = [
+    # Constitution
+    "Constitution of India", "भारतीय संविधान",
+    "Indian Constitution", "भारत का संविधान",
+    "Fundamental Rights", "मौलिक अधिकार",
+    "Directive Principles", "नीति निर्देशक तत्व",
+    # Acts
+    "Indian Penal Code", "IPC", "भारतीय दंड संहिता",
+    "Code of Civil Procedure", "CPC", "दीवानी प्रक्रिया संहिता",
+    "Code of Criminal Procedure", "CrPC", "फौजदारी प्रक्रिया संहिता",
+    "Companies Act", "कंपनी अधिनियम",
+    "Income Tax Act", "आयकर अधिनियम",
+    # Legal professionals
+    "Advocate", "अधिवक्ता", "Judge", "न्यायाधीश",
+    "Public Prosecutor", "सरकारी वकील",
+    "Magistrate", "मजिस्ट्रेट",
+]
+
+# India - Data Protection (डेटा संरक्षण)
+india_data_protection = [
+    "Digital Personal Data Protection Act", "DPDPA",
+    "Information Technology Act", "IT Act",
+    "Right to Information Act", "RTI",
+    "सूचना का अधिकार", "सूचना प्रौद्योगिकी अधिनियम",
+]
+
+# India - Government (सरकार)
+india_government = [
+    "Parliament of India", "भारतीय संसद",
+    "Lok Sabha", "लोक सभा", "House of the People",
+    "Rajya Sabha", "राज्य सभा", "Council of States",
+    "President of India", "भारत के राष्ट्रपति",
+    "Prime Minister of India", "भारत के प्रधानमंत्री",
+    "Supreme Court", "Election Commission", "चुनाव आयोग",
+    "Central Bureau of Investigation", "CBI",
+    "Intelligence Bureau", "IB",
+]
+
+# ============================================================================
+# PAKISTAN - GEOGRAPHIC & LEGAL (پاکستان)
+# ============================================================================
+
+# Pakistan - Geographic
+pakistan_locations = [
+    # Country (Urdu/English)
+    "Pakistan", "پاکستان", "Islamic Republic of Pakistan",
+    "اسلامی جمہوریہ پاکستان",
+    # Provinces
+    "Punjab", "پنجاب", "Sindh", "سندھ",
+    "Khyber Pakhtunkhwa", "خیبر پختونخوا", "KPK",
+    "Balochistan", "بلوچستان",
+    "Gilgit-Baltistan", "Azad Kashmir", "آزاد کشمیر",
+    # Major Cities
+    "Karachi", "کراچی", "Lahore", "لاہور",
+    "Islamabad", "اسلام آباد", "Rawalpindi", "راولپنڈی",
+    "Faisalabad", "فیصل آباد", "Multan", "ملتان",
+    "Peshawar", "پشاور", "Quetta", "کوئٹہ",
+    "Hyderabad", "حیدرآباد",
+]
+
+# Pakistan - Legal System
+pakistan_legal = [
+    # Courts (Urdu)
+    "Supreme Court of Pakistan", "عدالت عظمیٰ پاکستان",
+    "High Court", "ہائی کورٹ",
+    "Federal Shariat Court", "وفاقی شرعی عدالت",
+    "District Court", "Sessions Court",
+    # Legal Terms (Urdu)
+    "Constitution of Pakistan", "آئین پاکستان",
+    "Pakistan Penal Code", "PPC",
+    # Government
+    "National Assembly", "قومی اسمبلی",
+    "Senate of Pakistan", "سینیٹ پاکستان",
+    "President of Pakistan", "صدر پاکستان",
+    "Prime Minister of Pakistan", "وزیر اعظم پاکستان",
+]
+
+# ============================================================================
+# BANGLADESH - GEOGRAPHIC & LEGAL (বাংলাদেশ)
+# ============================================================================
+
+# Bangladesh - Geographic
+bangladesh_locations = [
+    # Country (Bengali/English)
+    "Bangladesh", "বাংলাদেশ",
+    "People's Republic of Bangladesh",
+    "গণপ্রজাতন্ত্রী বাংলাদেশ",
+    # Divisions
+    "Dhaka", "ঢাকা", "Chittagong", "চট্টগ্রাম",
+    "Rajshahi", "রাজশাহী", "Khulna", "খুলনা",
+    "Sylhet", "সিলেট", "Barisal", "বরিশাল",
+    "Rangpur", "রংপুর", "Mymensingh", "ময়মনসিংহ",
+    # Major Cities
+    "Dhaka City", "ঢাকা শহর",
+    "Chittagong City", "Comilla", "কুমিল্লা",
+]
+
+# Bangladesh - Legal System
+bangladesh_legal = [
+    # Courts (Bengali)
+    "Supreme Court of Bangladesh", "বাংলাদেশ সুপ্রিম কোর্ট",
+    "High Court Division", "হাইকোর্ট বিভাগ",
+    "Appellate Division", "আপীল বিভাগ",
+    # Legal Terms
+    "Constitution of Bangladesh", "বাংলাদেশের সংবিধান",
+    # Government
+    "Parliament of Bangladesh", "Jatiya Sangsad",
+    "জাতীয় সংসদ", "National Parliament",
+    "Prime Minister of Bangladesh",
+]
+
+# ============================================================================
+# SRI LANKA - GEOGRAPHIC & LEGAL (ශ්‍රී ලංකා / இலங்கை)
+# ============================================================================
+
+# Sri Lanka - Geographic
+sri_lanka_locations = [
+    # Country (Sinhala/Tamil/English)
+    "Sri Lanka", "ශ්‍රී ලංකා", "இலங்கை",
+    "Democratic Socialist Republic of Sri Lanka",
+    # Provinces
+    "Western Province", "Central Province", "Southern Province",
+    "Northern Province", "Eastern Province",
+    # Major Cities
+    "Colombo", "කොළඹ", "கொழும்பு",
+    "Kandy", "මහනුවර", "கண்டி",
+    "Galle", "Jaffna", "யாழ்ப்பாணம்",
+]
+
+# Sri Lanka - Legal System
+sri_lanka_legal = [
+    # Courts
+    "Supreme Court of Sri Lanka",
+    "Court of Appeal", "High Court",
+    # Legal Terms
+    "Constitution of Sri Lanka",
+    # Government
+    "Parliament of Sri Lanka",
+]
+
+# ============================================================================
+# NEPAL - GEOGRAPHIC & LEGAL (नेपाल)
+# ============================================================================
+
+# Nepal - Geographic
+nepal_locations = [
+    # Country (Nepali)
+    "Nepal", "नेपाल", "Federal Democratic Republic of Nepal",
+    "संघीय लोकतान्त्रिक गणतन्त्र नेपाल",
+    # Provinces
+    "Koshi Province", "Madhesh Province", "Bagmati Province",
+    "Gandaki Province", "Lumbini Province",
+    "Karnali Province", "Sudurpashchim Province",
+    # Major Cities
+    "Kathmandu", "काठमाडौं", "Pokhara", "पोखरा",
+    "Lalitpur", "ललितपुर", "Biratnagar", "Bharatpur",
+]
+
+# Nepal - Legal System
+nepal_legal = [
+    # Courts (Nepali)
+    "Supreme Court of Nepal", "नेपालको सर्वोच्च अदालत",
+    "High Court", "उच्च अदालत",
+    # Legal Terms
+    "Constitution of Nepal", "नेपालको संविधान",
+    # Government
+    "Federal Parliament of Nepal",
+    "House of Representatives", "प्रतिनिधि सभा",
+    "National Assembly", "राष्ट्रिय सभा",
+]
+
+# ============================================================================
+# AFGHANISTAN - GEOGRAPHIC & LEGAL (افغانستان)
+# ============================================================================
+
+# Afghanistan - Geographic
+afghanistan_locations = [
+    # Country (Pashto/Dari)
+    "Afghanistan", "افغانستان",
+    "Islamic Emirate of Afghanistan",
+    "د افغانستان اسلامي امارت",
+    # Provinces (major ones)
+    "Kabul", "کابل", "Kandahar", "کندهار",
+    "Herat", "هرات", "Mazar-i-Sharif", "مزار شریف",
+    "Jalalabad", "جلال آباد",
+]
+
+afghanistan_legal = [
+    "Supreme Court of Afghanistan",
+    "ستره محکمه",
+    "Constitution of Afghanistan",
+]
+
+# ============================================================================
+# MALDIVES
+# ============================================================================
+
+maldives_locations = [
+    "Maldives", "ދިވެހިރާއްޖެ", "Republic of Maldives",
+    "Malé", "މާލެ",
+]
+
+maldives_legal = [
+    "Supreme Court of Maldives",
+    "High Court of Maldives",
+    "Constitution of Maldives",
+]
+
+# ============================================================================
+# BHUTAN
+# ============================================================================
+
+bhutan_locations = [
+    "Bhutan", "འབྲུག", "Kingdom of Bhutan",
+    "Thimphu", "ཐིམ་ཕུ", "Paro", "Phuentsholing",
+]
+
+bhutan_legal = [
+    "Supreme Court of Bhutan",
+    "High Court of Bhutan",
+    "Constitution of Bhutan",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - HINDI (हिंदी कानूनी शब्द)
+# ============================================================================
+
+legal_terms_hindi = [
+    # Court terms
+    "न्यायालय", "अदालत", "कोर्ट", "न्यायाधीश", "जज",
+    "वकील", "अधिवक्ता", "मजिस्ट्रेट",
+    # Legal documents
+    "संविधान", "कानून", "अधिनियम", "नियम", "फैसला",
+    "निर्णय", "आदेश", "हुक्म",
+    # Parties
+    "वादी", "प्रतिवादी", "आरोपी", "गवाह", "साक्षी",
+    # Procedures
+    "अपील", "रिट", "याचिका", "सुनवाई", "मुकदमा",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - URDU (اردو قانونی اصطلاحات)
+# ============================================================================
+
+legal_terms_urdu = [
+    "عدالت", "کورٹ", "جج", "وکیل", "مجسٹریٹ",
+    "آئین", "قانون", "فیصلہ", "حکم", "فرمان",
+    "مدعی", "مدعا علیہ", "ملزم", "گواہ",
+    "اپیل", "سماعت", "مقدمہ",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - BENGALI (বাংলা আইনি পরিভাষা)
+# ============================================================================
+
+legal_terms_bengali = [
+    "আদালত", "কোর্ট", "বিচারক", "জজ", "আইনজীবী",
+    "ম্যাজিস্ট্রেট", "সংবিধান", "আইন", "রায়", "আদেশ",
+    "বাদী", "বিবাদী", "আসামী", "সাক্ষী",
+    "আপিল", "শুনানি", "মামলা",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - TAMIL (தமிழ் சட்ட சொற்கள்)
+# ============================================================================
+
+legal_terms_tamil = [
+    "நீதிமன்றம்", "நீதிபதி", "வழக்கறிஞர்",
+    "அரசியலமைப்பு", "சட்டம்", "தீர்ப்பு", "உத்தரவு",
+    "வாதி", "பிரதிவாதி", "குற்றம் சாட்டப்பட்டவர்",
+    "சாட்சி", "மேல்முறையீடு", "விசாரணை",
+]
+
+# ============================================================================
+# TIME TERMS - HINDI (समय से संबंधित शब्द)
+# ============================================================================
+
+time_hindi = [
+    # Months
+    "जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून",
+    "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर",
+    # Days
+    "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार",
+    # Time periods
+    "दिन", "सप्ताह", "महीना", "साल", "आज", "कल", "परसों",
+]
+
+# ============================================================================
+# TIME TERMS - URDU (وقت کی اصطلاحات)
+# ============================================================================
+
+time_urdu = [
+    # Months
+    "جنوری", "فروری", "مارچ", "اپریل", "مئی", "جون",
+    "جولائی", "اگست", "ستمبر", "اکتوبر", "نومبر", "دسمبر",
+    # Days
+    "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ", "اتوار",
+    # Time periods
+    "دن", "ہفتہ", "مہینہ", "سال", "آج", "کل",
+]
+
+# ============================================================================
+# TIME TERMS - BENGALI (সময় সম্পর্কিত শব্দ)
+# ============================================================================
+
+time_bengali = [
+    # Months
+    "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন",
+    "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর",
+    # Days
+    "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার", "রবিবার",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "south_asia"
+description = "South Asia exclusions (Hindi, Urdu, Bengali, Tamil, Telugu, Punjabi)"
+languages = [
+    "Hindi",
+    "Urdu",
+    "Bengali",
+    "Tamil",
+    "Telugu",
+    "Punjabi",
+    "Marathi",
+    "Gujarati",
+    "Kannada",
+    "Malayalam",
+    "Sinhala",
+    "Nepali",
+    "Pashto",
+    "Dari"
+]
+countries = [
+    "India",
+    "Pakistan",
+    "Bangladesh",
+    "Sri Lanka",
+    "Nepal",
+    "Afghanistan",
+    "Maldives",
+    "Bhutan"
+]

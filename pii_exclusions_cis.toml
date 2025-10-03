@@ -1,0 +1,416 @@
+# PII Exclusions - CIS Region (Commonwealth of Independent States)
+# Languages: Russian, Ukrainian, Belarusian, Kazakh, Uzbek, Georgian, Armenian, etc.
+# Coverage: Russia, Ukraine, Kazakhstan, Belarus, Georgia, Armenia, Azerbaijan, etc.
+
+# ============================================================================
+# RUSSIA - GEOGRAPHIC LOCATIONS (Россия)
+# ============================================================================
+
+# Russia - Country Names
+russia_country = [
+    "Россия", "Russia", "Российская Федерация", "Russian Federation", "RF",
+]
+
+# Russia - Federal Subjects (selection of major ones)
+russia_regions = [
+    # Federal Cities
+    "Москва", "Moscow", "Санкт-Петербург", "Saint Petersburg", "St. Petersburg",
+    "Севастополь", "Sevastopol",
+    # Oblasts (selection)
+    "Московская область", "Moscow Oblast",
+    "Ленинградская область", "Leningrad Oblast",
+    "Свердловская область", "Sverdlovsk Oblast",
+    "Новосибирская область", "Novosibirsk Oblast",
+    "Нижегородская область", "Nizhny Novgorod Oblast",
+    "Самарская область", "Samara Oblast",
+    "Челябинская область", "Chelyabinsk Oblast",
+    "Ростовская область", "Rostov Oblast",
+    # Republics
+    "Республика Татарстан", "Tatarstan", "Kazan", "Казань",
+    "Республика Башкортостан", "Bashkortostan",
+    "Чеченская Республика", "Chechnya",
+    "Республика Дагестан", "Dagestan",
+    # Krais
+    "Краснодарский край", "Krasnodar Krai",
+    "Красноярский край", "Krasnoyarsk Krai",
+    "Пермский край", "Perm Krai",
+    # Autonomous Oblasts/Okrugs
+    "Ханты-Мансийский автономный округ", "Khanty-Mansi Autonomous Okrug",
+]
+
+# Russia - Major Cities
+russia_cities = [
+    "Москва", "Moscow", "Санкт-Петербург", "Saint Petersburg",
+    "Новосибирск", "Novosibirsk", "Екатеринбург", "Yekaterinburg",
+    "Казань", "Kazan", "Нижний Новгород", "Nizhny Novgorod",
+    "Челябинск", "Chelyabinsk", "Самара", "Samara",
+    "Омск", "Omsk", "Ростов-на-Дону", "Rostov-on-Don",
+    "Уфа", "Ufa", "Красноярск", "Krasnoyarsk",
+    "Воронеж", "Voronezh", "Пермь", "Perm",
+    "Волгоград", "Volgograd",
+]
+
+# ============================================================================
+# RUSSIA - LEGAL SYSTEM (Российская правовая система)
+# ============================================================================
+
+# Russia - Courts (Суды)
+russia_courts = [
+    "Конституционный Суд Российской Федерации", "Constitutional Court",
+    "Верховный Суд Российской Федерации", "Supreme Court",
+    "Высший Арбитражный Суд", "Supreme Arbitration Court",
+    "Арбитражный суд", "Arbitration Court",
+    "Районный суд", "District Court",
+    "Мировой суд", "Magistrate Court",
+]
+
+# Russia - Legal Terms (Правовые термины)
+russia_legal = [
+    # Constitution & Laws
+    "Конституция Российской Федерации", "Constitution of Russia",
+    "Гражданский кодекс", "Civil Code",
+    "Уголовный кодекс", "Criminal Code",
+    "Административный кодекс", "Administrative Code",
+    "Федеральный закон", "Federal Law",
+    # Legal professionals
+    "Судья", "Judge", "Прокурор", "Prosecutor",
+    "Адвокат", "Lawyer", "Attorney",
+    # Procedures
+    "Иск", "Lawsuit", "Приговор", "Verdict",
+    "Решение суда", "Court Decision",
+    "Апелляция", "Appeal", "Кассация", "Cassation",
+]
+
+# Russia - Data Protection
+russia_data_protection = [
+    "Федеральный закон о персональных данных", "Personal Data Law",
+    "152-ФЗ", "Federal Law 152-FZ",
+    "Роскомнадзор", "Roskomnadzor",
+    "Федеральная служба по надзору в сфере связи",
+]
+
+# Russia - Government
+russia_government = [
+    "Государственная Дума", "State Duma",
+    "Совет Федерации", "Federation Council",
+    "Федеральное Собрание", "Federal Assembly",
+    "Президент Российской Федерации", "President of Russia",
+    "Правительство Российской Федерации", "Government of Russia",
+    "Генеральная прокуратура", "General Prosecutor's Office",
+    "Федеральная служба безопасности", "FSB", "Federal Security Service",
+]
+
+# ============================================================================
+# UKRAINE - GEOGRAPHIC & LEGAL (Україна)
+# ============================================================================
+
+# Ukraine - Geographic
+ukraine_locations = [
+    # Country
+    "Україна", "Ukraine", "Ukrayina",
+    # Oblasts (regions)
+    "Київ", "Kyiv", "Kiev", "Київська область", "Kyiv Oblast",
+    "Харків", "Kharkiv", "Kharkov", "Харківська область",
+    "Одеса", "Odesa", "Odessa", "Одеська область",
+    "Дніпро", "Dnipro", "Dnipropetrovsk", "Дніпропетровська область",
+    "Донецьк", "Donetsk", "Донецька область",
+    "Запоріжжя", "Zaporizhzhia", "Запорізька область",
+    "Львів", "Lviv", "Lvov", "Львівська область",
+    "Крим", "Crimea", "Autonomous Republic of Crimea",
+    # Other major cities
+    "Маріуполь", "Mariupol", "Кривий Ріг", "Kryvyi Rih",
+    "Миколаїв", "Mykolaiv", "Луганськ", "Luhansk",
+]
+
+# Ukraine - Legal System
+ukraine_legal = [
+    # Courts
+    "Конституційний Суд України", "Constitutional Court of Ukraine",
+    "Верховний Суд України", "Supreme Court of Ukraine",
+    "Вищий спеціалізований суд", "High Specialized Court",
+    "Апеляційний суд", "Appellate Court",
+    # Legal Terms
+    "Конституція України", "Constitution of Ukraine",
+    "Цивільний кодекс", "Civil Code",
+    "Кримінальний кодекс", "Criminal Code",
+    # Government
+    "Верховна Рада України", "Verkhovna Rada", "Parliament of Ukraine",
+    "Президент України", "President of Ukraine",
+    "Кабінет Міністрів", "Cabinet of Ministers",
+    # Data Protection
+    "Закон про захист персональних даних", "Personal Data Protection Law",
+]
+
+# ============================================================================
+# KAZAKHSTAN - GEOGRAPHIC & LEGAL (Қазақстан)
+# ============================================================================
+
+# Kazakhstan - Geographic
+kazakhstan_locations = [
+    # Country (Kazakh/Russian)
+    "Қазақстан", "Kazakhstan", "Казахстан",
+    "Қазақстан Республикасы", "Republic of Kazakhstan",
+    # Cities
+    "Астана", "Astana", "Нұр-Сұлтан", "Nur-Sultan",
+    "Алматы", "Almaty", "Шымкент", "Shymkent",
+    "Қарағанды", "Karaganda", "Караганда",
+    "Ақтөбе", "Aktobe", "Павлодар", "Pavlodar",
+]
+
+# Kazakhstan - Legal System
+kazakhstan_legal = [
+    # Courts
+    "Қазақстан Республикасының Жоғарғы Соты", "Supreme Court of Kazakhstan",
+    "Конституциялық Кеңес", "Constitutional Council",
+    # Legal Terms
+    "Қазақстан Республикасының Конституциясы", "Constitution of Kazakhstan",
+    # Government
+    "Қазақстан Парламенті", "Parliament of Kazakhstan",
+]
+
+# ============================================================================
+# BELARUS - GEOGRAPHIC & LEGAL (Беларусь)
+# ============================================================================
+
+# Belarus - Geographic
+belarus_locations = [
+    # Country (Belarusian/Russian)
+    "Беларусь", "Belarus", "Бе​ларусь",
+    "Рэспубліка Беларусь", "Republic of Belarus",
+    # Cities
+    "Мінск", "Minsk", "Минск",
+    "Гомель", "Gomel", "Гомель", "Homel",
+    "Магілёў", "Mogilev", "Могилев", "Mahilyow",
+    "Віцебск", "Vitebsk", "Витебск", "Vitsyebsk",
+    "Гродна", "Grodno", "Гродно", "Hrodna",
+    "Брэст", "Brest", "Брест",
+]
+
+# Belarus - Legal System
+belarus_legal = [
+    # Courts
+    "Канстытуцыйны Суд", "Constitutional Court of Belarus",
+    "Вярхоўны Суд", "Supreme Court of Belarus",
+    # Legal Terms
+    "Канстытуцыя Рэспублікі Беларусь", "Constitution of Belarus",
+    # Government
+    "Нацыянальны сход", "National Assembly",
+]
+
+# ============================================================================
+# GEORGIA - GEOGRAPHIC & LEGAL (საქართველო)
+# ============================================================================
+
+# Georgia - Geographic
+georgia_locations = [
+    # Country (Georgian)
+    "საქართველო", "Georgia", "Sakartvelo",
+    # Cities
+    "თბილისი", "Tbilisi", "ბათუმი", "Batumi",
+    "ქუთაისი", "Kutaisi", "რუსთავი", "Rustavi",
+]
+
+# Georgia - Legal System
+georgia_legal = [
+    # Courts
+    "საქართველოს უზენაესი სასამართლო", "Supreme Court of Georgia",
+    "საკონსტიტუციო სასამართლო", "Constitutional Court",
+    # Legal Terms
+    "საქართველოს კონსტიტუცია", "Constitution of Georgia",
+    # Government
+    "საქართველოს პარლამენტი", "Parliament of Georgia",
+]
+
+# ============================================================================
+# ARMENIA - GEOGRAPHIC & LEGAL (Հայաստան)
+# ============================================================================
+
+# Armenia - Geographic
+armenia_locations = [
+    # Country (Armenian)
+    "Հայաստան", "Armenia", "Hayastan",
+    "Հայաստանի Հանրապետություն", "Republic of Armenia",
+    # Cities
+    "Երևան", "Yerevan", "Erevan",
+    "Գյումրի", "Gyumri", "Վանաձոր", "Vanadzor",
+]
+
+# Armenia - Legal System
+armenia_legal = [
+    # Courts
+    "Հայաստանի Հանրապետության Սահմանադրական դատարան",
+    "Constitutional Court of Armenia",
+    "Վճռաբեկ դատարան", "Court of Cassation",
+    # Legal Terms
+    "Հայաստանի Հանրապետության Սահմանադրություն",
+    "Constitution of Armenia",
+    # Government
+    "Ազգային ժողով", "National Assembly",
+]
+
+# ============================================================================
+# AZERBAIJAN - GEOGRAPHIC & LEGAL (Azərbaycan)
+# ============================================================================
+
+# Azerbaijan - Geographic
+azerbaijan_locations = [
+    # Country (Azerbaijani/Cyrillic)
+    "Azərbaycan", "Azerbaijan", "Азербайджан",
+    "Azərbaycan Respublikası", "Republic of Azerbaijan",
+    # Cities
+    "Bakı", "Baku", "Баку",
+    "Gəncə", "Ganja", "Гянджа",
+    "Sumqayıt", "Sumgait", "Сумгаит",
+]
+
+# Azerbaijan - Legal System
+azerbaijan_legal = [
+    # Courts
+    "Konstitusiya Məhkəməsi", "Constitutional Court",
+    "Ali Məhkəmə", "Supreme Court",
+    # Legal Terms
+    "Azərbaycan Respublikasının Konstitusiyası",
+    "Constitution of Azerbaijan",
+    # Government
+    "Milli Məclis", "National Assembly",
+]
+
+# ============================================================================
+# UZBEKISTAN - GEOGRAPHIC & LEGAL (Oʻzbekiston)
+# ============================================================================
+
+uzbekistan_locations = [
+    # Country
+    "Oʻzbekiston", "Uzbekistan", "Узбекистан",
+    "Oʻzbekiston Respublikasi", "Republic of Uzbekistan",
+    # Cities
+    "Toshkent", "Tashkent", "Ташкент",
+    "Samarqand", "Samarkand", "Самарканд",
+    "Buxoro", "Bukhara", "Бухара",
+]
+
+uzbekistan_legal = [
+    "Konstitutsiyaviy sud", "Constitutional Court",
+    "Oliy sud", "Supreme Court",
+    "Oʻzbekiston Respublikasi Konstitutsiyasi", "Constitution",
+]
+
+# ============================================================================
+# OTHER CIS COUNTRIES
+# ============================================================================
+
+other_cis = [
+    # Kyrgyzstan
+    "Кыргызстан", "Kyrgyzstan", "Бишкек", "Bishkek",
+    # Tajikistan
+    "Тоҷикистон", "Tajikistan", "Душанбе", "Dushanbe",
+    # Turkmenistan
+    "Türkmenistan", "Туркменистан", "Turkmenistan",
+    "Aşgabat", "Ashgabat", "Ашхабад",
+    # Moldova
+    "Moldova", "Молдова", "Chișinău", "Кишинёв", "Chisinau",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - RUSSIAN (Общие юридические термины)
+# ============================================================================
+
+legal_terms_russian = [
+    # Court terms
+    "суд", "судья", "прокурор", "адвокат", "юрист",
+    "истец", "ответчик", "обвиняемый", "подсудимый", "свидетель",
+    # Legal documents
+    "конституция", "закон", "кодекс", "указ", "постановление",
+    "решение", "приговор", "определение", "вердикт",
+    # Procedures
+    "иск", "жалоба", "апелляция", "кассация", "пересмотр",
+    "судебное заседание", "слушание", "дело", "процесс",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - UKRAINIAN (Загальні юридичні терміни)
+# ============================================================================
+
+legal_terms_ukrainian = [
+    "суд", "суддя", "прокурор", "адвокат", "юрист",
+    "позивач", "відповідач", "обвинувачений", "свідок",
+    "конституція", "закон", "кодекс", "указ", "постанова",
+    "рішення", "вирок", "ухвала",
+    "позов", "скарга", "апеляція", "касація",
+    "судове засідання", "справа", "процес",
+]
+
+# ============================================================================
+# TIME TERMS - RUSSIAN (Временные термины)
+# ============================================================================
+
+time_russian = [
+    # Months
+    "январь", "февраль", "март", "апрель", "май", "июнь",
+    "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+    # Days of week
+    "понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье",
+    # Time periods
+    "день", "неделя", "месяц", "год", "сегодня", "вчера", "завтра",
+]
+
+# ============================================================================
+# TIME TERMS - UKRAINIAN (Часові терміни)
+# ============================================================================
+
+time_ukrainian = [
+    # Months
+    "січень", "лютий", "березень", "квітень", "травень", "червень",
+    "липень", "серпень", "вересень", "жовтень", "листопад", "грудень",
+    # Days of week
+    "понеділок", "вівторок", "середа", "четвер", "п'ятниця", "субота", "неділя",
+    # Time periods
+    "день", "тиждень", "місяць", "рік", "сьогодні", "вчора", "завтра",
+]
+
+# ============================================================================
+# TIME TERMS - BELARUSIAN (Часавыя тэрміны)
+# ============================================================================
+
+time_belarusian = [
+    # Months
+    "студзень", "люты", "сакавік", "красавік", "май", "чэрвень",
+    "ліпень", "жнівень", "верасень", "кастрычнік", "лістапад", "снежань",
+    # Days
+    "панядзелак", "аўторак", "серада", "чацвер", "пятніца", "субота", "нядзеля",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "cis"
+description = "CIS region exclusions (Russian, Ukrainian, Belarusian, Kazakh, Georgian, Armenian)"
+languages = [
+    "Russian",
+    "Ukrainian",
+    "Belarusian",
+    "Kazakh",
+    "Uzbek",
+    "Georgian",
+    "Armenian",
+    "Azerbaijani",
+    "Kyrgyz",
+    "Tajik",
+    "Turkmen"
+]
+countries = [
+    "Russia",
+    "Ukraine",
+    "Kazakhstan",
+    "Belarus",
+    "Georgia",
+    "Armenia",
+    "Azerbaijan",
+    "Uzbekistan",
+    "Kyrgyzstan",
+    "Tajikistan",
+    "Turkmenistan",
+    "Moldova"
+]

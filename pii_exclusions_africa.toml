@@ -1,0 +1,537 @@
+# PII Exclusions - Africa Region (Sub-Saharan Africa)
+# Languages: English, French, Portuguese, Swahili, Afrikaans, Various African Languages
+# Coverage: South Africa, Nigeria, Kenya, Ghana, Ethiopia, Tanzania, Uganda, etc.
+
+# ============================================================================
+# SOUTH AFRICA - GEOGRAPHIC LOCATIONS
+# ============================================================================
+
+# South Africa - Country Names
+south_africa_country = [
+    "South Africa", "Republic of South Africa", "RSA",
+    "Suid-Afrika", "Afrika Borwa", "iNingizimu Afrika",
+]
+
+# South Africa - Provinces
+south_africa_provinces = [
+    "Gauteng", "Western Cape", "Eastern Cape", "KwaZulu-Natal",
+    "Free State", "Limpopo", "Mpumalanga", "North West", "Northern Cape",
+]
+
+# South Africa - Major Cities
+south_africa_cities = [
+    "Johannesburg", "Cape Town", "Kaapstad", "Durban", "Pretoria",
+    "Tshwane", "Port Elizabeth", "Gqeberha", "Bloemfontein",
+    "East London", "Nelspruit", "Mbombela", "Polokwane", "Kimberley",
+]
+
+# ============================================================================
+# SOUTH AFRICA - LEGAL SYSTEM
+# ============================================================================
+
+south_africa_courts = [
+    "Constitutional Court of South Africa",
+    "Supreme Court of Appeal", "SCA",
+    "High Court", "Magistrate's Court",
+    "Labour Court", "Land Claims Court",
+    "Electoral Court", "Competition Appeal Court",
+]
+
+south_africa_legal = [
+    # Constitution & Laws
+    "Constitution of South Africa", "Bill of Rights",
+    "Companies Act", "Labour Relations Act",
+    "Promotion of Access to Information Act", "PAIA",
+    # Data Protection
+    "Protection of Personal Information Act", "POPIA",
+    "Information Regulator", "Information Regulator of South Africa",
+    # Government
+    "National Assembly", "National Council of Provinces",
+    "Parliament of South Africa",
+    "Constitutional Court", "National Prosecuting Authority", "NPA",
+]
+
+# ============================================================================
+# NIGERIA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+nigeria_locations = [
+    "Nigeria", "Federal Republic of Nigeria",
+    # States (selection of major ones)
+    "Lagos", "Abuja", "Kano", "Kaduna", "Port Harcourt",
+    "Ibadan", "Benin City", "Jos", "Ilorin", "Enugu",
+    "Aba", "Warri", "Calabar", "Maiduguri", "Owerri",
+]
+
+nigeria_legal = [
+    # Courts
+    "Supreme Court of Nigeria",
+    "Court of Appeal", "Federal High Court",
+    "State High Court", "Magistrate Court",
+    "Sharia Court of Appeal", "Customary Court of Appeal",
+    # Legal
+    "Constitution of Nigeria", "Nigerian Constitution",
+    "National Assembly", "Senate", "House of Representatives",
+    # Data Protection
+    "Nigeria Data Protection Regulation", "NDPR",
+    "Nigeria Data Protection Bureau", "NDPB",
+    "National Information Technology Development Agency", "NITDA",
+]
+
+# ============================================================================
+# KENYA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+kenya_locations = [
+    "Kenya", "Republic of Kenya", "Jamhuri ya Kenya",
+    # Counties (major ones)
+    "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret",
+    "Thika", "Malindi", "Kitale", "Garissa", "Nyeri",
+]
+
+kenya_legal = [
+    # Courts
+    "Supreme Court of Kenya",
+    "Court of Appeal of Kenya",
+    "High Court of Kenya",
+    "Magistrate's Court", "Kadhi's Court",
+    "Employment and Labour Relations Court",
+    # Legal
+    "Constitution of Kenya", "Katiba ya Kenya",
+    "National Assembly", "Senate of Kenya",
+    "Parliament of Kenya", "Bunge la Kenya",
+    # Data Protection
+    "Data Protection Act", "Kenya Data Protection Act",
+    "Office of the Data Protection Commissioner",
+]
+
+# ============================================================================
+# GHANA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+ghana_locations = [
+    "Ghana", "Republic of Ghana",
+    # Regions
+    "Greater Accra", "Ashanti", "Western", "Eastern",
+    "Central", "Volta", "Northern", "Upper East", "Upper West",
+    # Major Cities
+    "Accra", "Kumasi", "Sekondi-Takoradi", "Tamale", "Cape Coast",
+]
+
+ghana_legal = [
+    # Courts
+    "Supreme Court of Ghana",
+    "Court of Appeal", "High Court",
+    "Circuit Court", "District Court",
+    # Legal
+    "Constitution of Ghana", "Ghanaian Constitution",
+    "Parliament of Ghana",
+    # Data Protection
+    "Data Protection Act", "Data Protection Commission",
+]
+
+# ============================================================================
+# ETHIOPIA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+ethiopia_locations = [
+    "Ethiopia", "Federal Democratic Republic of Ethiopia",
+    "ኢትዮጵያ", "Itoophiyaa",
+    # Cities
+    "Addis Ababa", "Addis Abeba", "Dire Dawa", "Mekelle",
+    "Gondar", "Bahir Dar", "Hawassa", "Jimma",
+]
+
+ethiopia_legal = [
+    "Federal Supreme Court of Ethiopia",
+    "Federal High Court",
+    "Constitution of Ethiopia", "Ethiopian Constitution",
+    "House of Peoples' Representatives",
+    "House of Federation",
+]
+
+# ============================================================================
+# TANZANIA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+tanzania_locations = [
+    "Tanzania", "United Republic of Tanzania",
+    "Jamhuri ya Muungano wa Tanzania",
+    # Cities
+    "Dar es Salaam", "Dodoma", "Mwanza", "Arusha",
+    "Mbeya", "Morogoro", "Tanga", "Zanzibar",
+]
+
+tanzania_legal = [
+    "Court of Appeal of Tanzania",
+    "High Court of Tanzania",
+    "Constitution of Tanzania",
+    "National Assembly", "Bunge",
+]
+
+# ============================================================================
+# UGANDA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+uganda_locations = [
+    "Uganda", "Republic of Uganda",
+    # Cities
+    "Kampala", "Entebbe", "Mbarara", "Gulu", "Jinja",
+]
+
+uganda_legal = [
+    "Supreme Court of Uganda",
+    "Court of Appeal of Uganda",
+    "High Court of Uganda",
+    "Constitution of Uganda",
+    "Parliament of Uganda",
+]
+
+# ============================================================================
+# RWANDA - GEOGRAPHIC & LEGAL
+# ============================================================================
+
+rwanda_locations = [
+    "Rwanda", "Republic of Rwanda",
+    "Repubulika y'u Rwanda", "République du Rwanda",
+    "Kigali", "Butare", "Huye", "Gisenyi", "Musanze",
+]
+
+rwanda_legal = [
+    "Supreme Court of Rwanda",
+    "High Court of Rwanda",
+    "Constitution of Rwanda",
+    "Parliament of Rwanda", "Chamber of Deputies", "Senate",
+]
+
+# ============================================================================
+# CÔTE D'IVOIRE (IVORY COAST) - FRENCH
+# ============================================================================
+
+ivory_coast_locations = [
+    "Côte d'Ivoire", "Ivory Coast", "République de Côte d'Ivoire",
+    "Abidjan", "Yamoussoukro", "Bouaké", "Daloa", "San-Pédro",
+]
+
+ivory_coast_legal = [
+    "Cour Suprême de Côte d'Ivoire", "Supreme Court",
+    "Cour Constitutionnelle", "Constitutional Court",
+    "Constitution ivoirienne",
+]
+
+# ============================================================================
+# SENEGAL - FRENCH
+# ============================================================================
+
+senegal_locations = [
+    "Sénégal", "Senegal", "République du Sénégal",
+    "Dakar", "Thiès", "Kaolack", "Saint-Louis", "Ziguinchor",
+]
+
+senegal_legal = [
+    "Cour Suprême du Sénégal",
+    "Conseil Constitutionnel",
+    "Constitution du Sénégal",
+    "Assemblée Nationale",
+]
+
+# ============================================================================
+# CAMEROON - FRENCH/ENGLISH
+# ============================================================================
+
+cameroon_locations = [
+    "Cameroon", "Cameroun", "Republic of Cameroon",
+    "République du Cameroun",
+    "Yaoundé", "Douala", "Garoua", "Bamenda", "Bafoussam",
+]
+
+cameroon_legal = [
+    "Supreme Court of Cameroon", "Cour Suprême",
+    "Constitution du Cameroun", "Cameroonian Constitution",
+    "National Assembly", "Assemblée Nationale",
+]
+
+# ============================================================================
+# DEMOCRATIC REPUBLIC OF CONGO - FRENCH
+# ============================================================================
+
+drc_locations = [
+    "République Démocratique du Congo", "RDC", "DRC",
+    "Democratic Republic of the Congo", "Congo-Kinshasa",
+    "Kinshasa", "Lubumbashi", "Mbuji-Mayi", "Kananga", "Kisangani",
+]
+
+drc_legal = [
+    "Cour Constitutionnelle", "Constitutional Court",
+    "Cour de Cassation", "Court of Cassation",
+    "Constitution de la RDC",
+]
+
+# ============================================================================
+# ANGOLA - PORTUGUESE
+# ============================================================================
+
+angola_locations = [
+    "Angola", "República de Angola", "Republic of Angola",
+    "Luanda", "Huambo", "Lobito", "Benguela", "Lubango",
+]
+
+angola_legal = [
+    "Tribunal Supremo", "Supreme Court",
+    "Tribunal Constitucional", "Constitutional Court",
+    "Constituição de Angola", "Angolan Constitution",
+]
+
+# ============================================================================
+# MOZAMBIQUE - PORTUGUESE
+# ============================================================================
+
+mozambique_locations = [
+    "Moçambique", "Mozambique", "República de Moçambique",
+    "Maputo", "Matola", "Beira", "Nampula", "Chimoio",
+]
+
+mozambique_legal = [
+    "Tribunal Supremo de Moçambique",
+    "Conselho Constitucional",
+    "Constituição da República de Moçambique",
+]
+
+# ============================================================================
+# ZIMBABWE
+# ============================================================================
+
+zimbabwe_locations = [
+    "Zimbabwe", "Republic of Zimbabwe",
+    "Harare", "Bulawayo", "Chitungwiza", "Mutare", "Gweru",
+]
+
+zimbabwe_legal = [
+    "Supreme Court of Zimbabwe",
+    "High Court of Zimbabwe",
+    "Constitution of Zimbabwe",
+    "Parliament of Zimbabwe",
+]
+
+# ============================================================================
+# ZAMBIA
+# ============================================================================
+
+zambia_locations = [
+    "Zambia", "Republic of Zambia",
+    "Lusaka", "Kitwe", "Ndola", "Kabwe", "Chingola",
+]
+
+zambia_legal = [
+    "Supreme Court of Zambia",
+    "High Court of Zambia",
+    "Constitution of Zambia",
+    "National Assembly of Zambia",
+]
+
+# ============================================================================
+# BOTSWANA
+# ============================================================================
+
+botswana_locations = [
+    "Botswana", "Republic of Botswana",
+    "Gaborone", "Francistown", "Molepolole", "Maun", "Serowe",
+]
+
+botswana_legal = [
+    "Court of Appeal of Botswana",
+    "High Court of Botswana",
+    "Constitution of Botswana",
+    "National Assembly of Botswana",
+]
+
+# ============================================================================
+# NAMIBIA
+# ============================================================================
+
+namibia_locations = [
+    "Namibia", "Republic of Namibia",
+    "Windhoek", "Walvis Bay", "Swakopmund", "Rundu", "Oshakati",
+]
+
+namibia_legal = [
+    "Supreme Court of Namibia",
+    "High Court of Namibia",
+    "Constitution of Namibia",
+    "National Assembly of Namibia",
+]
+
+# ============================================================================
+# MAURITIUS
+# ============================================================================
+
+mauritius_locations = [
+    "Mauritius", "Republic of Mauritius", "Maurice",
+    "Port Louis", "Vacoas-Phoenix", "Curepipe", "Quatre Bornes",
+]
+
+mauritius_legal = [
+    "Supreme Court of Mauritius",
+    "Constitution of Mauritius",
+    "National Assembly of Mauritius",
+    "Data Protection Act", "Data Protection Office",
+]
+
+# ============================================================================
+# OTHER AFRICAN COUNTRIES
+# ============================================================================
+
+other_african_countries = [
+    # Mali
+    "Mali", "République du Mali", "Bamako",
+    # Burkina Faso
+    "Burkina Faso", "Ouagadougou",
+    # Niger
+    "Niger", "République du Niger", "Niamey",
+    # Chad
+    "Tchad", "Chad", "N'Djamena",
+    # Sudan
+    "Sudan", "République du Soudan", "Khartoum",
+    # South Sudan
+    "South Sudan", "Juba",
+    # Somalia
+    "Somalia", "Mogadishu",
+    # Eritrea
+    "Eritrea", "Asmara",
+    # Burundi
+    "Burundi", "Bujumbura", "Gitega",
+    # Malawi
+    "Malawi", "Lilongwe", "Blantyre",
+    # Madagascar
+    "Madagascar", "Antananarivo",
+    # Seychelles
+    "Seychelles", "Victoria",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - ENGLISH
+# ============================================================================
+
+legal_terms_english_africa = [
+    "High Court", "Magistrate Court", "Supreme Court",
+    "Court of Appeal", "Constitutional Court",
+    "Parliament", "National Assembly", "Senate",
+    "Constitution", "Act", "Statute", "Regulation",
+    "Judge", "Magistrate", "Attorney", "Advocate",
+    "Plaintiff", "Defendant", "Accused", "Witness",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - FRENCH (AFRICA)
+# ============================================================================
+
+legal_terms_french_africa = [
+    "Cour Suprême", "Cour d'Appel", "Tribunal",
+    "Cour Constitutionnelle",
+    "Parlement", "Assemblée Nationale", "Sénat",
+    "Constitution", "Loi", "Règlement", "Décret",
+    "Juge", "Magistrat", "Avocat",
+    "Plaignant", "Défendeur", "Accusé", "Témoin",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - PORTUGUESE (AFRICA)
+# ============================================================================
+
+legal_terms_portuguese_africa = [
+    "Tribunal Supremo", "Tribunal Constitucional",
+    "Tribunal de Recurso",
+    "Parlamento", "Assembleia Nacional",
+    "Constituição", "Lei", "Decreto", "Regulamento",
+    "Juiz", "Magistrado", "Advogado",
+    "Queixoso", "Réu", "Acusado", "Testemunha",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - AFRIKAANS
+# ============================================================================
+
+legal_terms_afrikaans = [
+    "Hooggeregshof", "Konstitusionele Hof",
+    "Appèlhof", "Landdroshof",
+    "Parlement", "Nasionale Vergadering",
+    "Grondwet", "Wet", "Regulasie",
+    "Regter", "Landros", "Prokureur", "Advokaat",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - SWAHILI
+# ============================================================================
+
+legal_terms_swahili = [
+    "Mahkama Kuu", "Supreme Court",
+    "Mahkama ya Rufaa", "Court of Appeal",
+    "Bunge", "Parliament",
+    "Katiba", "Constitution",
+    "Sheria", "Law",
+    "Jaji", "Judge", "Mshitakiwa", "Accused",
+]
+
+# ============================================================================
+# TIME TERMS - SWAHILI
+# ============================================================================
+
+time_swahili = [
+    # Months
+    "Januari", "Februari", "Machi", "Aprili", "Mei", "Juni",
+    "Julai", "Agosti", "Septemba", "Oktoba", "Novemba", "Desemba",
+    # Days
+    "Jumapili", "Jumatatu", "Jumanne", "Jumatano",
+    "Alhamisi", "Ijumaa", "Jumamosi",
+]
+
+# ============================================================================
+# TIME TERMS - AFRIKAANS
+# ============================================================================
+
+time_afrikaans = [
+    # Months
+    "Januarie", "Februarie", "Maart", "April", "Mei", "Junie",
+    "Julie", "Augustus", "September", "Oktober", "November", "Desember",
+    # Days
+    "Sondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrydag", "Saterdag",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "africa"
+description = "Sub-Saharan Africa exclusions (English, French, Portuguese, Swahili, Afrikaans)"
+languages = [
+    "English",
+    "French",
+    "Portuguese",
+    "Swahili",
+    "Afrikaans",
+    "Amharic",
+    "Zulu",
+    "Xhosa"
+]
+countries = [
+    "South Africa",
+    "Nigeria",
+    "Kenya",
+    "Ghana",
+    "Ethiopia",
+    "Tanzania",
+    "Uganda",
+    "Rwanda",
+    "Côte d'Ivoire",
+    "Senegal",
+    "Cameroon",
+    "Democratic Republic of Congo",
+    "Angola",
+    "Mozambique",
+    "Zimbabwe",
+    "Zambia",
+    "Botswana",
+    "Namibia",
+    "Mauritius"
+]

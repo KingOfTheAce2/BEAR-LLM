@@ -1,0 +1,422 @@
+# PII Exclusions - MENA Region (Middle East & North Africa)
+# Languages: Arabic, Hebrew, Turkish, Persian
+# Coverage: Saudi Arabia, UAE, Egypt, Turkey, Israel, Jordan, Lebanon, Morocco, etc.
+
+# ============================================================================
+# SAUDI ARABIA - GEOGRAPHIC LOCATIONS (المملكة العربية السعودية)
+# ============================================================================
+
+# Saudi Arabia - Country Names
+saudi_country = [
+    "المملكة العربية السعودية", "Saudi Arabia", "Kingdom of Saudi Arabia",
+    "KSA", "السعودية",
+]
+
+# Saudi Arabia - Regions (المناطق)
+saudi_regions = [
+    "الرياض", "Riyadh", "مكة المكرمة", "Makkah", "Mecca",
+    "المدينة المنورة", "Madinah", "Medina",
+    "الشرقية", "Eastern Province", "عسير", "Asir",
+    "جازان", "Jazan", "تبوك", "Tabuk", "حائل", "Hail",
+    "الحدود الشمالية", "Northern Borders", "الجوف", "Al-Jouf",
+    "نجران", "Najran", "الباحة", "Al-Bahah", "القصيم", "Al-Qassim",
+]
+
+# Saudi Arabia - Major Cities
+saudi_cities = [
+    "الرياض", "Riyadh", "جدة", "Jeddah", "مكة", "Mecca", "Makkah",
+    "المدينة", "Medina", "Madinah", "الدمام", "Dammam",
+    "الطائف", "Taif", "بريدة", "Buraidah", "خميس مشيط", "Khamis Mushait",
+]
+
+# ============================================================================
+# SAUDI ARABIA - LEGAL SYSTEM (النظام القانوني السعودي)
+# ============================================================================
+
+saudi_legal = [
+    # Courts
+    "المحكمة العليا", "Supreme Court", "محكمة الاستئناف", "Court of Appeal",
+    "المحكمة العامة", "General Court", "المحكمة الجزائية", "Criminal Court",
+    "المحكمة التجارية", "Commercial Court",
+    # Legal terms
+    "النظام الأساسي للحكم", "Basic Law of Governance",
+    "الشريعة الإسلامية", "Islamic Sharia", "الشريعة", "Sharia",
+    "نظام المرافعات", "Code of Civil Procedure",
+    # Government
+    "مجلس الوزراء", "Council of Ministers",
+    "مجلس الشورى", "Shura Council", "Consultative Assembly",
+    # Data Protection
+    "نظام حماية البيانات الشخصية", "Personal Data Protection Law",
+    "هيئة حماية البيانات", "Data Protection Authority",
+]
+
+# ============================================================================
+# UNITED ARAB EMIRATES - GEOGRAPHIC & LEGAL (الإمارات العربية المتحدة)
+# ============================================================================
+
+uae_locations = [
+    # Country
+    "الإمارات العربية المتحدة", "United Arab Emirates", "UAE", "الإمارات",
+    # Emirates
+    "أبو ظبي", "Abu Dhabi", "دبي", "Dubai",
+    "الشارقة", "Sharjah", "عجمان", "Ajman",
+    "أم القيوين", "Umm Al Quwain", "رأس الخيمة", "Ras Al Khaimah",
+    "الفجيرة", "Fujairah",
+]
+
+uae_legal = [
+    # Courts
+    "المحكمة الاتحادية العليا", "Federal Supreme Court",
+    "محاكم دبي", "Dubai Courts", "محاكم أبوظبي", "Abu Dhabi Courts",
+    # Legal terms
+    "الدستور الإماراتي", "UAE Constitution",
+    "القانون الاتحادي", "Federal Law",
+    # Data Protection
+    "قانون حماية البيانات الشخصية", "Personal Data Protection Law",
+    "مكتب مفوض حماية البيانات", "Office of Data Protection Commissioner",
+    # Free Zones
+    "مركز دبي المالي العالمي", "DIFC", "Dubai International Financial Centre",
+    "سوق أبوظبي العالمي", "ADGM", "Abu Dhabi Global Market",
+]
+
+# ============================================================================
+# EGYPT - GEOGRAPHIC & LEGAL (مصر)
+# ============================================================================
+
+egypt_locations = [
+    # Country
+    "مصر", "Egypt", "جمهورية مصر العربية", "Arab Republic of Egypt",
+    # Governorates
+    "القاهرة", "Cairo", "الجيزة", "Giza", "الإسكندرية", "Alexandria",
+    "الأقصر", "Luxor", "أسوان", "Aswan", "بورسعيد", "Port Said",
+    "السويس", "Suez", "الإسماعيلية", "Ismailia",
+]
+
+egypt_legal = [
+    # Courts
+    "المحكمة الدستورية العليا", "Supreme Constitutional Court",
+    "محكمة النقض", "Court of Cassation",
+    "المحكمة الإدارية العليا", "Supreme Administrative Court",
+    # Legal terms
+    "الدستور المصري", "Egyptian Constitution",
+    "القانون المدني", "Civil Code", "القانون الجنائي", "Penal Code",
+    "النيابة العامة", "Public Prosecution",
+    # Data Protection
+    "قانون حماية البيانات الشخصية", "Personal Data Protection Law",
+]
+
+# ============================================================================
+# TURKEY - GEOGRAPHIC & LEGAL (Türkiye)
+# ============================================================================
+
+turkey_locations = [
+    # Country
+    "Türkiye", "Turkey", "Türkiye Cumhuriyeti", "Republic of Turkey",
+    # Major Cities
+    "İstanbul", "Istanbul", "Ankara", "İzmir", "Bursa", "Antalya",
+    "Adana", "Gaziantep", "Konya", "Mersin",
+]
+
+turkey_legal = [
+    # Courts
+    "Anayasa Mahkemesi", "Constitutional Court",
+    "Yargıtay", "Court of Cassation", "Supreme Court of Appeals",
+    "Danıştay", "Council of State",
+    "Asliye Mahkemesi", "Court of First Instance",
+    # Legal terms
+    "Türkiye Cumhuriyeti Anayasası", "Constitution of Turkey",
+    "Türk Medeni Kanunu", "Turkish Civil Code",
+    "Türk Ceza Kanunu", "Turkish Penal Code",
+    # Data Protection
+    "Kişisel Verileri Koruma Kanunu", "KVKK",
+    "Personal Data Protection Law",
+    "Kişisel Verileri Koruma Kurumu", "Data Protection Authority",
+]
+
+# ============================================================================
+# ISRAEL - GEOGRAPHIC & LEGAL (ישראל)
+# ============================================================================
+
+israel_locations = [
+    # Country (Hebrew)
+    "ישראל", "Israel", "מדינת ישראל", "State of Israel",
+    # Major Cities (Hebrew)
+    "ירושלים", "Jerusalem", "תל אביב", "Tel Aviv",
+    "חיפה", "Haifa", "ראשון לציון", "Rishon LeZion",
+    "פתח תקווה", "Petah Tikva", "באר שבע", "Be'er Sheva",
+]
+
+israel_legal = [
+    # Courts (Hebrew)
+    "בית המשפט העליון", "Supreme Court", "High Court of Justice",
+    "בית משפט מחוזי", "District Court",
+    "בית משפט שלום", "Magistrate's Court",
+    # Legal terms (Hebrew)
+    "חוקי היסוד", "Basic Laws",
+    "החוק האזרחי", "Civil Law",
+    "החוק הפלילי", "Criminal Law",
+    # Data Protection
+    "חוק הגנת הפרטיות", "Privacy Protection Law",
+    "רשות הגנת הפרטיות", "Privacy Protection Authority",
+    # English
+    "Knesset", "כנסת", "Israeli Parliament",
+    "Attorney General", "פרקליט המדינה",
+]
+
+# ============================================================================
+# JORDAN - GEOGRAPHIC & LEGAL (الأردن)
+# ============================================================================
+
+jordan_locations = [
+    "الأردن", "Jordan", "المملكة الأردنية الهاشمية",
+    "Hashemite Kingdom of Jordan",
+    "عمان", "Amman", "الزرقاء", "Zarqa", "إربد", "Irbid",
+]
+
+jordan_legal = [
+    "محكمة التمييز", "Court of Cassation",
+    "المحكمة الدستورية", "Constitutional Court",
+    "الدستور الأردني", "Jordanian Constitution",
+    "قانون حماية البيانات الشخصية", "Personal Data Protection Law",
+]
+
+# ============================================================================
+# LEBANON - GEOGRAPHIC & LEGAL (لبنان)
+# ============================================================================
+
+lebanon_locations = [
+    "لبنان", "Lebanon", "الجمهورية اللبنانية", "Lebanese Republic",
+    "بيروت", "Beirut", "طرابلس", "Tripoli", "صيدا", "Sidon",
+]
+
+lebanon_legal = [
+    "محكمة التمييز", "Court of Cassation",
+    "المجلس الدستوري", "Constitutional Council",
+    "الدستور اللبناني", "Lebanese Constitution",
+]
+
+# ============================================================================
+# MOROCCO - GEOGRAPHIC & LEGAL (المغرب)
+# ============================================================================
+
+morocco_locations = [
+    # Arabic
+    "المغرب", "Morocco", "المملكة المغربية", "Kingdom of Morocco",
+    # French
+    "Maroc", "Royaume du Maroc",
+    # Cities
+    "الرباط", "Rabat", "الدار البيضاء", "Casablanca",
+    "فاس", "Fez", "Fès", "مراكش", "Marrakech", "Marrakesh",
+    "طنجة", "Tangier", "Tanger",
+]
+
+morocco_legal = [
+    # Arabic
+    "المحكمة الدستورية", "Constitutional Court",
+    "محكمة النقض", "Court of Cassation",
+    # French
+    "Cour Constitutionnelle", "Cour de Cassation",
+    "Constitution du Maroc", "Moroccan Constitution",
+    # Data Protection
+    "لجنة مراقبة حماية المعطيات الشخصية", "CNDP",
+    "Commission Nationale de Contrôle de la Protection des Données",
+]
+
+# ============================================================================
+# TUNISIA - GEOGRAPHIC & LEGAL (تونس)
+# ============================================================================
+
+tunisia_locations = [
+    "تونس", "Tunisia", "الجمهورية التونسية", "Tunisian Republic",
+    "République Tunisienne",
+    "تونس العاصمة", "Tunis", "صفاقس", "Sfax",
+]
+
+tunisia_legal = [
+    "المحكمة الدستورية", "Constitutional Court",
+    "محكمة التعقيب", "Court of Cassation",
+    "Instance Nationale de Protection des Données Personnelles", "INPDP",
+]
+
+# ============================================================================
+# ALGERIA - GEOGRAPHIC & LEGAL (الجزائر)
+# ============================================================================
+
+algeria_locations = [
+    "الجزائر", "Algeria", "الجمهورية الجزائرية", "Algérie",
+    "République Algérienne",
+    "الجزائر العاصمة", "Algiers", "Alger", "وهران", "Oran",
+]
+
+algeria_legal = [
+    "المحكمة العليا", "Supreme Court", "Cour Suprême",
+    "المجلس الدستوري", "Constitutional Council",
+]
+
+# ============================================================================
+# IRAQ - GEOGRAPHIC & LEGAL (العراق)
+# ============================================================================
+
+iraq_locations = [
+    "العراق", "Iraq", "جمهورية العراق", "Republic of Iraq",
+    "بغداد", "Baghdad", "البصرة", "Basra", "الموصل", "Mosul",
+    "أربيل", "Erbil", "كركوك", "Kirkuk",
+]
+
+iraq_legal = [
+    "المحكمة الاتحادية العليا", "Federal Supreme Court",
+    "الدستور العراقي", "Iraqi Constitution",
+]
+
+# ============================================================================
+# KUWAIT, BAHRAIN, QATAR, OMAN (GCC Countries)
+# ============================================================================
+
+gcc_countries = [
+    # Kuwait
+    "الكويت", "Kuwait", "دولة الكويت", "State of Kuwait",
+    "مدينة الكويت", "Kuwait City",
+    "المحكمة الدستورية الكويتية", "Constitutional Court of Kuwait",
+    # Bahrain
+    "البحرين", "Bahrain", "مملكة البحرين", "Kingdom of Bahrain",
+    "المنامة", "Manama",
+    "المحكمة الدستورية البحرينية", "Constitutional Court of Bahrain",
+    # Qatar
+    "قطر", "Qatar", "دولة قطر", "State of Qatar",
+    "الدوحة", "Doha",
+    "المحكمة الدستورية القطرية", "Constitutional Court of Qatar",
+    # Oman
+    "عمان", "Oman", "سلطنة عمان", "Sultanate of Oman",
+    "مسقط", "Muscat",
+]
+
+# ============================================================================
+# IRAN - GEOGRAPHIC & LEGAL (ایران - Persian)
+# ============================================================================
+
+iran_locations = [
+    # Persian/Farsi
+    "ایران", "Iran", "جمهوری اسلامی ایران", "Islamic Republic of Iran",
+    "تهران", "Tehran", "اصفهان", "Isfahan", "مشهد", "Mashhad",
+    "شیراز", "Shiraz", "تبریز", "Tabriz",
+]
+
+iran_legal = [
+    "دیوان عدالت اداری", "Administrative Court of Justice",
+    "دیوان عالی کشور", "Supreme Court",
+    "قانون اساسی", "Constitution",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - ARABIC (المصطلحات القانونية)
+# ============================================================================
+
+legal_terms_arabic = [
+    # Court terms
+    "محكمة", "قاضي", "قضاء", "حكم", "قرار",
+    "استئناف", "نقض", "تمييز", "دستوري",
+    # Legal documents
+    "دستور", "قانون", "نظام", "لائحة", "مرسوم",
+    # Parties
+    "مدعي", "مدعى عليه", "متهم", "شاهد", "محامي",
+    # Procedures
+    "دعوى", "جلسة", "طعن", "استجواب",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - HEBREW (מונחים משפטיים)
+# ============================================================================
+
+legal_terms_hebrew = [
+    "בית משפט", "שופט", "דין", "פסק דין", "ערעור",
+    "חוק", "תקנה", "תקנון", "נתבע", "תובע",
+    "עורך דין", "עד", "משפט", "דיון",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - TURKISH (Hukuki Terimler)
+# ============================================================================
+
+legal_terms_turkish = [
+    "mahkeme", "hakim", "yargıç", "karar", "hüküm",
+    "temyiz", "istinaf", "kanun", "yasa", "tüzük",
+    "davacı", "davalı", "sanık", "tanık", "avukat",
+]
+
+# ============================================================================
+# TIME TERMS - ARABIC (مصطلحات الوقت)
+# ============================================================================
+
+time_arabic = [
+    # Months (Gregorian)
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+    # Months (Islamic)
+    "محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى",
+    "جمادى الثانية", "رجب", "شعبان", "رمضان", "شوال",
+    "ذو القعدة", "ذو الحجة",
+    # Days
+    "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت",
+    # Time periods
+    "يوم", "أسبوع", "شهر", "سنة", "اليوم", "أمس", "غداً",
+]
+
+# ============================================================================
+# TIME TERMS - HEBREW (מונחי זמן)
+# ============================================================================
+
+time_hebrew = [
+    # Months (Hebrew calendar)
+    "תשרי", "חשוון", "כסלו", "טבת", "שבט", "אדר",
+    "ניסן", "אייר", "סיוון", "תמוז", "אב", "אלול",
+    # Months (Gregorian)
+    "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+    "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+    # Days
+    "ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת",
+]
+
+# ============================================================================
+# TIME TERMS - TURKISH (Zaman Terimleri)
+# ============================================================================
+
+time_turkish = [
+    # Months
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+    # Days
+    "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "mena"
+description = "Middle East & North Africa exclusions (Arabic, Hebrew, Turkish, Persian)"
+languages = [
+    "Arabic",
+    "Hebrew",
+    "Turkish",
+    "Persian (Farsi)",
+    "French (North Africa)"
+]
+countries = [
+    "Saudi Arabia",
+    "United Arab Emirates",
+    "Egypt",
+    "Turkey",
+    "Israel",
+    "Jordan",
+    "Lebanon",
+    "Morocco",
+    "Tunisia",
+    "Algeria",
+    "Iraq",
+    "Kuwait",
+    "Bahrain",
+    "Qatar",
+    "Oman",
+    "Iran"
+]

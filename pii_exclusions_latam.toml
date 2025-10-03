@@ -1,0 +1,408 @@
+# PII Exclusions - LATAM Region (Latin America)
+# Languages: Spanish, Portuguese
+# Coverage: Mexico, Brazil, Argentina, Chile, Colombia, Peru, Venezuela, Central America, Caribbean
+
+# ============================================================================
+# MEXICO - GEOGRAPHIC LOCATIONS (México)
+# ============================================================================
+
+# Mexico - Country Names
+mexico_country = [
+    "México", "Mexico", "Estados Unidos Mexicanos", "United Mexican States",
+]
+
+# Mexico - States (Estados)
+mexico_states = [
+    "Aguascalientes", "Baja California", "Baja California Sur", "Campeche",
+    "Chiapas", "Chihuahua", "Coahuila", "Colima", "Durango", "Guanajuato",
+    "Guerrero", "Hidalgo", "Jalisco", "México", "Estado de México",
+    "Michoacán", "Morelos", "Nayarit", "Nuevo León", "Oaxaca",
+    "Puebla", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa",
+    "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz",
+    "Yucatán", "Zacatecas", "Ciudad de México", "CDMX",
+]
+
+# Mexico - Major Cities
+mexico_cities = [
+    "Ciudad de México", "Guadalajara", "Monterrey", "Puebla", "Tijuana",
+    "León", "Juárez", "Zapopan", "Mérida", "Cancún", "Querétaro",
+    "Aguascalientes", "Mexicali", "Hermosillo", "Toluca", "Chihuahua",
+]
+
+# ============================================================================
+# MEXICO - LEGAL SYSTEM (Sistema Legal Mexicano)
+# ============================================================================
+
+# Mexico - Courts (Tribunales)
+mexico_courts = [
+    "Suprema Corte de Justicia de la Nación", "SCJN", "Supreme Court of Justice",
+    "Tribunal Federal de Justicia Administrativa", "TFJA",
+    "Tribunal Electoral del Poder Judicial de la Federación",
+    "Consejo de la Judicatura Federal",
+    "Juzgado de Distrito", "Tribunal Colegiado", "Tribunal Unitario",
+]
+
+# Mexico - Legal Terms
+mexico_legal = [
+    "Constitución Política", "Código Civil", "Código Penal",
+    "Ley Federal", "Ley General", "Amparo", "Juicio de Amparo",
+    "Ministerio Público", "Procuraduría", "Fiscalía General",
+]
+
+# Mexico - Data Protection
+mexico_data_protection = [
+    "Instituto Nacional de Transparencia", "INAI",
+    "Ley Federal de Protección de Datos Personales", "LFPDPPP",
+    "Datos Personales en Posesión de Particulares",
+    "Instituto Nacional de Acceso a la Información",
+]
+
+# Mexico - Government
+mexico_government = [
+    "Secretaría de Gobernación", "SEGOB",
+    "Secretaría de Relaciones Exteriores", "SRE",
+    "Cámara de Diputados", "Senado de la República",
+    "Presidente de México", "Poder Ejecutivo Federal",
+]
+
+# ============================================================================
+# BRAZIL - GEOGRAPHIC LOCATIONS (Brasil)
+# ============================================================================
+
+# Brazil - Country Names
+brazil_country = [
+    "Brasil", "Brazil", "República Federativa do Brasil",
+    "Federative Republic of Brazil",
+]
+
+# Brazil - States (Estados)
+brazil_states = [
+    "Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará",
+    "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão",
+    "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará",
+    "Paraíba", "Paraná", "Pernambuco", "Piauí", "Rio de Janeiro",
+    "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima",
+    "Santa Catarina", "São Paulo", "Sergipe", "Tocantins",
+]
+
+# Brazil - Major Cities
+brazil_cities = [
+    "São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza",
+    "Belo Horizonte", "Manaus", "Curitiba", "Recife", "Porto Alegre",
+    "Belém", "Goiânia", "Guarulhos", "Campinas", "São Luís",
+]
+
+# ============================================================================
+# BRAZIL - LEGAL SYSTEM (Sistema Jurídico Brasileiro)
+# ============================================================================
+
+# Brazil - Courts (Tribunais)
+brazil_courts = [
+    "Supremo Tribunal Federal", "STF", "Federal Supreme Court",
+    "Superior Tribunal de Justiça", "STJ", "Superior Court of Justice",
+    "Tribunal Superior do Trabalho", "TST",
+    "Tribunal Superior Eleitoral", "TSE",
+    "Superior Tribunal Militar", "STM",
+    "Tribunal Regional Federal", "TRF",
+    "Tribunal de Justiça", "Vara Cível", "Vara Criminal",
+]
+
+# Brazil - Legal Terms
+brazil_legal = [
+    "Constituição Federal", "Código Civil Brasileiro",
+    "Código Penal", "Código de Processo Civil", "CPC",
+    "Código de Processo Penal", "CPP",
+    "Consolidação das Leis do Trabalho", "CLT",
+    "Ministério Público", "Advocacia-Geral da União", "AGU",
+]
+
+# Brazil - Data Protection
+brazil_data_protection = [
+    "Lei Geral de Proteção de Dados", "LGPD",
+    "Autoridade Nacional de Proteção de Dados", "ANPD",
+    "Dados Pessoais", "Titular de Dados",
+    "Controlador", "Operador", "Encarregado",
+]
+
+# Brazil - Government
+brazil_government = [
+    "Presidência da República", "Congresso Nacional",
+    "Câmara dos Deputados", "Senado Federal",
+    "Ministério da Justiça", "Polícia Federal",
+]
+
+# ============================================================================
+# ARGENTINA - GEOGRAPHIC & LEGAL (Argentina)
+# ============================================================================
+
+# Argentina - Geographic
+argentina_locations = [
+    "Argentina", "República Argentina", "Argentine Republic",
+    # Provinces
+    "Buenos Aires", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes",
+    "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza",
+    "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis",
+    "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego",
+    "Tucumán", "Ciudad Autónoma de Buenos Aires", "CABA",
+    # Major Cities
+    "Buenos Aires", "Córdoba", "Rosario", "Mendoza", "La Plata",
+    "Mar del Plata", "San Miguel de Tucumán", "Salta",
+]
+
+# Argentina - Legal System
+argentina_legal = [
+    "Corte Suprema de Justicia de la Nación", "CSJN",
+    "Tribunales Federales", "Juzgados Nacionales",
+    "Constitución Nacional", "Código Civil y Comercial",
+    "Código Penal", "Ministerio Público Fiscal",
+    "Ley de Protección de Datos Personales", "Ley 25.326",
+    "Agencia de Acceso a la Información Pública", "AAIP",
+    "Dirección Nacional de Protección de Datos Personales",
+]
+
+# ============================================================================
+# CHILE - GEOGRAPHIC & LEGAL (Chile)
+# ============================================================================
+
+# Chile - Geographic
+chile_locations = [
+    "Chile", "República de Chile", "Republic of Chile",
+    # Regions
+    "Arica y Parinacota", "Tarapacá", "Antofagasta", "Atacama", "Coquimbo",
+    "Valparaíso", "Región Metropolitana", "O'Higgins", "Maule", "Ñuble",
+    "Biobío", "Araucanía", "Los Ríos", "Los Lagos", "Aysén",
+    "Magallanes", "Magallanes y la Antártica Chilena",
+    # Major Cities
+    "Santiago", "Valparaíso", "Concepción", "Viña del Mar", "Antofagasta",
+    "Temuco", "Rancagua", "Talca", "Iquique", "Puerto Montt",
+]
+
+# Chile - Legal System
+chile_legal = [
+    "Corte Suprema de Chile", "Supreme Court of Chile",
+    "Corte de Apelaciones", "Tribunales de Justicia",
+    "Constitución Política", "Código Civil", "Código Penal",
+    "Ministerio Público", "Fiscalía Nacional",
+    "Ley de Protección de Datos Personales", "Ley 19.628",
+    "Consejo para la Transparencia", "CPLT",
+]
+
+# ============================================================================
+# COLOMBIA - GEOGRAPHIC & LEGAL (Colombia)
+# ============================================================================
+
+# Colombia - Geographic
+colombia_locations = [
+    "Colombia", "República de Colombia", "Republic of Colombia",
+    # Departments
+    "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
+    "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba",
+    "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena",
+    "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
+    "San Andrés y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca",
+    "Vaupés", "Vichada", "Distrito Capital", "Bogotá",
+    # Major Cities
+    "Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena",
+    "Cúcuta", "Bucaramanga", "Pereira", "Ibagué", "Santa Marta",
+]
+
+# Colombia - Legal System
+colombia_legal = [
+    "Corte Suprema de Justicia", "Supreme Court of Justice",
+    "Corte Constitucional", "Constitutional Court",
+    "Consejo de Estado", "Council of State",
+    "Fiscalía General de la Nación", "Attorney General's Office",
+    "Constitución Política", "Código Civil", "Código Penal",
+    "Ley de Protección de Datos Personales", "Ley 1581",
+    "Superintendencia de Industria y Comercio", "SIC",
+    "Delegatura de Protección de Datos Personales",
+]
+
+# ============================================================================
+# PERU - GEOGRAPHIC & LEGAL (Perú)
+# ============================================================================
+
+peru_locations = [
+    "Perú", "Peru", "República del Perú", "Republic of Peru",
+    # Regions
+    "Lima", "Arequipa", "Cusco", "Trujillo", "Piura", "Callao",
+    "Chiclayo", "Iquitos", "Huancayo", "Tacna",
+    # Legal
+    "Corte Suprema de Justicia", "Tribunal Constitucional",
+    "Ministerio Público", "Fiscalía de la Nación",
+    "Constitución Política del Perú", "Código Civil",
+    "Ley de Protección de Datos Personales", "Ley 29733",
+    "Autoridad Nacional de Protección de Datos Personales",
+]
+
+# ============================================================================
+# VENEZUELA - GEOGRAPHIC & LEGAL (Venezuela)
+# ============================================================================
+
+venezuela_locations = [
+    "Venezuela", "República Bolivariana de Venezuela",
+    "Bolivarian Republic of Venezuela",
+    # States
+    "Caracas", "Maracaibo", "Valencia", "Barquisimeto", "Maracay",
+    # Legal
+    "Tribunal Supremo de Justicia", "TSJ",
+    "Sala Constitucional", "Ministerio Público",
+    "Constitución de la República Bolivariana de Venezuela",
+]
+
+# ============================================================================
+# CENTRAL AMERICA (América Central)
+# ============================================================================
+
+central_america = [
+    # Guatemala
+    "Guatemala", "República de Guatemala", "Ciudad de Guatemala",
+    "Corte de Constitucionalidad",
+    # Costa Rica
+    "Costa Rica", "República de Costa Rica", "San José",
+    "Corte Suprema de Justicia de Costa Rica",
+    # Panama
+    "Panamá", "Panama", "República de Panamá", "Ciudad de Panamá",
+    "Corte Suprema de Justicia de Panamá",
+    # Honduras
+    "Honduras", "República de Honduras", "Tegucigalpa",
+    # El Salvador
+    "El Salvador", "República de El Salvador", "San Salvador",
+    # Nicaragua
+    "Nicaragua", "República de Nicaragua", "Managua",
+    # Belize
+    "Belize", "Belice", "Belmopan",
+]
+
+# ============================================================================
+# CARIBBEAN (Caribe)
+# ============================================================================
+
+caribbean_spanish = [
+    # Cuba
+    "Cuba", "República de Cuba", "La Habana", "Havana",
+    "Tribunal Supremo Popular",
+    # Dominican Republic
+    "República Dominicana", "Dominican Republic", "Santo Domingo",
+    "Suprema Corte de Justicia",
+    # Puerto Rico (US Territory)
+    "Puerto Rico", "San Juan", "Tribunal Supremo de Puerto Rico",
+]
+
+# ============================================================================
+# OTHER SOUTH AMERICAN COUNTRIES
+# ============================================================================
+
+other_south_america = [
+    # Ecuador
+    "Ecuador", "República del Ecuador", "Quito", "Guayaquil",
+    "Corte Nacional de Justicia", "Corte Constitucional del Ecuador",
+    # Bolivia
+    "Bolivia", "Estado Plurinacional de Bolivia", "La Paz", "Sucre",
+    "Tribunal Supremo de Justicia de Bolivia",
+    # Paraguay
+    "Paraguay", "República del Paraguay", "Asunción",
+    "Corte Suprema de Justicia del Paraguay",
+    # Uruguay
+    "Uruguay", "República Oriental del Uruguay", "Montevideo",
+    "Suprema Corte de Justicia del Uruguay",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - SPANISH (Términos Legales Comunes)
+# ============================================================================
+
+legal_terms_spanish = [
+    # Court terms
+    "Tribunal", "Corte", "Juzgado", "Sala", "Magistrado", "Juez",
+    "Fiscal", "Procurador", "Defensor", "Abogado",
+    # Legal documents
+    "Sentencia", "Resolución", "Auto", "Decreto", "Ley", "Reglamento",
+    "Constitución", "Código", "Jurisprudencia",
+    # Parties
+    "Demandante", "Demandado", "Acusado", "Imputado", "Testigo",
+    # Procedures
+    "Amparo", "Recurso", "Apelación", "Casación", "Revisión",
+    "Juicio", "Proceso", "Audiencia", "Vista",
+]
+
+# ============================================================================
+# COMMON LEGAL TERMS - PORTUGUESE (Termos Jurídicos Comuns)
+# ============================================================================
+
+legal_terms_portuguese = [
+    # Court terms
+    "Tribunal", "Corte", "Juízo", "Vara", "Magistrado", "Juiz",
+    "Promotor", "Procurador", "Defensor", "Advogado",
+    # Legal documents
+    "Sentença", "Decisão", "Acórdão", "Despacho", "Lei", "Regulamento",
+    "Constituição", "Código", "Jurisprudência",
+    # Parties
+    "Autor", "Réu", "Acusado", "Testemunha",
+    # Procedures
+    "Recurso", "Apelação", "Agravo", "Embargos", "Revisão",
+    "Processo", "Audiência", "Sessão",
+]
+
+# ============================================================================
+# TIME TERMS - SPANISH (Términos de Tiempo)
+# ============================================================================
+
+time_spanish = [
+    # Months
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    # Days of week
+    "lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo",
+    # Time periods
+    "día", "semana", "mes", "año", "hoy", "ayer", "mañana",
+]
+
+# ============================================================================
+# TIME TERMS - PORTUGUESE (Termos de Tempo)
+# ============================================================================
+
+time_portuguese = [
+    # Months
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+    # Days of week
+    "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",
+    "sexta-feira", "sábado", "domingo",
+    # Time periods
+    "dia", "semana", "mês", "ano", "hoje", "ontem", "amanhã",
+]
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+[settings]
+region = "latam"
+description = "Latin America exclusions (Spanish and Portuguese)"
+languages = [
+    "Spanish",
+    "Portuguese"
+]
+countries = [
+    "Mexico",
+    "Brazil",
+    "Argentina",
+    "Chile",
+    "Colombia",
+    "Peru",
+    "Venezuela",
+    "Ecuador",
+    "Bolivia",
+    "Paraguay",
+    "Uruguay",
+    "Guatemala",
+    "Costa Rica",
+    "Panama",
+    "Honduras",
+    "El Salvador",
+    "Nicaragua",
+    "Cuba",
+    "Dominican Republic",
+    "Puerto Rico"
+]

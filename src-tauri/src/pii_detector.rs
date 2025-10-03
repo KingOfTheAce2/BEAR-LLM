@@ -348,10 +348,10 @@ impl PIIDetector {
     }
 
     /// Load PII exclusions configuration from ALL regional TOML files
-    /// Loads and merges: pii_exclusions_en.toml, pii_exclusions_eu.toml, pii_exclusions_apac.toml
+    /// Loads and merges: en, eu, apac, latam, mena, africa, south_asia, cis
     /// This ensures comprehensive multilingual PII detection regardless of document language
     fn load_exclusions_config() -> Result<PIIExclusionsConfig> {
-        let regions = vec!["en", "eu", "apac"];
+        let regions = vec!["en", "eu", "apac", "latam", "mena", "africa", "south_asia", "cis"];
         let mut merged_exclusions = HashMap::new();
         let mut merged_settings = PIIExclusionSettings::default();
         let mut total_loaded = 0;
