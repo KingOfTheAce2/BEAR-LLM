@@ -29,7 +29,7 @@ mod model_manager;
 mod presidio_bridge;
 mod presidio_service;
 mod process_helper;
-mod rate_limiter;
+// mod rate_limiter; // REMOVED - Not needed for single-user desktop app, hardware monitor handles resource limits
 mod setup_manager;
 mod system;
 mod system_monitor;
@@ -65,7 +65,7 @@ use compliance::ComplianceManager;
 use hardware_detector::{HardwareDetector, HardwareSpecs, ModelRecommendation};
 use mcp_server::{AgentOrchestrator, MCPServer};
 use middleware::{ConsentGuard, ConsentGuardBuilder};
-use rate_limiter::RateLimiter;
+// use rate_limiter::RateLimiter; // REMOVED - Hardware monitor provides resource protection
 use scheduler::{RetentionScheduler, SchedulerHandle};
 
 // SECURITY FIX: Use tempfile crate for atomic temporary file creation
@@ -229,9 +229,6 @@ struct AppState {
     // Consent Guard Middleware
     consent_guard: Arc<ConsentGuard>,
 
-    // Rate limiting
-    rate_limiter: Arc<RateLimiter>,
-
     // Retention Scheduler
     scheduler_handle: Option<Arc<RwLock<SchedulerHandle>>>,
 
@@ -347,11 +344,7 @@ async fn process_document(
     file_path: String,
     file_type: String,
 ) -> Result<ProcessedDocument, String> {
-    // Rate limit check
-    state
-        .rate_limiter
-        .check_rate_limit(&format!("process_document:{}", file_path))
-        .await?;
+    // No rate limiting needed - hardware monitor already prevents resource exhaustion
 
     let content = state
         .file_processor
@@ -394,17 +387,7 @@ async fn send_message(
     message: String,
     model_name: String,
 ) -> Result<String, String> {
-    // Rate limit check - use generic key for now (in production, use actual user/session ID)
-    state
-        .rate_limiter
-        .check_rate_limit("send_message")
-        .await
-        .map_err(|e| {
-            tracing::warn!("Rate limit exceeded for send_message");
-            e
-        })?;
-
-    // Check system safety - scope the lock
+    // Check system safety - hardware monitor prevents resource exhaustion
     {
         let mut hw_monitor = state.hardware_monitor.write().await;
         if !hw_monitor.check_safety().await.map_err(|e| e.to_string())? {
@@ -1539,9 +1522,6 @@ fn main() {
 
         // Consent Guard Middleware
         consent_guard: consent_guard.clone(),
-
-        // Rate limiting
-        rate_limiter: Arc::new(RateLimiter::new()),
 
         // Retention Scheduler
         scheduler_handle: Some(scheduler_handle.clone()),
