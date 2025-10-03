@@ -1,10 +1,9 @@
-use anyhow::{Result, anyhow, bail};
-use candle_core::{Device, Tensor, DType};
+use anyhow::{Result, anyhow};
+use candle_core::{Device, Tensor, DType, safetensors};
 use candle_nn::VarBuilder;
 use candle_transformers::models::bert::{BertModel, Config as BertConfig};
 use hf_hub::{api::sync::Api, Repo, RepoType};
 use tokenizers::Tokenizer;
-use std::sync::Arc;
 use tracing::info;
 use crate::pii_detector::PIIEntity;
 
@@ -30,7 +29,8 @@ impl NerModel {
 
         let config: BertConfig = serde_json::from_str(&std::fs::read_to_string(config_filename)?)?;
 
-        let vb = VarBuilder::from_safetensors(&model_filename, DType::F32, &device)?;
+        let model_weights = safetensors::load(&model_filename, &device)?;
+        let vb = VarBuilder::from_tensors(model_weights, DType::F32, &device)?;
         let model = BertModel::load(vb, &config)?;
 
         // This mapping needs to be accurate for the chosen model.
@@ -59,11 +59,9 @@ impl NerModel {
         let tokens = encoding.get_ids().to_vec();
         let offsets = encoding.get_offsets().to_vec();
 
-        let token_ids = Tensor::new(&tokens, &self.device)?.unsqueeze(0)?; // Add batch dimension
-        let attention_mask = Tensor::new(
-            &vec![1u32; tokens.len()],
-            &self.device,
-        )?.unsqueeze(0)?;
+        let token_ids = Tensor::new(tokens.as_slice(), &self.device)?.unsqueeze(0)?; // Add batch dimension
+        let attention_mask_vec = vec![1u32; tokens.len()];
+        let attention_mask = Tensor::new(attention_mask_vec.as_slice(), &self.device)?.unsqueeze(0)?;
 
         let ys = self.model.forward(&token_ids, &attention_mask, None)?; // Get logits
         let logits = ys.squeeze(0)?.to_vec2::<f32>()?; // Remove batch dim and convert to Vec<Vec<f32>>

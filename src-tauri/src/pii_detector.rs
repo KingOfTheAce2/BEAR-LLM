@@ -526,9 +526,10 @@ impl PIIDetector {
             let mut candle_ner_model = self.candle_ner_model.write().await;
             if candle_ner_model.is_none() {
                 tracing::info!("Initializing Candle NER model for Layer 2...");
-                let model_id = match config.candle_model_language.as_str() {
-                    "dutch" => "pdelobelle/robbert-v2-dutch-ner",
-                    _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
+                let device = if candle_core::utils::cuda_is_available() {
+                    Device::new_cuda(0)?
+                } else {
+                    Device::Cpu
                 };
                 match NerModel::new(model_id, "main", device) {
                     Ok(model) => {
@@ -596,8 +597,8 @@ impl PIIDetector {
 
         // LAYER 2: Candle NER (optional, if configured)
         if matches!(config.detection_layer, DetectionLayer::WithCandle | DetectionLayer::FullStack) {
-            let candle_ner_model_guard = self.candle_ner_model.read().await;
-            if let Some(ner_model) = candle_ner_model_guard.as_ref() {
+            let mut candle_ner_model_guard = self.candle_ner_model.write().await;
+            if let Some(ner_model) = candle_ner_model_guard.as_mut() {
                 let layer2_start = std::time::Instant::now();
                 match ner_model.predict(text) {
                     Ok(entities) => {
@@ -1150,7 +1151,11 @@ print(json.dumps(entities))
         if enabled {
             if self.candle_ner_model.read().await.is_none() {
                 tracing::info!("Attempting to load Candle NER model...");
-                let device = Device::Cpu; // TODO: Make configurable
+                let device = if candle_core::utils::cuda_is_available() {
+                    Device::new_cuda(0)?
+                } else {
+                    Device::Cpu
+                };
                 let model_id = match config.candle_model_language.as_str() {
                     "dutch" => "pdelobelle/robbert-v2-dutch-ner",
                     _ => "dbmdz/bert-large-cased-finetuned-conll03-english",
