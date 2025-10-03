@@ -40,11 +40,12 @@ walkdir = "2.5"
 nvml-wrapper = "0.11"
 zip = "0.6"
 # AI/ML dependencies - Pure Rust inference (no C++ build issues)
-candle-core = { version = "0.8", features = ["cuda"] }
+candle-core = "0.8"  # CUDA support optional, enabled at runtime if available
 candle-nn = "0.8"
 candle-transformers = "0.8"  # GGUF support is built-in via quantized_llama module
 tokenizers = "0.21"
 # Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
+# Note: GPU acceleration works without CUDA feature - Candle auto-detects at runtime
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Better embeddings - Use fastembed with compatible features
@@ -85,7 +86,8 @@ windows = { version = "0.58", features = [
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
-# CUDA support now through Candle (pure Rust, no C++ toolchain issues)
+# CUDA is optional - only enable if building on system with CUDA toolkit
+# For most users, CPU fallback is automatic and works fine
 cuda = ["candle-core/cuda"]
 
 [lib]
