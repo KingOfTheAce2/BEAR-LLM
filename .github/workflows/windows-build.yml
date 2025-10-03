@@ -89,53 +89,22 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Configure Build Environment (Dynamic CRT Strategy)
-        shell: pwsh
-        run: |
-          Write-Host "🔧 Configuring MSVC for DYNAMIC runtime linking..." -ForegroundColor Cyan
-          echo "CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "RUSTFLAGS=-C target-feature=-crt-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "✅ Environment variables set for dynamic linking:" -ForegroundColor Green
-          Write-Host "  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL (dynamic)"
-          Write-Host "  RUSTFLAGS=-C target-feature=-crt-static"
-
-      - name: Quick Link Validation (Fast Fail)
+      - name: Quick Build Check (Fast Fail)
         shell: pwsh
         run: |
           cd src-tauri
-          Write-Host "⚡ Running quick link validation (fails in <10min if issues exist)..." -ForegroundColor Yellow
-          cargo check --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -FilePath link-check.log
+          Write-Host "⚡ Running quick build check (Pure Rust - no C++ linking issues)..." -ForegroundColor Yellow
+          cargo check --release --target x86_64-pc-windows-msvc 2>&1 | Tee-Object -FilePath build-check.log
 
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ LINK VALIDATION FAILED - Analyzing errors..." -ForegroundColor Red
-
-            # Check for specific link errors
-            $linkErrors = Select-String -Path link-check.log -Pattern "linking with.*failed|LNK\d+|error: could not compile"
-
-            if ($linkErrors) {
-              Write-Host "`n🔍 DETECTED LINKING ERRORS:" -ForegroundColor Red
-              $linkErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-
-              # Check for runtime mismatch
-              if (Select-String -Path link-check.log -Pattern "LNK2038.*RuntimeLibrary") {
-                Write-Host "`n💡 DIAGNOSIS: MSVC Runtime Library Mismatch" -ForegroundColor Magenta
-                Write-Host "   One dependency uses /MD (dynamic) while another uses /MT (static)" -ForegroundColor Magenta
-                Write-Host "   This build is attempting DYNAMIC linking strategy." -ForegroundColor Magenta
-              }
-
-              # Check for missing symbols
-              if (Select-String -Path link-check.log -Pattern "unresolved external symbol") {
-                Write-Host "`n💡 DIAGNOSIS: Missing symbols detected" -ForegroundColor Magenta
-                Write-Host "   This usually indicates library dependency issues" -ForegroundColor Magenta
-              }
-            }
-
+            Write-Host "❌ BUILD CHECK FAILED - Analyzing errors..." -ForegroundColor Red
+            Get-Content build-check.log | Select-Object -Last 50 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
             Write-Host "`n📋 Full error log saved to artifacts" -ForegroundColor Yellow
-            Write-Host "🛑 STOPPING BUILD - No point continuing, this will fail" -ForegroundColor Red
+            Write-Host "🛑 STOPPING BUILD - Compilation errors detected" -ForegroundColor Red
             exit 1
           }
 
-          Write-Host "✅ Link validation passed - proceeding to full build" -ForegroundColor Green
+          Write-Host "✅ Build check passed - proceeding to full build" -ForegroundColor Green
 
       - name: Run Clippy (code quality check)
         run: |
@@ -150,10 +119,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          GGML_CUDA: OFF
-          GGML_METAL: OFF
-          CMAKE_MSVC_RUNTIME_LIBRARY: MultiThreadedDLL
-          RUSTFLAGS: "-C target-feature=-crt-static"
+          # No C++ build configuration needed - Pure Rust with Candle
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
         with:
@@ -220,15 +186,15 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload Link Validation Logs
+      - name: Upload Build Check Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: link-validation-logs-v${{ needs.validate.outputs.version }}
+          name: build-check-logs-v${{ needs.validate.outputs.version }}
           path: |
-            src-tauri/link-check.log
+            src-tauri/build-check.log
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 7
 
       - name: Upload Build Logs
         if: always()

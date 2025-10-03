@@ -39,14 +39,12 @@ urlencoding = "2.1"
 walkdir = "2.5"
 nvml-wrapper = "0.11"
 zip = "0.6"
-# AI/ML dependencies
-candle-core = "0.8"
+# AI/ML dependencies - Pure Rust inference (no C++ build issues)
+candle-core = { version = "0.8", features = ["cuda"] }
 candle-nn = "0.8"
-candle-transformers = "0.8"
+candle-transformers = { version = "0.8", features = ["gguf"] }
 tokenizers = "0.21"
-# GGUF model support using llama.cpp bindings
-# CUDA is optional - enable with --features cuda
-llama-cpp-2 = { version = "0.1", default-features = false }
+# Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
 # Vector database
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Better embeddings - Use fastembed with compatible features
@@ -87,9 +85,8 @@ windows = { version = "0.58", features = [
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
-# Optional CUDA support - requires CUDA Toolkit installed
-# Enable with: cargo build --features cuda
-cuda = ["llama-cpp-2/cuda"]
+# CUDA support now through Candle (pure Rust, no C++ toolchain issues)
+cuda = ["candle-core/cuda"]
 
 [lib]
 name = "bear_ai_llm"

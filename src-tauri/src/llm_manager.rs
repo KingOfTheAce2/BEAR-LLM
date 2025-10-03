@@ -1,5 +1,5 @@
+use crate::candle_inference::{GGUFInferenceConfig, GGUFInferenceEngine}; // Now using Candle (Pure Rust)
 use crate::constants::*;
-use crate::gguf_inference::{GGUFInferenceConfig, GGUFInferenceEngine};
 use anyhow::{anyhow, Result};
 use candle_core::Device;
 use hf_hub::api::tokio::Api;
