@@ -1,13 +1,4 @@
-import { useState } fr    // Supported file types
-    const supportedTypes = [
-      '.gguf',  // GGUF model files
-      '.txt',   // Text files
-      '.pdf',   // PDF documents
-      '.doc',   // Word documents
-      '.docx'   // Word documents
-    ];
-
-    const handleDrop = (e: React.DragEvent) => {m 'react';
+import React, { useState } from 'react';
 import { Upload, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface FileUploadProps {
@@ -18,6 +9,15 @@ interface FileUploadProps {
 const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isProcessing }) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Supported file types (moved inside the component)
+  const supportedTypes = [
+    '.gguf',  // GGUF model files
+    '.txt',   // Text files
+    '.pdf',   // PDF documents
+    '.doc',   // Word documents
+    '.docx'   // Word documents
+  ];
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
