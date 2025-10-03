@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   Send, Paperclip, Plus, Sun, Moon,
-  Bot, ChevronLeft, ChevronRight,
+  Bot, ChevronLeft, ChevronRight, Settings as SettingsIcon,
   Loader2, Sparkles, Scale, Users
 } from 'lucide-react';
 import { useAppStore } from './stores/appStore';
@@ -13,6 +13,7 @@ import BearLogo from './components/BearLogo';
 import { UpdateNotification } from './components/UpdateNotification';
 import { checkForUpdatesOnStartup } from './utils/updater';
 import SetupWizard from './components/SetupWizard';
+import Settings from './components/Settings';
 import { logger } from './utils/logger';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [showSetup, setShowSetup] = useState(false);
   const [setupComplete, setSetupComplete] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -222,6 +224,7 @@ function App() {
         />
       )}
       <UpdateNotification />
+      <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-[var(--bg-secondary)] border-r border-[var(--border-primary)] flex flex-col overflow-hidden`}>
@@ -258,6 +261,13 @@ function App() {
 
         <div className="p-4 border-t border-[var(--border-primary)] space-y-2">
           <ModelSelector />
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-[var(--hover-bg)] rounded-lg transition-all"
+          >
+            <SettingsIcon className="w-4 h-4" />
+            <span className="text-sm">Settings</span>
+          </button>
           <button
             onClick={toggleTheme}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 hover:bg-[var(--hover-bg)] rounded-lg transition-all"
@@ -306,7 +316,7 @@ function App() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto scrollbar-custom">
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full px-4">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fadeIn">
                 <BearLogo size="large" theme={theme} className="mb-6" />

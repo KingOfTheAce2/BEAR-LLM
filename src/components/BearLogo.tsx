@@ -21,9 +21,10 @@ const BearLogo: React.FC<BearLogoProps> = ({
     large: 'w-20 h-20'
   };
 
-  const logoSrc = currentTheme === 'dark'
-    ? '/BEAR_AI_LLM_Logo_white.png'
-    : '/BEAR_AI_LLM_Logo_black.png';
+  // FIXED: Light mode needs BLACK logo, dark mode needs WHITE logo
+  const logoSrc = currentTheme === 'light'
+    ? '/BEAR_AI_LLM_Logo_black.png'
+    : '/BEAR_AI_LLM_Logo_white.png';
 
   const fallbackSrc = '/BEAR_AI_logo.png';
 

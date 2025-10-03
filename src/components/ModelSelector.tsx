@@ -94,7 +94,7 @@ const ModelSelector: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-80 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-xl z-50">
+        <div className="absolute top-full mt-2 right-0 w-80 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-xl z-[100]">
           {error && (
             <div className="px-4 py-2 border-b border-[var(--border-primary)] bg-yellow-50 dark:bg-yellow-900/20">
               <p className="text-xs text-yellow-600 dark:text-yellow-400">{error}</p>
@@ -105,7 +105,7 @@ const ModelSelector: React.FC = () => {
           <div className="p-3 border-b border-[var(--border-primary)]">
             <button
               onClick={() => setShowHardware(!showHardware)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-lg transition-all hover:scale-105 mb-2"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--text-primary)] hover:bg-opacity-90 text-[var(--bg-primary)] rounded-lg transition-all mb-2"
             >
               <Zap className="w-4 h-4" />
               <span className="font-medium">Hardware Recommendations</span>
@@ -113,7 +113,7 @@ const ModelSelector: React.FC = () => {
 
             <button
               onClick={handleBrowseModels}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all hover:scale-105"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--hover-bg)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded-lg transition-all"
             >
               <Globe className="w-4 h-4" />
               <span className="font-medium">Browse HuggingFace Models</span>

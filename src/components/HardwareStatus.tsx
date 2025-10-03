@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Monitor, Cpu, MemoryStick, HardDrive, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Monitor, Cpu, MemoryStick, HardDrive, Zap, AlertTriangle, CheckCircle, Download, Loader2 } from 'lucide-react';
 
 interface HardwareSpecs {
   cpu_cores: number;
@@ -34,6 +34,8 @@ const HardwareStatus: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   useEffect(() => {
     detectHardware();
@@ -73,6 +75,33 @@ const HardwareStatus: React.FC = () => {
       case 'performance': return <Zap className="w-4 h-4" />;
       case 'workstation': return <Monitor className="w-4 h-4" />;
       default: return <Cpu className="w-4 h-4" />;
+    }
+  };
+
+  const handleDownloadModel = async (modelId: string) => {
+    setDownloading(modelId);
+    setDownloadProgress(0);
+    setError(null);
+
+    try {
+      // Simulate progress updates (TODO: Connect to actual Tauri download progress events)
+      const progressInterval = setInterval(() => {
+        setDownloadProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
+
+      await invoke('download_model_from_huggingface', { modelId });
+
+      clearInterval(progressInterval);
+      setDownloadProgress(100);
+
+      setTimeout(() => {
+        setDownloading(null);
+        setDownloadProgress(0);
+      }, 1000);
+    } catch (err) {
+      setError(`Failed to download ${modelId}: ${err}`);
+      setDownloading(null);
+      setDownloadProgress(0);
     }
   };
 
@@ -194,12 +223,35 @@ const HardwareStatus: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="flex flex-col items-end gap-2">
                   <div className="text-xs text-[var(--text-tertiary)]">
                     Score: {Math.round(rec.compatibility_score * 100)}%
                   </div>
                   {index === 0 && (
-                    <div className="text-xs text-green-500 mt-1">Recommended</div>
+                    <div className="text-xs text-green-500">Recommended</div>
+                  )}
+                  {downloading === rec.model_id ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                        <span className="text-xs text-blue-500">{downloadProgress}%</span>
+                      </div>
+                      <div className="w-24 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 transition-all duration-300"
+                          style={{ width: `${downloadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleDownloadModel(rec.model_id)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-all hover:scale-105"
+                      title="Download GGUF model"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Download</span>
+                    </button>
                   )}
                 </div>
               </div>
