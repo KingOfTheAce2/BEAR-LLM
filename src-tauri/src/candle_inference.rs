@@ -100,9 +100,11 @@ impl GGUFInferenceEngine {
 
         tracing::info!("Loading GGUF model from: {:?}", path);
 
-        // Load quantized model (GGUF/GGML format)
-        let vb = llama::VarBuilder::from_gguf(path, &self.device)?;
-        let model = llama::ModelWeights::from_gguf(vb, path)?;
+        // Load quantized model (GGUF format)
+        use candle_transformers::quantized_var_builder::VarBuilder;
+
+        let mut file = std::fs::File::open(path)?;
+        let model = llama::ModelWeights::from_gguf(&mut file, &self.device)?;
 
         // Try to load tokenizer from same directory or HuggingFace cache
         let tokenizer_path = path.parent().map(|p| p.join("tokenizer.json"));
@@ -156,9 +158,9 @@ impl GGUFInferenceEngine {
         max_tokens: usize,
         stop_sequences: Vec<String>,
     ) -> Result<GenerationResult> {
-        let model_lock = self.model.read().await;
+        let mut model_lock = self.model.write().await;
         let model = model_lock
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| anyhow!("No model loaded. Call load_model() first."))?;
 
         let tokenizer_lock = self.tokenizer.read().await;
@@ -207,8 +209,7 @@ impl GGUFInferenceEngine {
             tokens.truncate(max_prompt_tokens);
         }
 
-        // Convert tokens to tensor
-        let input_ids = Tensor::new(&tokens[..], &self.device)?;
+        // Tokens are ready for inference (no explicit tensor conversion needed for quantized models)
 
         // Generation loop
         let start_time = std::time::Instant::now();
@@ -241,10 +242,9 @@ impl GGUFInferenceEngine {
             tokens_generated += 1;
 
             // Check for stop sequences
-            if let Some((matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
+            if let Some((_matched_seq, pos)) = self.find_stop_sequence(&generated_text, &stop_sequences) {
                 stop_reason = StopReason::StopSequence;
                 generated_text.truncate(pos);
-                tracing::debug!("Stop sequence found: '{}' at position {}", matched_seq, pos);
                 break;
             }
         }
@@ -283,9 +283,9 @@ impl GGUFInferenceEngine {
     where
         F: FnMut(&str) -> bool,
     {
-        let model_lock = self.model.read().await;
+        let mut model_lock = self.model.write().await;
         let model = model_lock
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| anyhow!("No model loaded"))?;
 
         let tokenizer_lock = self.tokenizer.read().await;
