@@ -1,5 +1,20 @@
 # Claude Code Configuration - SPARC Development Environment
 
+## 🚨 CRITICAL: FULL-STACK DEVELOPMENT REQUIREMENT
+
+**⚠️ BEAR-LLM/BEAR AI SPECIAL RULE:**
+**ALWAYS consider BOTH frontend AND backend when working on this codebase!**
+
+When a user reports an issue or requests a feature:
+1. ✅ Check **React/TypeScript frontend** (src/components/, src/App.tsx)
+2. ✅ Check **Rust backend** (src-tauri/src/)
+3. ✅ Verify **integration** between Tauri commands and UI
+4. ✅ Test **both layers** before declaring complete
+
+**Example:** User says "download not working"
+- ❌ WRONG: Only check backend download_model function
+- ✅ CORRECT: Check backend function AND frontend Download button AND progress UI AND error handling
+
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:
@@ -7,6 +22,7 @@
 2. **NEVER save working files, text/mds and tests to the root folder**
 3. ALWAYS organize files in appropriate subdirectories
 4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
+5. **ALWAYS verify BOTH frontend (React/TS) AND backend (Rust) for every task**
 
 ### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
 
