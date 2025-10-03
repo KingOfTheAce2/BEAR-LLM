@@ -39,27 +39,30 @@ urlencoding = "2.1"
 walkdir = "2.5"
 nvml-wrapper = "0.11"
 zip = "0.6"
-# AI/ML dependencies - Pure Rust inference (no C++ build issues)
-candle-core = "0.8"  # CUDA support optional, enabled at runtime if available
+
+# AI/ML dependencies - Pure Rust inference
+candle-core = "0.8"
 candle-nn = "0.8"
-candle-transformers = "0.8"  # GGUF support is built-in via quantized_llama module
+candle-transformers = "0.8"
 tokenizers = "0.21.0"
 
-# Database
-rusqlite = { version = \"0.30\", features = [\"bundled\"] }\nr2d2 = \"0.8\"\nr2d2_sqlite = { version = \"0.23\", features = [\"bundled\"] }
+# Database dependencies
+rusqlite = { version = "0.30.0", features = ["bundled"] }
+r2d2 = "0.8.10"
+r2d2_sqlite = { version = "0.21.0", features = ["bundled"] }
 
 # Crypto & Security
-ring = "0.17"
-sha2 = "0.10"
-zeroize = "1.6"
-argon2 = "0.5"
-keyring = "2.1"
-rand = "0.8"
-hex = "0.4"
+ring = "0.17.5"
+sha2 = "0.10.8"
+zeroize = "1.6.0"
+argon2 = "0.5.2"
+keyring = "2.1.0"
+rand = "0.8.5"
+hex = "0.4.3"
 
 # Document handling
-docx-rs = "0.4"
-printpdf = { version = "0.7", features = ["embedded_images"] }
+docx-rs = "0.4.7"
+printpdf = { version = "0.7.0", features = ["embedded_images"] }
 
 # Removed llama-cpp-2 - migrated to pure Rust Candle for reliable Windows builds
 # Note: GPU acceleration works without CUDA feature - Candle auto-detects at runtime
