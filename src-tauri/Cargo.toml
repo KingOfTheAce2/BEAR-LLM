@@ -47,7 +47,7 @@ candle-transformers = "0.8"
 tokenizers = "0.21.0"
 
 # Database dependencies
-rusqlite = { version = "0.30.0", features = ["bundled"] }
+rusqlite = { version = "0.28.0", features = ["bundled"] }
 r2d2 = "0.8.10"
 r2d2_sqlite = { version = "0.21.0", features = ["bundled"] }
 
