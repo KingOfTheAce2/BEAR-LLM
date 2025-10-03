@@ -1,6 +1,6 @@
 [package]
 name = "bear-ai-llm"
-version = "1.0.42"
+version = "1.0.44"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Ernst van Gassen <ernst@example.com>"]
 edition = "2021"
