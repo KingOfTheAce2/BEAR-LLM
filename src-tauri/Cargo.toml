@@ -50,8 +50,7 @@ tokenizers = "0.21"
 # faiss = { version = "0.12", optional = true } # Disabled - using fastembed instead
 # Better embeddings - Use fastembed with compatible features
 fastembed = { version = "5.0", default-features = false, features = ["online"] }
-# ONNX runtime for NER models - ensure compatible runtime library
-ort = { version = "2.0.0-rc.10", default-features = false, features = ["download-binaries", "half", "load-dynamic"] }
+# Note: ort (ONNX Runtime) is brought in by gline-rs and fastembed - no direct dependency needed
 pdf-extract = "0.7"
 rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
 r2d2 = "0.8"  # Connection pooling
@@ -62,6 +61,9 @@ ring = "0.17"  # FIPS-compatible cryptography for chat encryption
 argon2 = "0.5"  # Key derivation for per-user encryption
 calamine = { version = "0.26", features = ["dates"] }
 docx-rs = "0.4"
+# Layer 2 PII Detection - BLOCKED by dependency conflict
+# gline-rs = "1.0.0"  # ❌ Requires ort rc.9, conflicts with fastembed's ort rc.10
+# TODO: Implement with candle-transformers or wait for gline-rs v1.0.1
 # Export and compliance dependencies
 printpdf = "0.7"  # PDF export
 age = "0.10"  # Encryption for data portability
