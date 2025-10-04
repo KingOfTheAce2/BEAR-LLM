@@ -1,6 +1,6 @@
 use crate::utils::cosine_similarity;
 use anyhow::{anyhow, Result};
-use candle_transformers::models::candle_embed::{EmbeddingModel, InitOptions, TextEmbedding};
+use candle_embed::{EmbeddingModel, InitOptions, TextEmbedding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -9,8 +9,22 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-// Production RAG Engine with real embeddings and vector search
-// This is the single source of truth for RAG functionality in BEAR AI
+/// Simple language detector for English vs Dutch.
+/// Returns "nl" for Dutch, "en" for English.
+fn detect_language(text: &str) -> &'static str {
+    let lower = text.to_lowercase();
+    let dutch_markers = ["de", "het", "een", "niet", "met", "voor", "zijn", "wordt", "artikel"];
+    let english_markers = ["the", "and", "not", "with", "for", "shall", "section", "article"];
+
+    let dutch_hits = dutch_markers.iter().filter(|&&w| lower.contains(w)).count();
+    let english_hits = english_markers.iter().filter(|&&w| lower.contains(w)).count();
+
+    if dutch_hits > english_hits {
+        "nl"
+    } else {
+        "en"
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
@@ -49,7 +63,7 @@ impl Default for RAGConfig {
         Self {
             chunk_size: 512,
             chunk_overlap: 50,
-            embedding_model: "BAAI/bge-small-en-v1.5".to_string(),
+            embedding_model: "auto-legal".to_string(), // Auto-detect language for legal models
             similarity_threshold: 0.3,
             max_results: 10,
             enable_reranking: true,
@@ -83,7 +97,7 @@ impl RAGEngine {
                 dimensions: 384,
                 size_mb: 150,
                 use_case: "General documents, fast search".to_string(),
-                is_active: true,
+                is_active: false,
             },
             RAGModelInfo {
                 name: "BGE Base EN v1.5".to_string(),
@@ -115,6 +129,26 @@ impl RAGEngine {
                 use_case: "Resource-constrained systems".to_string(),
                 is_active: false,
             },
+            RAGModelInfo {
+                name: "Legal English (E5-Legal)".to_string(),
+                model_id: "legembedding_e5_base".to_string(),
+                embedding_model: EmbeddingModel::Unknown,
+                description: "Sentence embedding model fine-tuned on legal English corpora".to_string(),
+                dimensions: 384,
+                size_mb: 400,
+                use_case: "Legal document retrieval (English)".to_string(),
+                is_active: true,
+            },
+            RAGModelInfo {
+                name: "Legal Dutch (Roberta legal NL)".to_string(),
+                model_id: "legal-dutch-roberta-base".to_string(),
+                embedding_model: EmbeddingModel::Unknown,
+                description: "Dutch legal domain embedding model".to_string(),
+                dimensions: 768,
+                size_mb: 416,
+                use_case: "Legal document retrieval (Dutch)".to_string(),
+                is_active: true,
+            },
         ]
     }
 }
@@ -124,7 +158,7 @@ pub struct RAGEngine {
     embeddings_model: Arc<RwLock<Option<TextEmbedding>>>,
     config: Arc<RwLock<RAGConfig>>,
     index_path: PathBuf,
-    inverted_index: Arc<RwLock<HashMap<String, Vec<String>>>>, // For keyword search
+    inverted_index: Arc<RwLock<HashMap<String, Vec<String>>>>,
 }
 
 impl Default for RAGEngine {
@@ -142,7 +176,7 @@ impl RAGEngine {
 
         Self {
             documents: Arc::new(RwLock::new(HashMap::new())),
-            embeddings_model: Arc::new(RwLock::new(None)), // Simplified embedding approach
+            embeddings_model: Arc::new(RwLock::new(None)),
             config: Arc::new(RwLock::new(RAGConfig::default())),
             index_path,
             inverted_index: Arc::new(RwLock::new(HashMap::new())),
@@ -150,10 +184,7 @@ impl RAGEngine {
     }
 
     pub async fn initialize(&self) -> Result<()> {
-        // Create index directory only
         tokio::fs::create_dir_all(&self.index_path).await?;
-
-        // Load existing index (fast)
         self.load_index().await?;
 
         tracing::info!(
@@ -164,7 +195,7 @@ impl RAGEngine {
         Ok(())
     }
 
-    // Lazy-load embeddings model on first use (if not downloaded during setup)
+    /// Automatically load or switch embeddings model based on config or language detection.
     async fn ensure_embeddings_model(&self) -> Result<()> {
         let model_lock = self.embeddings_model.read().await;
         if model_lock.is_some() {
@@ -172,19 +203,30 @@ impl RAGEngine {
         }
         drop(model_lock);
 
-        // Get configured model from config
         let config = self.config.read().await;
-        let model_id = config.embedding_model.clone();
+        let mut model_id = config.embedding_model.clone();
         drop(config);
 
-        // Map model ID to EmbeddingModel enum
+        // Auto-language detection for legal domain
+        if model_id == "auto-legal" {
+            let sample_text = {
+                let docs = self.documents.read().await;
+                docs.values().next().map(|d| d.content.clone()).unwrap_or_default()
+            };
+
+            let lang = detect_language(&sample_text);
+            model_id = if lang == "nl" {
+                "legal-dutch-roberta-base".to_string()
+            } else {
+                "legembedding_e5_base".to_string()
+            };
+
+            tracing::info!("🌐 Auto-selected model based on detected language ({}): {}", lang, model_id);
+        }
+
         let embedding_model = self.get_embedding_model_from_id(&model_id)?;
 
-        // If model was already downloaded during setup, this will be instant
-        // If not, it will download now (fallback)
-        tracing::info!("📥 Loading RAG embeddings model: {}...", model_id);
-
-        // Initialize embeddings model (uses cache if available)
+        tracing::info!("📥 Loading embeddings model: {}", model_id);
         let model = TextEmbedding::try_new(
             InitOptions::new(embedding_model).with_show_download_progress(true),
         )?;
@@ -192,7 +234,7 @@ impl RAGEngine {
         let mut model_lock = self.embeddings_model.write().await;
         *model_lock = Some(model);
 
-        tracing::info!("✅ RAG embeddings model ready: {}", model_id);
+        tracing::info!("✅ Embeddings model ready: {}", model_id);
         Ok(())
     }
 
@@ -202,38 +244,29 @@ impl RAGEngine {
             "BAAI/bge-base-en-v1.5" => Ok(EmbeddingModel::BGEBaseENV15),
             "BAAI/bge-large-en-v1.5" => Ok(EmbeddingModel::BGELargeENV15),
             "sentence-transformers/all-MiniLM-L6-v2" => Ok(EmbeddingModel::AllMiniLML6V2),
+            // These two are placeholders for legal-domain models that might need HF integration.
+            "legembedding_e5_base" => Ok(EmbeddingModel::Unknown),
+            "legal-dutch-roberta-base" => Ok(EmbeddingModel::Unknown),
             _ => Err(anyhow!("Unsupported embedding model: {}", model_id)),
         }
     }
 
-    /// Check if RAG engine is initialized
     pub fn is_initialized(&self) -> bool {
-        // RAG engine is considered initialized if documents map exists
-        // Even if empty, it's ready to accept documents
         true
     }
 
     pub async fn switch_rag_model(&self, model_id: String) -> Result<()> {
         tracing::info!("🔄 Switching RAG model to: {}", model_id);
-
-        // Validate model ID
         self.get_embedding_model_from_id(&model_id)?;
 
-        // Update config
         let mut config = self.config.write().await;
         config.embedding_model = model_id.clone();
         drop(config);
 
-        // Unload current model
         let mut model_lock = self.embeddings_model.write().await;
         *model_lock = None;
-        drop(model_lock);
 
-        tracing::info!(
-            "✅ RAG model switched to: {}. Will load on next use.",
-            model_id
-        );
-
+        tracing::info!("✅ Model switched to: {} (lazy load on next use)", model_id);
         Ok(())
     }
 
