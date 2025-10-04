@@ -523,9 +523,9 @@ impl PIIDetector {
         // Initialize Candle NER model (Layer 2) if needed
         let config = self.config.read().await;
         let model_id = if config.candle_model_language.as_str() == "dutch" {
-            "pdelobelle/robbert-v2-dutch-ner"
+            "./models/robbert-v2-dutch-ner"
         } else {
-            "dbmdz/bert-large-cased-finetuned-conll03-english"
+            "./models/bert-large-cased-finetuned-conll03-english"
         };
         if matches!(config.detection_layer, DetectionLayer::WithCandle | DetectionLayer::FullStack) {
             let mut candle_ner_model = self.candle_ner_model.write().await;
@@ -536,7 +536,7 @@ impl PIIDetector {
                 } else {
                     Device::Cpu
                 };
-                match NerModel::new(model_id, "main", device) {
+                match NerModel::new_local(PathBuf::from(model_id), device) {
                     Ok(model) => {
                         *candle_ner_model = Some(model);
                         tracing::info!("✅ Candle NER model initialized successfully.");
@@ -1151,9 +1151,9 @@ print(json.dumps(entities))
     pub async fn set_candle_enabled(&self, enabled: bool) -> Result<()> {
         let config = self.config.read().await;
         let model_id = if config.candle_model_language.as_str() == "dutch" {
-            "pdelobelle/robbert-v2-dutch-ner"
+            "./models/robbert-v2-dutch-ner"
         } else {
-            "dbmdz/bert-large-cased-finetuned-conll03-english"
+            "./models/bert-large-cased-finetuned-conll03-english"
         };
         drop(config); // Drop config read lock early
 
@@ -1168,7 +1168,7 @@ print(json.dumps(entities))
                 } else {
                     Device::Cpu
                 };
-                match NerModel::new(model_id, "main", device) {
+                match NerModel::new_local(PathBuf::from(model_id), device) {
                     Ok(model) => {
                         *self.candle_ner_model.write().await = Some(model);
                         tracing::info!("✅ Candle NER model loaded successfully.");

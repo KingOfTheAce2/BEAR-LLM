@@ -1,6 +1,6 @@
 [package]
 name = "bear-ai-llm"
-version = "1.0.57"
+version = "1.0.62"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Ernst van Gassen <ernst@example.com>"]
 edition = "2021"
@@ -39,6 +39,11 @@ urlencoding = "2.1"
 walkdir = "2.5"
 nvml-wrapper = "0.11"
 zip = "0.6"
+fastembed = "5"
+calamine = "0.24"         # For reading Excel (.xlsx, .xls) files
+encoding_rs = "0.8"       # For binary text encoding detection
+cfb = "0.6"               # For legacy OLE document structure (.doc, .ppt)
+pdf-extract = "0.6"       # For PDF text extraction
 
 # AI/ML dependencies - Pure Rust inference
 candle-core = "0.8"
