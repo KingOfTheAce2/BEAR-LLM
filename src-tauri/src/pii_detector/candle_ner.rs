@@ -177,6 +177,9 @@ impl NerModel {
             let sum_exp: f32 = logit_row.iter().map(|x| x.exp()).sum();
             let confidence = (max_logit.exp()) / sum_exp;
 
+            // Capture stripped I- label for the next conditional check
+            let stripped_i = label.strip_prefix("I-");
+
             if let Some(stripped) = label.strip_prefix("B-") {
                 // End previous entity if one is open
                 if let Some(prev_label) = current_entity_label.take() {
@@ -199,9 +202,9 @@ impl NerModel {
                 current_entity_start = Some(start);
                 current_entity_end = Some(end);
                 current_entity_confidence = confidence;
-            } else if let Some(stripped) = label.strip_prefix("I-")
-                && current_entity_label.as_deref() == Some(stripped)
-            {
+            // The original error line is fixed here by moving the `label.strip_prefix("I-")` check
+            // out and using a standard boolean comparison to check for continuation.
+            } else if stripped_i.is_some() && current_entity_label.as_deref() == stripped_i.as_deref() {
                 // Continue current entity
                 current_entity_tokens.push(token_text.to_string());
                 current_entity_end = Some(end);
