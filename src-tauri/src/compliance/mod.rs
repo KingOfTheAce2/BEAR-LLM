@@ -255,7 +255,8 @@ mod tests {
 
         // Generate report
         let report = manager.generate_compliance_report(user_id).await.unwrap();
-        assert!(report["consents"]["current"].as_array().unwrap().len() > 0);
+        // Fix: Replace .len() > 0 with !.is_empty()
+        assert!(!report["consents"]["current"].as_array().unwrap().is_empty());
 
         // Cleanup
         let _ = std::fs::remove_file(db_path);

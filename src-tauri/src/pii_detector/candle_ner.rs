@@ -177,7 +177,7 @@ impl NerModel {
             let sum_exp: f32 = logit_row.iter().map(|x| x.exp()).sum();
             let confidence = (max_logit.exp()) / sum_exp;
 
-            if label.starts_with("B-") {
+            if let Some(stripped) = label.strip_prefix("B-") {
                 // End previous entity if one is open
                 if let Some(prev_label) = current_entity_label.take() {
                     if !current_entity_tokens.is_empty() {
@@ -195,12 +195,12 @@ impl NerModel {
 
                 // Start new entity
                 current_entity_tokens = vec![token_text.to_string()];
-                current_entity_label = Some(label[2..].to_string());
+                current_entity_label = Some(stripped.to_string());
                 current_entity_start = Some(start);
                 current_entity_end = Some(end);
                 current_entity_confidence = confidence;
-            } else if label.starts_with("I-")
-                && current_entity_label.as_deref() == Some(&label[2..])
+            } else if let Some(stripped) = label.strip_prefix("I-")
+                && current_entity_label.as_deref() == Some(stripped)
             {
                 // Continue current entity
                 current_entity_tokens.push(token_text.to_string());

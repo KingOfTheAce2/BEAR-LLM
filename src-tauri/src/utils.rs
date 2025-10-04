@@ -185,15 +185,15 @@ mod tests {
     fn test_model_size_estimation() {
         // 7B Q4_K_M model
         let size = estimate_model_size_mb(7.0, "Q4_K_M");
-        assert!(size >= 3500 && size <= 4500); // ~4GB
+        assert!((3500..=4500).contains(&size)); // ~4GB
 
         // 7B FP16 model
         let size = estimate_model_size_mb(7.0, "FP16");
-        assert!(size >= 13000 && size <= 15000); // ~14GB
+        assert!((13000..=15000).contains(&size)); // ~14GB
 
         // 1.1B Q4_K_M model (TinyLlama)
         let size = estimate_model_size_mb(1.1, "Q4_K_M");
-        assert!(size >= 500 && size <= 800); // ~600MB
+        assert!((500..=800).contains(&size)); // ~600MB
     }
 
     #[test]
