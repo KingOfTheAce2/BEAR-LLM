@@ -204,7 +204,7 @@ impl NerModel {
                 current_entity_confidence = confidence;
             // The original error line is fixed here by moving the `label.strip_prefix("I-")` check
             // out and using a standard boolean comparison to check for continuation.
-            } else if stripped_i.is_some() && current_entity_label.as_deref() == stripped_i.as_deref() {
+            } else if stripped_i.is_some() && current_entity_label.as_deref() == stripped_i {
                 // Continue current entity
                 current_entity_tokens.push(token_text.to_string());
                 current_entity_end = Some(end);
