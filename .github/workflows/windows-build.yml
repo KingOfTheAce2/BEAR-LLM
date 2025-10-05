@@ -63,6 +63,8 @@ jobs:
     runs-on: windows-latest
     env:
       RUSTFLAGS: "-Ctarget-feature=-crt-static"
+      CFLAGS: "/MD"
+      CXXFLAGS: "/MD"
 
     steps:
       - uses: actions/checkout@v4
@@ -85,7 +87,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}-md-runtime
           restore-keys: |
             ${{ runner.os }}-cargo-release-
 
