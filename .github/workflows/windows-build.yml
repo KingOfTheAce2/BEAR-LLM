@@ -103,8 +103,13 @@ jobs:
         run: |
           Write-Host "🔍 Verifying dynamic runtime linkage (/MD)..."
           # We build with -vv and capture output to check for /MT flag.
-          # This ensures all C/C++ dependencies are using the dynamic runtime.
-          $buildOutput = cargo build --release --target x86_64-pc-windows-msvc -vv 2>&1
+          # The output is streamed to the console to provide progress feedback.
+          $buildOutput = [System.Collections.Generic.List[string]]::new()
+          cargo build --release --target x86_64-pc-windows-msvc -vv 2>&1 | ForEach-Object {
+              $buildOutput.Add($_)
+              Write-Host $_
+          }
+
           $mtUsage = $buildOutput | Select-String "/MT"
           if ($mtUsage) {
               Write-Host "❌ Found static runtime linkage (/MT) in build output:" -ForegroundColor Red
