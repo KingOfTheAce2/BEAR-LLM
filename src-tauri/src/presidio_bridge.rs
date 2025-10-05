@@ -166,7 +166,7 @@ scipy>=1.10.0
 
         let output = AsyncCommand::new(python)
             .no_window()
-            .args(&["-m", "pip", "install", "-r"])
+            .args(["-m", "pip", "install", "-r"])
             .arg(&requirements_path)
             .no_window()
             .output()
@@ -181,7 +181,7 @@ scipy>=1.10.0
         println!("📥 Downloading spaCy NER model (small - 40MB)...");
         let output = AsyncCommand::new(python)
             .no_window()
-            .args(&["-m", "spacy", "download", "en_core_web_sm"])
+            .args(["-m", "spacy", "download", "en_core_web_sm"])
             .no_window()
             .output()
             .await?;
@@ -343,8 +343,7 @@ except ImportError as e:
         let model_path = self.model_path.read().await;
 
         // Create detection script (LITE mode - spaCy only, no transformers)
-        let detection_script = format!(
-            r#"
+        let detection_script = r#"
 import json
 import sys
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
@@ -407,8 +406,7 @@ if __name__ == "__main__":
     config = json.loads(sys.argv[2])
     result = detect_pii(text, config)
     print(result)
-"#
-        );
+"#.to_string()
 
         let script_path = model_path
             .as_ref()

@@ -574,7 +574,7 @@ async fn rag_search(
         .await
         .map_err(|e| e.to_string())?;
 
-    let confidence = if results.len() > 0 { 0.85 } else { 0.0 };
+    let confidence = if !results.is_empty() { 0.85 } else { 0.0 };
 
     Ok(serde_json::json!({
         "answer": format!("Found {} relevant documents for your query.", results.len()),
@@ -607,7 +607,7 @@ async fn upload_document(
 
     // Store in database
     let db = state.database_manager.read().await;
-    let file_type = filename.split('.').last().unwrap_or("txt");
+    let file_type = filename.split('.').next_back().unwrap_or("txt");
     let doc_id = db
         .store_document(&filename, &cleaned_content, file_type)
         .map_err(|e| e.to_string())?;
@@ -640,7 +640,7 @@ async fn analyze_document_pii(
 ) -> Result<serde_json::Value, String> {
     let start_time = std::time::Instant::now();
 
-    let file_type = filename.split('.').last().unwrap_or("unknown");
+    let file_type = filename.split('.').next_back().unwrap_or("unknown");
     let original_text = if state.file_processor.is_supported(file_type) {
         // SECURITY FIX: Atomically create temporary file with content
         // Uses tempfile crate for atomic creation, preventing TOCTOU race conditions
@@ -872,21 +872,20 @@ async fn search_huggingface_models(
     limit: Option<usize>,
 ) -> Result<serde_json::Value, String> {
     // Simple search implementation - in production use HF API
-    let popular_models = vec![
-        ("TheBloke/Llama-2-7B-Chat-GGUF", "Llama 2 7B Chat", "7B"),
-        (
-            "TheBloke/Mistral-7B-Instruct-v0.2-GGUF",
-            "Mistral 7B Instruct",
-            "7B",
-        ),
-        (
-            "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
-            "TinyLlama 1.1B",
-            "1.1B",
-        ),
-        ("TheBloke/CodeLlama-7B-Instruct-GGUF", "CodeLlama 7B", "7B"),
-    ];
-
+          let popular_models = [
+            ("TheBloke/Llama-2-7B-Chat-GGUF", "Llama 2 7B Chat", "7B"),
+            (
+                "TheBloke/Mistral-7B-Instruct-v0.2-GGUF",
+                "Mistral 7B Instruct",
+                "7B",
+            ),
+            (
+                "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+                "TinyLlama 1.1B",
+                "1.1B",
+            ),
+            ("TheBloke/CodeLlama-7B-Instruct-GGUF", "CodeLlama 7B", "7B"),
+        ];
     let results: Vec<serde_json::Value> = popular_models
         .iter()
         .filter(|(id, name, _)| {
@@ -915,27 +914,24 @@ async fn search_huggingface_models(
 // RAG Configuration Commands
 #[tauri::command]
 async fn get_available_rag_models() -> Result<serde_json::Value, String> {
-    let models = vec![
-        (
-            "BAAI/bge-small-en-v1.5",
-            "BGE Small English",
-            "Small",
-            "133MB",
-        ),
-        (
-            "BAAI/bge-base-en-v1.5",
-            "BGE Base English",
-            "Medium",
-            "438MB",
-        ),
-        (
-            "sentence-transformers/all-MiniLM-L6-v2",
-            "MiniLM L6",
-            "Small",
-            "90MB",
-        ),
-    ];
-
+          let models = [(
+                "BAAI/bge-small-en-v1.5",
+                "BGE Small English",
+                "Small",
+                "133MB",
+            ),
+            (
+                "BAAI/bge-base-en-v1.5",
+                "BGE Base English",
+                "Medium",
+                "438MB",
+            ),
+            (
+                "sentence-transformers/all-MiniLM-L6-v2",
+                "MiniLM L6",
+                "Small",
+                "90MB",
+            )];
     let model_list: Vec<serde_json::Value> = models
         .iter()
         .map(|(id, name, size, disk)| {

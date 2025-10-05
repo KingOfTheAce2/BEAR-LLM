@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Consent Guard Middleware - GDPR & AI Act Compliance
 // Enforces consent requirements before data processing operations
 
@@ -175,7 +176,7 @@ impl ConsentGuard {
                 .iter()
                 .map(|r| {
                     format!(
-                        "{}: {}",
+                        "{} - {}",
                         r.consent_type,
                         r.reason.as_ref().unwrap_or(&"Unknown".to_string())
                     )

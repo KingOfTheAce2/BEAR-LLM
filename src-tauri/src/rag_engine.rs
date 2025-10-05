@@ -59,6 +59,7 @@ impl Default for RAGConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct RAGModelInfo {
     pub name: String,
     pub model_id: String,
@@ -99,6 +100,7 @@ impl RAGEngine {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_available_models() -> Vec<RAGModelInfo> {
         vec![
             RAGModelInfo {
@@ -526,12 +528,14 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn clear_cache(&self) -> Result<()> {
         *self.embeddings_model.write().await = None;
         tracing::info!("🧹 RAG engine embedding cache cleared");
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn clear_index(&self) -> Result<()> {
         self.documents.write().await.clear();
         self.inverted_index.write().await.clear();
@@ -540,6 +544,7 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn delete_document(&self, doc_id: &str) -> Result<()> {
         let mut docs = self.documents.write().await;
         let mut index = self.inverted_index.write().await;
@@ -573,6 +578,7 @@ impl RAGEngine {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_statistics(&self) -> Result<JsonValue> {
         let docs = self.documents.read().await;
         let index = self.inverted_index.read().await;
@@ -600,6 +606,7 @@ impl RAGEngine {
         }))
     }
 
+    #[allow(dead_code)]
     fn estimate_index_size(
         &self,
         docs: &HashMap<String, Document>,
@@ -617,6 +624,7 @@ impl RAGEngine {
     }
 
     /// Build final prompt for LLM with retrieved context
+    #[allow(dead_code)]
     pub async fn generate_augmented_prompt(
         &self,
         query: &str,

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use anyhow::Result;
 use std::time::Duration;
 use sysinfo::{Components, ProcessesToUpdate, System};

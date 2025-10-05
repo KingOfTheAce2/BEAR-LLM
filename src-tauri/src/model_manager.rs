@@ -241,12 +241,10 @@ impl ModelManager {
 fn get_directory_size(path: &Path) -> Result<u64> {
     let mut size = 0;
 
-    for entry in walkdir::WalkDir::new(path) {
-        if let Ok(entry) = entry {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() {
-                    size += metadata.len();
-                }
+    for entry in walkdir::WalkDir::new(path).into_iter().flatten() {
+        if let Ok(metadata) = entry.metadata() {
+            if metadata.is_file() {
+                size += metadata.len();
             }
         }
     }

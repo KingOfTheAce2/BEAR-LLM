@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
@@ -257,10 +258,8 @@ impl AuditLogger {
                     success: row.get(9)?,
                     error_message: row.get(10)?,
                 })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(entries)
+            })?;
+        entries.collect::<Result<Vec<_>, _>>()?
     }
 
     /// Get audit logs for specific user
@@ -288,7 +287,7 @@ impl AuditLogger {
 
     /// Export audit logs for a user (GDPR compliance)
     pub fn export_user_audit_trail(&self, user_id: &str) -> Result<serde_json::Value> {
-        let logs = self.get_user_logs(user_id, 10000)?; // Get all logs
+        let logs = self.get_user_logs(user_id, 10000)?;
 
         Ok(serde_json::json!({
             "user_id": user_id,
@@ -331,8 +330,8 @@ impl AuditLogger {
                     "action": row.get::<_, String>(0)?,
                     "count": row.get::<_, i64>(1)?
                 }))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
+            })?;
+        action_distribution.collect::<Result<Vec<_>, _>>()?
 
         Ok(serde_json::json!({
             "total_entries": total_entries,
@@ -395,10 +394,8 @@ impl AuditLogger {
                     success: row.get(9)?,
                     error_message: row.get(10)?,
                 })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(entries)
+            })?;
+        entries.collect::<Result<Vec<_>, _>>()?
     }
 }
 
@@ -409,7 +406,7 @@ mod tests {
 
     fn get_test_db() -> PathBuf {
         let mut path = env::temp_dir();
-        path.push(format!("test_audit_{}.db", uuid::Uuid::new_v4()));
+        path.push(format!("test_audit_{{}}", uuid::Uuid::new_v4()));
         path
     }
 

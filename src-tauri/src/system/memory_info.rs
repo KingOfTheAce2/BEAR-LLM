@@ -1,7 +1,8 @@
-//! System Memory Detection and PII Mode Recommendation
-//!
-//! Provides memory detection, usage tracking, and intelligent recommendations
-//! for PII detection modes based on available system resources.
+#![allow(dead_code)]
+/// System Memory Detection and PII Mode Recommendation
+///
+/// Provides memory detection, usage tracking, and intelligent recommendations
+/// for PII detection modes based on available system resources.
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};

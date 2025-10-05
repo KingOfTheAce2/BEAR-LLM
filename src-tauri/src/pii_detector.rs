@@ -112,6 +112,7 @@ impl std::fmt::Display for DetectionLayer {
     }
 }
 
+#[allow(dead_code)]
 impl DetectionLayer {
     pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {
@@ -162,6 +163,7 @@ impl std::fmt::Display for PresidioMode {
     }
 }
 
+#[allow(dead_code)]
 impl PresidioMode {
     pub fn from_string(s: &str) -> Self {
         match s.to_lowercase().as_str() {

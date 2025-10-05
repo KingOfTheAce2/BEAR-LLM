@@ -419,7 +419,7 @@ impl SetupManager {
     async fn verify_setup(&self) -> Result<()> {
         // Verify Presidio
         let presidio_check = tokio::process::Command::new("python")
-            .args(&["-c", "import presidio_analyzer; print('OK')"])
+            .args(["-c", "import presidio_analyzer; print('OK')"])
             .output()
             .await;
 

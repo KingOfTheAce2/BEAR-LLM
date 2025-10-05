@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use nvml_wrapper::Nvml;
 use serde::{Deserialize, Serialize};
 use sysinfo::{Components, System};
@@ -105,7 +106,7 @@ impl SystemMonitor {
                     if let Ok(device) = nvml.device_by_index(0) {
                         let name = device.name().unwrap_or_else(|_| "Unknown GPU".to_string());
 
-                        let mem_info = device.memory_info().unwrap_or_else(|_| {
+                        let mem_info = device.memory_info().unwrap_or(
                             nvml_wrapper::struct_wrappers::device::MemoryInfo {
                                 total: 0,
                                 free: 0,
@@ -113,7 +114,7 @@ impl SystemMonitor {
                                 reserved: 0,
                                 version: 0,
                             }
-                        });
+                        );
 
                         let temperature = device
                             .temperature(
@@ -125,7 +126,7 @@ impl SystemMonitor {
 
                         let compute_cap = device
                             .cuda_compute_capability()
-                            .map(|cc| format!("{}.{}", cc.major, cc.minor))
+                            .map(|cc| format bertujuan("{}.{}", cc.major, cc.minor))
                             .unwrap_or_else(|_| "Unknown".to_string());
 
                         let driver_version = nvml
@@ -236,8 +237,7 @@ impl SystemMonitor {
                                 }
                                 Err(e) => {
                                     tracing::error!(
-                                        "GPU detection failed: Could not query Win32_VideoController via WMI. \
-                                        Error: {}. This may indicate WMI service issues or insufficient permissions.",
+                                        "GPU detection failed: Could not query Win32_VideoController via WMI. \n                                        Error: {}. This may indicate WMI service issues or insufficient permissions.",
                                         e
                                     );
                                 }
@@ -245,8 +245,7 @@ impl SystemMonitor {
                         }
                         Err(e) => {
                             tracing::error!(
-                                "GPU detection failed: Could not establish WMI connection. \
-                                Error: {}. Ensure WMI service is running and you have proper permissions.",
+                                "GPU detection failed: Could not establish WMI connection. \n                                Error: {}. Ensure WMI service is running and you have proper permissions.",
                                 e
                             );
                         }
@@ -254,8 +253,7 @@ impl SystemMonitor {
                 }
                 Err(e) => {
                     tracing::error!(
-                        "GPU detection failed: Could not initialize COM library for WMI. \
-                        Error: {}. This may indicate system-level COM configuration issues.",
+                        "GPU detection failed: Could not initialize COM library for WMI. \n                        Error: {}. This may indicate system-level COM configuration issues.",
                         e
                     );
                 }
@@ -300,7 +298,7 @@ impl SystemMonitor {
             core_count,
             frequency_mhz,
             usage_percent,
-            temperature: temperature,
+            temperature,
         }
     }
 
@@ -324,7 +322,7 @@ impl SystemMonitor {
         format!(
             "{} {}",
             System::name().unwrap_or_else(|| "Unknown".to_string()),
-            System::os_version().unwrap_or_else(|| "".to_string())
+            System::os_version().unwrap_or_default()
         )
     }
 

@@ -369,17 +369,13 @@ impl FileProcessor {
             DocumentChild::Paragraph(paragraph) => {
                 let mut paragraph_text = Vec::new();
                 for child in &paragraph.children {
-                    match child {
-                        ParagraphChild::Run(run) => {
-                            for run_child in &run.children {
-                                if let RunChild::Text(text) = run_child {
-                                    paragraph_text.push(text.text.clone());
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
+                                    if let ParagraphChild::Run(run) = child {
+                                        for run_child in &run.children {
+                                            if let RunChild::Text(text) = run_child {
+                                                paragraph_text.push(text.text.clone());
+                                            }
+                                        }
+                                    }                }
                 paragraph_text.join("")
             }
             DocumentChild::Table(_table) => {
@@ -524,8 +520,7 @@ impl FileProcessor {
         let mut current_word = Vec::new();
 
         for &byte in data {
-            // Look for printable ASCII and common extended characters
-            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+            if (32..=126).contains(&byte) || byte == 9 || byte == 10 || byte == 13 {
                 current_word.push(byte);
             } else {
                 // Non-printable character - end current word
@@ -625,8 +620,7 @@ impl FileProcessor {
         let mut char_count = 0;
 
         for &byte in data {
-            // Look for printable ASCII and Unicode characters
-            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+            if (32..=126).contains(&byte) || byte == 9 || byte == 10 || byte == 13 {
                 current_word.push(byte);
                 char_count += 1;
                 in_text_sequence = true;
@@ -711,7 +705,7 @@ impl FileProcessor {
         let mut current_sequence = Vec::new();
 
         for &byte in bytes {
-            if (byte >= 32 && byte <= 126) || byte == 9 || byte == 10 || byte == 13 {
+            if (32..=126).contains(&byte) || byte == 9 || byte == 10 || byte == 13 {
                 current_sequence.push(byte);
             } else {
                 if current_sequence.len() >= 4 {

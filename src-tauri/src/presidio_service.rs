@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -115,7 +116,7 @@ impl PresidioService {
 
         // Send shutdown request
         let shutdown_url = format!("{}/shutdown", self.service_url);
-        if let Ok(_) = reqwest::get(&shutdown_url).await {
+        if (reqwest::get(&shutdown_url).await).is_ok() {
             tracing::info!("Shutdown request sent to service");
         }
 

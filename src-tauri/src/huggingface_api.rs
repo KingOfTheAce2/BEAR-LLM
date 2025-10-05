@@ -1,6 +1,7 @@
+#![allow(dead_code)]
 use crate::utils::{estimate_model_size_mb, parse_model_params_from_id};
 use anyhow::{anyhow, Result};
-use reqwest;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -92,7 +93,7 @@ async fn search_hf_api(params: &ModelSearchParams) -> Result<Vec<HuggingFaceMode
             let author = m
                 .author
                 .unwrap_or_else(|| m.id.split('/').next().unwrap_or("unknown").to_string());
-            let name = m.id.split('/').last().unwrap_or(&m.id).to_string();
+            let name = m.id.split('/').next_back().unwrap_or(&m.id).to_string();
 
             HuggingFaceModel {
                 id: m.id.clone(),
@@ -299,7 +300,7 @@ where
                 let dest_path = save_dir.join(file_name);
 
                 // Copy to destination
-                if let Ok(_) = tokio::fs::copy(&downloaded_path, &dest_path).await {
+                if (tokio::fs::copy(&downloaded_path, &dest_path).await).is_ok() {
                     downloaded_files += 1;
                     let progress = (downloaded_files as f32 / total_files as f32) * 100.0;
                     progress_callback(progress);

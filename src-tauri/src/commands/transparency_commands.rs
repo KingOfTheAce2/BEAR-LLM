@@ -26,6 +26,7 @@ impl Default for TransparencyState {
 }
 
 impl TransparencyState {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
