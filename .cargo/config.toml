@@ -7,3 +7,6 @@ target-dir = "target"
 
 # No special Windows MSVC configuration needed
 # Pure Rust Candle builds reliably without CRT linking tweaks
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=-crt-static"]
