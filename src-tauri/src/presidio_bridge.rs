@@ -191,7 +191,7 @@ scipy>=1.10.0
         }
 
         println!("💡 Tip: For better accuracy (but +520MB RAM), download en_core_web_lg");
-        println!("   Run: python -m spacy download en_core_web_lg");
+        println!("  Run: python -m spacy download en_core_web_lg");
 
         let mut installed = self.presidio_installed.write().await;
         *installed = true;
@@ -254,7 +254,7 @@ def download_models():
 
 if __name__ == "__main__":
     download_models()
-"#;
+"#.to_string();
 
         let script_path = model_dir.join("download_models.py");
         tokio::fs::write(&script_path, download_script).await?;
@@ -351,12 +351,12 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 def detect_pii(text, config):
     # Initialize NLP engine with spaCy (LITE MODE - small model)
-    provider = NlpEngineProvider(nlp_configuration={{
+    provider = NlpEngineProvider(nlp_configuration={
         "nlp_engine_name": "spacy",
         "models": [
-            {{"lang_code": "en", "model_name": "en_core_web_sm"}}
+            {"lang_code": "en", "model_name": "en_core_web_sm"}
         ],
-    }})
+    })
     nlp_engine = provider.create_engine()
 
     # Create analyzer with custom configuration
@@ -368,15 +368,15 @@ def detect_pii(text, config):
     # FULL MODE: Uncomment to use transformer models (requires torch, transformers)
     # This adds ~1.5GB RAM but improves accuracy from 90% to 95%
     # try:
-    #     from transformers import pipeline
-    #     ner_pipeline = pipeline(
-    #         "ner",
-    #         model="lakshyakh93/deberta_finetuned_pii",
-    #         aggregation_strategy="simple"
-    #     )
-    #     transformer_results = ner_pipeline(text)
+    #       from transformers import pipeline
+    #       ner_pipeline = pipeline(
+    #           "ner",
+    #           model="lakshyakh93/deberta_finetuned_pii",
+    #           aggregation_strategy="simple"
+    #       )
+    #       transformer_results = ner_pipeline(text)
     # except:
-    #     transformer_results = []
+    #       transformer_results = []
 
     # Analyze text with Presidio
     results = analyzer.analyze(
@@ -390,14 +390,14 @@ def detect_pii(text, config):
     # Convert to JSON
     output = []
     for result in results:
-        output.append({{
+        output.append({
             "entity_type": result.entity_type,
             "text": text[result.start:result.end],
             "start": result.start,
             "end": result.end,
             "score": result.score,
-            "recognition_metadata": {{}}
-        }})
+            "recognition_metadata": {}
+        })
 
     return json.dumps(output)
 
@@ -406,7 +406,7 @@ if __name__ == "__main__":
     config = json.loads(sys.argv[2])
     result = detect_pii(text, config)
     print(result)
-"#.to_string()
+"#.to_string(); // FIX: Added semicolon here
 
         let script_path = model_path
             .as_ref()

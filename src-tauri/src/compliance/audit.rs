@@ -197,7 +197,7 @@ impl AuditLogger {
 
         let mut sql = String::from(
             "SELECT id, timestamp, user_id, action_type, entity_type, entity_id,
-                    details, ip_address, user_agent, success, error_message
+                 details, ip_address, user_agent, success, error_message
              FROM audit_log WHERE 1=1",
         );
 
@@ -259,7 +259,11 @@ impl AuditLogger {
                     error_message: row.get(10)?,
                 })
             })?;
-        entries.collect()
+        
+        // FIX: Collect the iterator, getting a Result<Vec, rusqlite::Error>, 
+        // then convert the error type to anyhow::Error.
+        entries.collect::<std::result::Result<Vec<AuditLogEntry>, rusqlite::Error>>()
+            .map_err(|e| e.into())
     }
 
     /// Get audit logs for specific user
@@ -367,7 +371,7 @@ impl AuditLogger {
 
         let mut stmt = conn.prepare(
             "SELECT id, timestamp, user_id, action_type, entity_type, entity_id,
-                    details, ip_address, user_agent, success, error_message
+                 details, ip_address, user_agent, success, error_message
              FROM audit_log
              WHERE details LIKE ?1 OR error_message LIKE ?1
              ORDER BY timestamp DESC
@@ -395,7 +399,11 @@ impl AuditLogger {
                     error_message: row.get(10)?,
                 })
             })?;
-        entries.collect()
+        
+        // FIX: Collect the iterator, getting a Result<Vec, rusqlite::Error>, 
+        // then convert the error type to anyhow::Error.
+        entries.collect::<std::result::Result<Vec<AuditLogEntry>, rusqlite::Error>>()
+            .map_err(|e| e.into())
     }
 }
 

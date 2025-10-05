@@ -126,7 +126,7 @@ impl SystemMonitor {
 
                         let compute_cap = device
                             .cuda_compute_capability()
-                            .map(|cc| format bertujuan("{}.{}", cc.major, cc.minor))
+                            .map(|cc| format!("{}.{}", cc.major, cc.minor))
                             .unwrap_or_else(|_| "Unknown".to_string());
 
                         let driver_version = nvml
@@ -237,7 +237,7 @@ impl SystemMonitor {
                                 }
                                 Err(e) => {
                                     tracing::error!(
-                                        "GPU detection failed: Could not query Win32_VideoController via WMI. \n                                        Error: {}. This may indicate WMI service issues or insufficient permissions.",
+                                        "GPU detection failed: Could not query Win32_VideoController via WMI. \n                                 Error: {}. This may indicate WMI service issues or insufficient permissions.",
                                         e
                                     );
                                 }
@@ -245,7 +245,7 @@ impl SystemMonitor {
                         }
                         Err(e) => {
                             tracing::error!(
-                                "GPU detection failed: Could not establish WMI connection. \n                                Error: {}. Ensure WMI service is running and you have proper permissions.",
+                                "GPU detection failed: Could not establish WMI connection. \n                                 Error: {}. Ensure WMI service is running and you have proper permissions.",
                                 e
                             );
                         }
@@ -253,7 +253,7 @@ impl SystemMonitor {
                 }
                 Err(e) => {
                     tracing::error!(
-                        "GPU detection failed: Could not initialize COM library for WMI. \n                        Error: {}. This may indicate system-level COM configuration issues.",
+                        "GPU detection failed: Could not initialize COM library for WMI. \n                                 Error: {}. This may indicate system-level COM configuration issues.",
                         e
                     );
                 }
@@ -550,8 +550,8 @@ fn estimate_inference_speed(specs: &SystemSpecs, model: &ModelParams) -> f32 {
     if !specs.gpu.available {
         // CPU only - very rough estimates
         match model.param_count {
-            p if p <= 3_000 => 5.0,  // 3B or less
-            p if p <= 7_000 => 2.0,  // 7B
+            p if p <= 3_000 => 5.0,   // 3B or less
+            p if p <= 7_000 => 2.0,   // 7B
             p if p <= 13_000 => 0.5, // 13B
             _ => 0.1,                // Larger models
         }
