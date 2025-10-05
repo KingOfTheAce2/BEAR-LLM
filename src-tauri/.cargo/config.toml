@@ -4,3 +4,6 @@
 [build]
 # Incremental compilation disabled for release builds
 incremental = false
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-Ctarget-feature=-crt-static"]
