@@ -103,11 +103,13 @@ jobs:
         run: |
           Write-Host "🔍 Verifying dynamic runtime linkage (/MD)..."
           # We build with -vv and capture output to check for /MT flag.
-          # The output is streamed to the console to provide progress feedback.
+          # The output is streamed to the console, but filtered to only show progress.
           $buildOutput = [System.Collections.Generic.List[string]]::new()
           cargo build --release --target x86_64-pc-windows-msvc -vv 2>&1 | ForEach-Object {
               $buildOutput.Add($_)
-              Write-Host $_
+              if ($_ -match "Compiling") {
+                  Write-Host $_ -ForegroundColor Green
+              }
           }
 
           $mtUsage = $buildOutput | Select-String "/MT"
