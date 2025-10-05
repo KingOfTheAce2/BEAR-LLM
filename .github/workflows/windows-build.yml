@@ -63,8 +63,8 @@ jobs:
     runs-on: windows-latest
     env:
       RUSTFLAGS: "-Ctarget-feature=-crt-static"
-      CFLAGS: "/MD"
-      CXXFLAGS: "/MD"
+      CFLAGS: "/MD /wd9025"
+      CXXFLAGS: "/MD /wd9025"
 
     steps:
       - uses: actions/checkout@v4
