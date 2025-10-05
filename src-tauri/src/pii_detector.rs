@@ -12,12 +12,22 @@
 //!
 //! ## Usage
 //! ```rust,no_run
-//! use pii_detector_production::PIIDetector;
+//! use crate::PIIDetector; // Corrected import
+//! use anyhow::Result; // Added for Result type
 //!
-//! let detector = PIIDetector::new();
-//! detector.initialize().await?;
-//! let entities = detector.detect_pii(text).await?;
-//! let redacted = detector.redact_pii(text).await?;
+//! #[tokio::main] // Added tokio runtime
+//! async fn main() -> Result<()> { // Made async
+//!     let mut detector = PIIDetector::new();
+//!     detector.initialize().await?;
+//!
+//!     let text = "John Doe's email is john@example.com"; // Defined text
+//!     let entities = detector.detect_pii(text).await?;
+//!     let redacted = detector.redact_pii(text).await?;
+//!
+//!     println!("Entities: {:?}", entities);
+//!     println!("Redacted: {}", redacted);
+//!     Ok(())
+//! }
 //! ```
 //!
 //! ## Detection Capabilities

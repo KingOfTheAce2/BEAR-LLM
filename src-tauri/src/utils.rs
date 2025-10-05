@@ -27,6 +27,8 @@ lazy_static! {
 ///
 /// # Example
 /// ```rust
+/// use crate::utils::cosine_similarity; // Added import
+///
 /// let vec1 = vec![1.0, 2.0, 3.0];
 /// let vec2 = vec![2.0, 4.0, 6.0];
 /// let similarity = cosine_similarity(&vec1, &vec2);
