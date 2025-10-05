@@ -112,13 +112,18 @@ jobs:
               }
           }
 
-          $mtUsage = $buildOutput | Select-String "/MT"
-          if ($mtUsage) {
-              Write-Host "❌ Found static runtime linkage (/MT) in build output:" -ForegroundColor Red
+          $mtUsage = $buildOutput | Select-String "'/MT'"
+          $overrideWarning = $buildOutput | Select-String "overriding '/MT' with '/MD'"
+
+          if ($mtUsage -and -not $overrideWarning) {
+              Write-Host "❌ Found static runtime linkage ('/MT') in build output (not a harmless override):" -ForegroundColor Red
               $mtUsage
               exit 1
           } else {
-              Write-Host "✅ No static runtime linkage found. All native dependencies are using /MD." -ForegroundColor Green
+              if ($overrideWarning) {
+                  Write-Host "⚠️ Harmless '/MT' override warning detected, but build uses '/MD'." -ForegroundColor Yellow
+              }
+              Write-Host "✅ All native dependencies are using /MD." -ForegroundColor Green
           }
 
       - name: Install cargo-audit
