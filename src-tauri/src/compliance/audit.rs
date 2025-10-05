@@ -259,7 +259,7 @@ impl AuditLogger {
                     error_message: row.get(10)?,
                 })
             })?;
-        entries.collect::<Result<Vec<_>, _>>()?
+        entries.collect()
     }
 
     /// Get audit logs for specific user
@@ -330,8 +330,8 @@ impl AuditLogger {
                     "action": row.get::<_, String>(0)?,
                     "count": row.get::<_, i64>(1)?
                 }))
-            })?;
-        action_distribution.collect::<Result<Vec<_>, _>>()?
+            })?.collect::<Result<Vec<_>, _>>()?;
+
 
         Ok(serde_json::json!({
             "total_entries": total_entries,
@@ -395,7 +395,7 @@ impl AuditLogger {
                     error_message: row.get(10)?,
                 })
             })?;
-        entries.collect::<Result<Vec<_>, _>>()?
+        entries.collect()
     }
 }
 
@@ -406,7 +406,7 @@ mod tests {
 
     fn get_test_db() -> PathBuf {
         let mut path = env::temp_dir();
-        path.push(format!("test_audit_{{}}", uuid::Uuid::new_v4()));
+        path.push(format!("test_audit_{}", uuid::Uuid::new_v4()));
         path
     }
 
