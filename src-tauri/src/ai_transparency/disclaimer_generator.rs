@@ -220,6 +220,7 @@ impl DisclaimerGenerator {
     }
 
     /// Generate minimal inline disclaimer
+    #[allow(dead_code)]
     pub fn format_inline(disclaimer: &ModelDisclaimer) -> String {
         format!(
             "⚠️ {} - {} | Limitations apply. Not for critical decisions.",

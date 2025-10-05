@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // GDPR Compliance Module for BEAR AI
 // Implements consent management, data retention, and audit logging
 
@@ -77,6 +78,7 @@ impl ComplianceManager {
     }
 
     /// Check if operation is allowed based on consent
+    #[allow(dead_code)]
     pub async fn check_operation_consent(&self, user_id: &str, operation: &str) -> Result<bool> {
         let consent_type = match operation {
             "pii_detection" => ConsentType::PiiDetection,

@@ -171,6 +171,7 @@ impl ConfidenceScore {
     }
 
     /// Get formatted confidence display
+    #[allow(dead_code)]
     pub fn format_display(&self) -> String {
         format!(
             "{} ({:.0}%)\n{}\n\nFactors:\n• Completeness: {:.0}%\n• Context: {:.0}%\n• Consistency: {:.0}%\n• Coherence: {:.0}%\n• Sources: {:.0}%",
@@ -201,6 +202,7 @@ impl ConfidenceFactors {
     }
 
     /// Create default factors with medium confidence
+    #[allow(dead_code)]
     pub fn default_medium() -> Self {
         Self {
             completeness: 0.6,

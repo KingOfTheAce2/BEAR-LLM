@@ -177,6 +177,7 @@ impl GenericDisclaimerGenerator {
     }
 
     /// Format minimal inline disclaimer
+    #[allow(dead_code)]
     pub fn format_inline(disclaimer: &GenericDisclaimer) -> String {
         let icon = match disclaimer.warning_level {
             DisclaimerLevel::Info => "ℹ️",
@@ -197,6 +198,7 @@ impl GenericDisclaimerGenerator {
     }
 
     /// Get disclaimer severity level
+    #[allow(dead_code)]
     pub fn get_severity_color(level: &DisclaimerLevel) -> &'static str {
         match level {
             DisclaimerLevel::Info => "#3B82F6",     // Blue

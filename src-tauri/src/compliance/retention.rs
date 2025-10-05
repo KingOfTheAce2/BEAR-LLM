@@ -252,6 +252,7 @@ impl RetentionManager {
     }
 
     /// Clear retention period (keep indefinitely)
+    #[allow(dead_code)]
     pub fn clear_retention(&self, entity_type: &str, entity_id: i64) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
 
@@ -306,6 +307,7 @@ impl RetentionManager {
     }
 
     /// Extend retention for specific entity (user requested extension)
+    #[allow(dead_code)]
     pub fn extend_retention(
         &self,
         entity_type: &str,

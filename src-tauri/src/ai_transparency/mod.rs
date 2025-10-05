@@ -115,6 +115,7 @@ impl TransparencyContext {
     }
 
     /// Mark disclaimers as acknowledged
+    #[allow(dead_code)]
     pub fn acknowledge_disclaimers(mut self) -> Self {
         self.disclaimers_acknowledged = true;
         self

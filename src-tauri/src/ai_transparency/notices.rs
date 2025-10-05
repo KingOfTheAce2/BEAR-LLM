@@ -16,6 +16,7 @@ pub struct NoticeTemplates {
 // Derive Default is preferable to manual implementation
 impl NoticeTemplates {
     #[must_use]
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }

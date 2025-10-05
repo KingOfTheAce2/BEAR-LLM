@@ -138,6 +138,7 @@ impl ModelCardFetcher {
     }
 
     /// Check if model card is cached and fresh
+    #[allow(dead_code)]
     pub fn is_cached(&self, model_id: &str) -> bool {
         if let Ok(cached) = self.get_cached_model_card(model_id) {
             if let Ok(elapsed) = cached.cached_at.elapsed() {
