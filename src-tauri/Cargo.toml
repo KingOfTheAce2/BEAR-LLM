@@ -1,6 +1,6 @@
 [package]
 name = "bear-ai-llm"
-version = "1.0.68"
+version = "1.0.69"
 description = "A secure, private AI assistant for legal professionals"
 authors = ["Ernst van Gassen <ernst@example.com>"]
 edition = "2021"
@@ -96,4 +96,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "bear-ai-llm"
 path = "src/main.rs"
+
+[patch.crates-io]
+esaxx-rs = { git = "https://github.com/Narsil/esaxx-rs.git" }
 
