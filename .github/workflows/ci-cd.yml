@@ -11,9 +11,7 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, develop ]
-  schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+   workflow_dispatch:
     inputs:
       version:
         description: 'Version to build (e.g., 1.0.31)'
